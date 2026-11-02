@@ -67,8 +67,9 @@ button,a{font:inherit;-webkit-tap-highlight-color:transparent}button{cursor:poin
 <body>
 <div id="viewport" aria-label="3D RC first-quarter race track"></div><div id="shade"></div>
 <div id="top">
-  <div class="brand"><strong>MICRO MAYHEM</strong><div class="details"><span>FULL COURSE · 04 / 04</span><span>THE BACKYARD GRAND PRIX</span></div></div>
+  <div class="brand"><strong>MICRO MAYHEM</strong><div class="details"><span id="course-kicker">COURSE 01 / 04</span><span id="course-title">Backyard Grand Prix</span></div></div>
   <div class="tools">
+    <a id="picker-link" class="tool-btn" href="./courses.html" style="text-decoration:none">COURSES</a>
     <button id="camera" class="tool-btn" type="button" aria-label="Switch to complete track overview">OVERVIEW</button>
     <button id="pause" class="tool-btn" type="button">Ⅱ PAUSE</button>
   </div>
@@ -85,22 +86,23 @@ button,a{font:inherit;-webkit-tap-highlight-color:transparent}button{cursor:poin
 </div>
 <div id="intro" class="overlay">
   <div class="dialog">
-    <div class="kicker">HAMBONE SOFTWARE / TRACK LAB</div>
+    <div class="kicker" id="course-subtitle">THE ORIGINAL FOUR-SECTOR CIRCUIT</div>
     <h1>FULL<br><em>THROTTLE.</em></h1>
-    <p>It's a complete circuit now! Four smooth-shell RC monster trucks. Four connected sectors. Two laps. Race through Backyard Launch, Garden Switchbacks, Canyon Rush, and the Home Run—with sweeping banked corners, giant jumps, and a last-second finish-line fight.</p>
+    <p id="course-description">The original backyard Grand Prix. Four spectacular sections, four trucks, two laps.</p>
     <div class="pills"><span>FULL LOOP</span><span>4 BIG JUMPS</span><span>4 SECTORS</span><span>2-LAP GRAND PRIX</span></div>
     <button id="start" class="primary" type="button"><span>START THE GRAND PRIX</span><span>↗</span></button>
     <p style="font-size:11px;margin:8px 0 0">Desktop: W / ↑ accelerate · A/D / ←→ steer · S brake · Shift turbo · C camera · Esc pause. Mobile: auto-throttle + touch steering.</p>
     <a href="./vehicle-preview.html" class="secondary" style="display:inline-block">INSPECT TRUCKS</a>
+    <a href="./courses.html" class="secondary" style="display:inline-block">CHOOSE ANOTHER COURSE</a>
     <a href="./index.html" class="secondary" style="display:inline-block">ORIGINAL RACE BUILD</a>
   </div>
 </div>
 <div id="results" class="overlay hidden">
-  <div class="dialog"><div class="kicker">THE BACKYARD GRAND PRIX — FINISHED</div><h1>CHECKERED<br><em>FLAG!</em></h1><p>Two complete laps of the full four-sector circuit. Want to shave seconds off your time?</p>
+  <div class="dialog"><div class="kicker" id="result-course-name">BACKYARD GRAND PRIX — FINISHED</div><h1>CHECKERED<br><em>FLAG!</em></h1><p>Two complete laps of the full four-sector circuit. Want to shave seconds off your time?</p>
     <div class="split"><div><span>TOTAL RACE TIME</span><strong id="result-time">--:--.--</strong></div><div><span>FINISH PLACE</span><strong id="result-place">-- / 4</strong></div></div>
     <div class="split"><div><span>LAP 01</span><strong id="result-split">--:--.--</strong></div><div><span>LAP 02</span><strong id="result-lap2">--:--.--</strong></div></div>
     <div class="split"><div><span>FASTEST LAP</span><strong id="result-best">--:--.--</strong></div><div><span>TRACK</span><strong>4 / 4</strong></div></div>
-    <button id="retry" class="primary" type="button"><span>RUN IT AGAIN</span><span>↗</span></button><button id="exit" class="secondary" type="button">BACK TO PREVIEW</button>
+    <button id="retry" class="primary" type="button"><span>RUN IT AGAIN</span><span>↗</span></button><button id="exit" class="secondary" type="button">CHOOSE ANOTHER COURSE</button>
   </div>
 </div>
 <div id="pause-overlay" class="overlay hidden"><div class="dialog"><div class="kicker">PIT LANE</div><h1>PAUSED.</h1><p>Restart the sector or return to the race.</p><button id="resume" class="primary" type="button"><span>RESUME</span><span>↗</span></button><button id="restart" class="secondary" type="button">RESTART SECTOR</button></div></div>
