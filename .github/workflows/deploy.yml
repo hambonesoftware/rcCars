@@ -32,6 +32,7 @@ jobs:
           node --check quarter-track.js
           node --check course-presets.js
           node --check course-picker.js
+          node --check track-layouts.js
           test -s courses.html
           node tests/track-geometry.test.cjs
           test -s quarter-track.html
