@@ -12,11 +12,14 @@ function section(from,to){
   assert.ok(b>a,'Missing source marker '+to);
   return src.slice(a,b);
 }
+const catalog=fs.readFileSync(path.join(__dirname,'..','course-presets.js'),'utf8')
+  .split('export function getCourse')[0]
+  .replace('export const COURSE_PRESETS','const COURSE_PRESETS');
 const defs=section('const R=','const controls=');
 const util=section('function clamp(','function makeBox(');
 const geometry=section('function surfaceHeight(','function createSkyEnvironment(');
 const code=[
-  defs,util,geometry,
+  catalog,'const COURSE=COURSE_PRESETS.backyard;',defs,util,geometry,
   '({END,SECTOR_1_END,SECTOR_2_END,SECTOR_3_END,LAPS,SECTOR_2_LEFT_START,SECTOR_2_LEFT_END,SECTOR_2_RIGHT_START,SECTOR_2_RIGHT_END,',
   'CRUISE_SPEED,MAX_SPEED,SEGMENT_LAYOUT,ramps,point,position,project,surfaceHeight})'
 ].join('\n');
@@ -81,4 +84,39 @@ for(const jump of t.ramps){
   assert.ok(jump.height>1.5);
   assert.ok(t.surfaceHeight(jump.end-.1)>1,'ramp has height');
 }
+
+function evaluateCourse(id){
+  const code=[
+    catalog,'const COURSE=COURSE_PRESETS['+JSON.stringify(id)+'];',
+    defs,util,geometry,
+    '({END,SECTOR_1_END,SECTOR_2_END,SECTOR_3_END,SEGMENT_LAYOUT,ramps,point,position,project,surfaceHeight})'
+  ].join('\n');
+  return vm.runInNewContext(code,Object.create(null),{timeout:2500});
+}
+for(const id of ['backyard','creek','garage','quarry']){
+  const course=evaluateCourse(id);
+  const begin=course.point(0),finish=course.point(course.END);
+  approx(begin.x,finish.x,.00001,id+' exact closure X');
+  approx(begin.z,finish.z,.00001,id+' exact closure Z');
+  approx(Math.sin(begin.angle),Math.sin(finish.angle),.00001,id+' tangent sine');
+  approx(Math.cos(begin.angle),Math.cos(finish.angle),.00001,id+' tangent cosine');
+  assert.equal(course.ramps.length,4,id+' has four major jumps');
+  const limits=[0,course.SECTOR_1_END,course.SECTOR_2_END,course.SECTOR_3_END,course.END];
+  assert.ok(limits.every((value,i)=>i===0||value>limits[i-1]),id+' sector order');
+  assert.ok(course.END>700,'unexpected short route '+id);
+  for(let s=4;s<course.END-5;s+=5.6){
+    for(const d of [-4.4,0,4.4]){
+      const p=course.position(s,d),projected=course.project(p.x,p.z,s);
+      approx(projected.s,s,.15,id+' projected distance');
+      approx(projected.d,d,.2,id+' projected lane');
+    }
+  }
+  for(const seg of course.SEGMENT_LAYOUT.slice(1)){
+    const p1=course.point(seg.startS-.0001),p2=course.point(seg.startS+.0001);
+    assert.ok(Math.hypot(p1.x-p2.x,p1.z-p2.z)<.002,id+' continuous road');
+    assert.ok(Math.abs(p1.angle-p2.angle)<.0001,id+' smooth heading');
+  }
+}
+console.log('PASS: 4 different layouts share closed-loop race geometry and continuous lanes');
+
 console.log('PASS: first half preserved, four-sector closed circuit, two laps, turns, jumps, lane joins, road projection, 2x speeds');
