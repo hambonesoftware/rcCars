@@ -7,9 +7,11 @@ const ui={
   pauseOverlay:$('pause-overlay'),start:$('start'),pause:$('pause'),resume:$('resume'),
   retry:$('retry'),restart:$('restart'),exit:$('exit'),camera:$('camera'),
   marker:$('marker'),flash:$('flash'),speed:$('speed'),time:$('time'),
-  place:$('place'),sector:$('sector'),heat:$('heat'),heatLabel:$('heat-label'),
+  place:$('place'),sector:$('sector'),lap:$('lap'),
+  heat:$('heat'),heatLabel:$('heat-label'),
   progress:$('progress-fill'),map:$('map'),resultTime:$('result-time'),
-  resultPlace:$('result-place'),resultSplit:$('result-split')
+  resultPlace:$('result-place'),resultSplit:$('result-split'),
+  resultLap2:$('result-lap2'),resultBest:$('result-best')
 };
 const mobile=matchMedia('(pointer:coarse)').matches;
 // Connected centerline definition. Each section starts tangent to the
