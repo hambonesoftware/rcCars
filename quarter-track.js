@@ -28,6 +28,7 @@ const player={
 let renderer,scene,camera,sun;
 let ai=[];
 let shadow;
+const rivalShadows=[];
 let worldClock=0,lastFrame=performance.now();
 const particles=[],cones=[];
 let audioCtx=null;
@@ -36,11 +37,11 @@ let audioGain=null;
 
 const mats={
   asphalt:new THREE.MeshStandardMaterial({color:'#777975',roughness:.96,side:THREE.DoubleSide}),
-  shoulder:new THREE.MeshStandardMaterial({color:'#836f51',roughness:1,side:THREE.DoubleSide}),
+  shoulder:new THREE.MeshStandardMaterial({color:'#766b50',roughness:1,side:THREE.DoubleSide}),
   curbYellow:new THREE.MeshStandardMaterial({color:'#e9bf47',roughness:.8}),
   curbBlack:new THREE.MeshStandardMaterial({color:'#353b35',roughness:.9}),
   curbWhite:new THREE.MeshStandardMaterial({color:'#eee9d8',roughness:.88}),
-  grass:new THREE.MeshStandardMaterial({color:'#6a9b58',roughness:1}),
+  grass:new THREE.MeshStandardMaterial({color:'#5f8b51',roughness:1}),
   darkGrass:new THREE.MeshStandardMaterial({color:'#3e7a4a',roughness:1}),
   leaves:new THREE.MeshStandardMaterial({color:'#3e7250',roughness:1}),
   leavesLight:new THREE.MeshStandardMaterial({color:'#568d52',roughness:1}),
@@ -118,48 +119,129 @@ function project(x,z,estimate){
   return {s,d:lateral,angle:p.angle};
 }
 
-function createAsphaltTexture(){
-  const c=document.createElement('canvas');c.width=c.height=512;
+function createSkyEnvironment(){
+  // A lightweight, locally generated outdoor reflection source: cool sky,
+  // warm sunlit horizon and leafy surroundings. Reflects in clearcoat and
+  // windshield glass without downloading HDR imagery or adding render passes.
+  const c=document.createElement('canvas');
+  c.width=512;c.height=256;
   const ctx=c.getContext('2d');
-  ctx.fillStyle='#8e9088';ctx.fillRect(0,0,512,512);
+  const upper=ctx.createLinearGradient(0,0,0,256);
+  upper.addColorStop(0,'#6594a9');
+  upper.addColorStop(.32,'#abc6cd');
+  upper.addColorStop(.49,'#ebdcc2');
+  upper.addColorStop(.53,'#8d9c73');
+  upper.addColorStop(1,'#414e39');
+  ctx.fillStyle=upper;
+  ctx.fillRect(0,0,512,256);
+  const sunlight=ctx.createRadialGradient(118,75,8,118,75,85);
+  sunlight.addColorStop(0,'rgba(255,250,225,.95)');
+  sunlight.addColorStop(.21,'rgba(255,239,203,.62)');
+  sunlight.addColorStop(1,'rgba(255,233,198,0)');
+  ctx.fillStyle=sunlight;
+  ctx.fillRect(0,0,512,256);
+  const env=new THREE.CanvasTexture(c);
+  env.mapping=THREE.EquirectangularReflectionMapping;
+  env.colorSpace=THREE.SRGBColorSpace;
+  return env;
+}
+function createAsphaltTextures(){
+  // Albedo and micro-normal are generated once. The colour is worn grey
+  // aggregate, not uniform charcoal; tiny height variations catch sunlight.
+  const size=512;
+  const c=document.createElement('canvas');c.width=c.height=size;
+  const ctx=c.getContext('2d');
+  ctx.fillStyle='#72736c';
+  ctx.fillRect(0,0,size,size);
   let seed=11775;
   const random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
-  for(let i=0;i<16500;i++){
-    const x=random()*512,y=random()*512,size=.4+random()*2.1;
-    const tone=random()>.55?'#e1ded3':'#323d3a';
-    ctx.globalAlpha=.045+random()*.13;
-    ctx.fillStyle=tone;ctx.fillRect(x,y,size,size);
+  for(let i=0;i<65;i++){
+    const x=random()*size,y=random()*size,r=13+random()*97;
+    const stain=ctx.createRadialGradient(x,y,0,x,y,r);
+    stain.addColorStop(0,random()>.5?'rgba(36,40,37,.13)':'rgba(204,201,178,.10)');
+    stain.addColorStop(1,'rgba(100,102,95,0)');
+    ctx.fillStyle=stain;
+    ctx.fillRect(x-r,y-r,r*2,r*2);
+  }
+  for(let i=0;i<23500;i++){
+    const x=random()*size,y=random()*size,w=.35+random()*2.2;
+    ctx.fillStyle=random()>.54?'#d8d1b9':'#242b28';
+    ctx.globalAlpha=.052+random()*.18;
+    ctx.fillRect(x,y,w,w*(.5+random()));
   }
   ctx.globalAlpha=1;
-  for(let i=0;i<9;i++){
-    const x=random()*512,y=random()*512;
-    ctx.strokeStyle='#454c48';ctx.globalAlpha=.10;ctx.lineWidth=.45;ctx.beginPath();
-    ctx.moveTo(x,y);ctx.lineTo(x+12+random()*25,y+5+random()*15);ctx.stroke();
+  // Irregular fine seams, edge scuffs and occasional faded tyre rubber.
+  for(let i=0;i<11;i++){
+    const x=random()*size,y=random()*size;
+    ctx.globalAlpha=.09+random()*.055;
+    ctx.strokeStyle='#303b37';ctx.lineWidth=.5+random()*.8;
+    ctx.beginPath();ctx.moveTo(x,y);
+    ctx.bezierCurveTo(x+8,y+3,x+15,y-5,x+25+random()*35,y+random()*12);
+    ctx.stroke();
+  }
+  for(let i=0;i<7;i++){
+    const x=random()*size,y=random()*size;
+    ctx.globalAlpha=.04;
+    ctx.strokeStyle='#282b2a';ctx.lineWidth=2+random()*2;
+    ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+random()*6,y+35+random()*95);ctx.stroke();
   }
   ctx.globalAlpha=1;
-  const t=new THREE.CanvasTexture(c);
-  t.wrapS=t.wrapT=THREE.RepeatWrapping;
-  t.repeat.set(1,1);
-  t.anisotropy=4;
-  t.colorSpace=THREE.SRGBColorSpace;
-  return t;
+  const color=new THREE.CanvasTexture(c);
+  color.wrapS=color.wrapT=THREE.RepeatWrapping;
+  color.repeat.set(1,1);
+  color.anisotropy=4;
+  color.colorSpace=THREE.SRGBColorSpace;
+
+  // Subtle blue-channel-up tangent-space normal map from coarse pebble grain.
+  // Only 256px, because deep surface detail should not cost mobile memory.
+  const res=256,noise=new Float32Array(res*res);
+  for(let y=0;y<res;y++)for(let x=0;x<res;x++){
+    noise[y*res+x]=random()*.72+.15*Math.sin(x*.55)*Math.cos(y*.47);
+  }
+  const n=document.createElement('canvas');n.width=n.height=res;
+  const nctx=n.getContext('2d');
+  const im=nctx.createImageData(res,res);
+  const sample=(x,y)=>noise[((y+res)%res)*res+((x+res)%res)];
+  for(let y=0;y<res;y++)for(let x=0;x<res;x++){
+    const dx=(sample(x-1,y)-sample(x+1,y))*.35;
+    const dy=(sample(x,y-1)-sample(x,y+1))*.35;
+    const inv=1/Math.sqrt(dx*dx+dy*dy+1);
+    const k=(y*res+x)*4;
+    im.data[k]=(dx*inv*.5+.5)*255;
+    im.data[k+1]=(dy*inv*.5+.5)*255;
+    im.data[k+2]=(inv*.5+.5)*255;
+    im.data[k+3]=255;
+  }
+  nctx.putImageData(im,0,0);
+  const normal=new THREE.CanvasTexture(n);
+  normal.wrapS=normal.wrapT=THREE.RepeatWrapping;
+  normal.repeat.set(1,1);
+  normal.anisotropy=4;
+  return {color,normal};
 }
 function createGrassTexture(){
   const c=document.createElement('canvas');c.width=c.height=256;
   const ctx=c.getContext('2d');
-  ctx.fillStyle='#779d60';ctx.fillRect(0,0,256,256);
+  ctx.fillStyle='#577f4b';ctx.fillRect(0,0,256,256);
   let seed=9157;
   const random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
-  for(let i=0;i<6000;i++){
+  for(let i=0;i<95;i++){
+    const x=random()*256,y=random()*256,r=8+random()*48;
+    const grad=ctx.createRadialGradient(x,y,0,x,y,r);
+    grad.addColorStop(0,random()>.5?'rgba(40,78,44,.23)':'rgba(179,155,91,.20)');
+    grad.addColorStop(1,'rgba(80,114,71,0)');
+    ctx.fillStyle=grad;ctx.fillRect(x-r,y-r,r*2,r*2);
+  }
+  for(let i=0;i<8500;i++){
     ctx.globalAlpha=.035+random()*.16;
-    ctx.fillStyle=random()>.52?'#d1b67d':'#295c3c';
+    ctx.fillStyle=random()>.54?'#c5b376':'#244f33';
     const x=random()*256,y=random()*256;
     ctx.fillRect(x,y,1+random()*4,.6+random()*3);
   }
   ctx.globalAlpha=1;
   const tex=new THREE.CanvasTexture(c);
   tex.wrapS=tex.wrapT=THREE.RepeatWrapping;
-  tex.repeat.set(23,23);
+  tex.repeat.set(19,19);
   tex.colorSpace=THREE.SRGBColorSpace;
   tex.anisotropy=4;return tex;
 }
@@ -196,7 +278,7 @@ function createRoad(){
     new THREE.MeshStandardMaterial({map:createGrassTexture(),roughness:1})
   );
   ground.rotation.x=-Math.PI/2;ground.position.set(60,-.07,80);
-  ground.receiveShadow=!mobile;scene.add(ground);
+  ground.receiveShadow=true;scene.add(ground);
 
   // Full-resolution banked road ribbon with actual elevation changes.
   const vertices=[],uvs=[],indices=[];
@@ -220,11 +302,14 @@ function createRoad(){
   g.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));
   g.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));
   g.setIndex(indices);g.computeVertexNormals();
+  const roadTextures=createAsphaltTextures();
   const roadMaterial=new THREE.MeshStandardMaterial({
-    map:createAsphaltTexture(),roughness:.97,side:THREE.DoubleSide
+    map:roadTextures.color,normalMap:roadTextures.normal,
+    normalScale:new THREE.Vector2(.28,.28),
+    roughness:.91,metalness:0,side:THREE.DoubleSide
   });
   const road=new THREE.Mesh(g,roadMaterial);
-  road.receiveShadow=!mobile;scene.add(road);
+  road.receiveShadow=true;scene.add(road);
 
   // Packed earth shoulder and verge on both sides follow the bank.
   for(const side of [-1,1]){
