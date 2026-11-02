@@ -20,7 +20,7 @@
       <p class="lead">Small wheels. Huge jumps. An absolutely unreasonable backyard.</p>
       <div class="feature-list"><span>⚡ TURBO &amp; HEAT</span><span>↗ BIG AIR</span><span>🏁 4-WAY RACING</span></div>
       <button id="play" class="big-button"><span>START YOUR ENGINES</span><span class="button-arrow">↗</span></button>
-      <p class="menu-hint">W / ↑ accelerate · A D / ← → steer · S / ↓ brake · SHIFT boost · Q E lean in air</p>
+      <p class="menu-hint">W / ↑ accelerate · A D / ← → steer · S / ↓ brake · SHIFT boost · Q E lean in air · C switch aerial views</p>
       <p class="menu-hint touch-hint">On touch screens, use the on-screen controls. Auto-throttle is on.</p>
     </div>
     <div class="menu-side"><div class="vertical-tag">01 / DIY RACE SERIES</div><div class="large-number">01</div><div class="side-subtitle">THE BACKYARD<br/>IS YOUR TRACK.</div></div>
@@ -30,9 +30,10 @@
       <div class="hud-tile position-tile"><div class="hud-label">POSITION</div><div class="hud-number"><span id="place">4</span><small>/4</small></div></div>
       <div class="hud-tile time-tile"><div class="hud-label">RACE TIME</div><div id="timer" class="timer-text">00:00.00</div><div class="tiny-meta" id="best-hud">BEST --:--.--</div></div>
       <div class="hud-tile section-tile"><div class="hud-label">ON THE COURSE</div><div id="section" class="section-text">START LINE</div><div class="progress-track"><div id="progress" class="progress-fill"></div></div></div>
-      <div class="hud-buttons"><button id="sound" class="small-button" aria-label="Toggle sound">♫</button><button id="pause" class="small-button" aria-label="Pause game">Ⅱ</button></div>
+      <div class="hud-buttons"><button id="camera-mode" class="small-button camera-button" aria-label="Camera: angled aerial. Switch to bird’s-eye." title="Switch aerial camera (C)">ISO</button><button id="sound" class="small-button" aria-label="Toggle sound">♫</button><button id="pause" class="small-button" aria-label="Pause game">Ⅱ</button></div>
     </div>
     <div id="countdown" class="countdown" aria-live="polite"></div>
+    <div id="radar-panel" aria-hidden="true"><div>TRACK RADAR <span>↗</span></div><canvas id="radar" width="156" height="188"></canvas></div>
     <div class="race-bottom">
       <div class="speedometer"><span id="speed">0</span><div><strong>KM/H</strong><small>RC SCALE</small></div></div>
       <div class="race-right">
