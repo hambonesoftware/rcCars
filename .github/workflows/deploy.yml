@@ -40,6 +40,11 @@ jobs:
           test -s index.html
           test -s style.css
 
+      - name: Smoke-test all courses in Chromium
+        run: |
+          npm install --no-save --ignore-scripts --no-audit --no-fund playwright-core@1.56.1
+          node tests/browser-smoke.cjs
+
       - name: Configure Pages
         uses: actions/configure-pages@v5
 
