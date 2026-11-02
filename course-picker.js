@@ -1,5 +1,6 @@
 import {COURSE_PRESETS} from './course-presets.js';
 import {buildCourseLoop} from './track-layouts.js';
+import {MODEL_TOWN_PLANS} from './miniature-world.js';
 
 const COURSES=Object.values(COURSE_PRESETS);
 const accents={backyard:'#e4fd7b',creek:'#7bf2d8',garage:'#ffd17c',quarry:'#f8c889'};
@@ -68,6 +69,74 @@ function drawMap(canvas,config){
     offsetX+(p[0]-minX)*scale,
     h-offsetY-(p[1]-minZ)*scale
   ];
+  // The preview is framed like a photographed HO-scale railroad display.
+  ctx.fillStyle=config.ground;
+  ctx.fillRect(0,0,w,h);
+  const boardBorder=ctx.createLinearGradient(0,0,0,h);
+  boardBorder.addColorStop(0,'#c8a57d');
+  boardBorder.addColorStop(1,'#775437');
+  ctx.strokeStyle=boardBorder;ctx.lineWidth=14;
+  ctx.strokeRect(7,7,w-14,h-14);
+  ctx.strokeStyle='#eed6aa';ctx.lineWidth=2;
+  ctx.strokeRect(14,14,w-28,h-28);
+  const town=MODEL_TOWN_PLANS[config.id];
+  if(town){
+    const normalAt=index=>{
+      const a=screen(pts[Math.max(0,index-2)]);
+      const b=screen(pts[Math.min(pts.length-1,index+2)]);
+      const dx=b[0]-a[0],dy=b[1]-a[1];
+      const mag=Math.hypot(dx,dy)||1;
+      return [-dy/mag,dx/mag,Math.atan2(dy,dx)];
+    };
+    for(const rail of town.railway){
+      const first=Math.max(2,Math.floor(pts.length*rail.start));
+      const last=Math.min(pts.length-3,Math.floor(pts.length*rail.end));
+      for(const offset of [-2,2]){
+        ctx.beginPath();
+        for(let i=first;i<=last;i+=2){
+          const q=screen(pts[i]),n=normalAt(i);
+          const x=q[0]+n[0]*rail.side*33+n[0]*offset;
+          const y=q[1]+n[1]*rail.side*33+n[1]*offset;
+          if(i===first)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+        }
+        ctx.strokeStyle='#5b554b';ctx.lineWidth=2;ctx.stroke();
+      }
+      for(let i=first;i<=last;i+=7){
+        const q=screen(pts[i]),n=normalAt(i);
+        const x=q[0]+n[0]*rail.side*33;
+        const y=q[1]+n[1]*rail.side*33;
+        ctx.save();ctx.translate(x,y);ctx.rotate(n[2]);
+        ctx.fillStyle='#715f4d';ctx.fillRect(-.8,-6,1.6,12);
+        ctx.restore();
+      }
+    }
+    town.districts.forEach((district,index)=>{
+      const indexAt=Math.max(3,Math.min(pts.length-4,
+        Math.floor(pts.length*district.at)));
+      const q=screen(pts[indexAt]),n=normalAt(indexAt);
+      const color=['#d8c79c','#c98279','#9ebfc0','#e3b77e'][index];
+      const districtX=q[0]+n[0]*district.side*26;
+      const districtY=q[1]+n[1]*district.side*26;
+      for(let i=0;i<6;i++){
+        const x=districtX+(i-2.5)*12*Math.cos(n[2]);
+        const y=districtY+(i-2.5)*12*Math.sin(n[2]);
+        ctx.save();ctx.translate(x,y);ctx.rotate(n[2]);
+        ctx.fillStyle='#223e4277';ctx.fillRect(-5,-4,11,9);
+        ctx.fillStyle=color;ctx.fillRect(-5,-5,10,8);
+        ctx.fillStyle=i%2?'#a05850':'#485e65';
+        ctx.fillRect(-6,-5,12,3);
+        ctx.fillStyle='#36494b';ctx.fillRect(-3,-1,1.3,2);
+        ctx.fillRect(1,-1,1.3,2);
+        ctx.restore();
+      }
+      ctx.fillStyle='#f7f0db';
+      ctx.font='bold 8px Arial,sans-serif';
+      ctx.textAlign='center';
+      ctx.shadowColor='#123038';ctx.shadowBlur=5;
+      ctx.fillText(district.title,districtX,districtY-12,130);
+      ctx.shadowBlur=0;
+    });
+  }
   const makePath=()=>{
     ctx.beginPath();
     pts.forEach((p,i)=>{const q=screen(p);if(i)ctx.lineTo(...q);else ctx.moveTo(...q);});
