@@ -24,7 +24,7 @@ This is a **first playable**, not an assertion of production-ready simulation: t
 python3 -m http.server 8000
 ```
 
-Open http://localhost:8000/. The game has no bundling step. Hosting is GitHub Pages-friendly; set **Settings → Pages → Deploy from a branch → main / (root)** if Pages is not enabled.
+Open http://localhost:8000/. The game has no bundling step. Deployment is configured by `.github/workflows/deploy.yml`. To make the site public, choose **Settings → Pages → Build and deployment → Source: GitHub Actions** once. The workflow then publishes on every push to `main`. Expected site URL: https://hambonesoftware.github.io/rcCars/ (only once Pages is enabled and deployment succeeds).
 
 Files: `index.html` UI, `style.css` responsive presentation, `game.js` Three.js world, physics and game logic.
 
