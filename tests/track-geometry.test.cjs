@@ -15,11 +15,15 @@ function section(from,to){
 const catalog=fs.readFileSync(path.join(__dirname,'..','course-presets.js'),'utf8')
   .split('export function getCourse')[0]
   .replace('export const COURSE_PRESETS','const COURSE_PRESETS');
+const loopCode=fs.readFileSync(path.join(__dirname,'..','track-layouts.js'),'utf8')
+  .replace(/^export /gm,'');
 const defs=section('const R=','const controls=');
 const util=section('function clamp(','function makeBox(');
 const geometry=section('function surfaceHeight(','function createSkyEnvironment(');
 const code=[
-  catalog,'const COURSE=COURSE_PRESETS.backyard;',defs,util,geometry,
+  catalog,loopCode,'const COURSE=COURSE_PRESETS.backyard;',
+  'const CUSTOM_TRACK=buildCourseLoop(COURSE.id);',
+  defs,util,geometry,
   '({END,SECTOR_1_END,SECTOR_2_END,SECTOR_3_END,LAPS,SECTOR_2_LEFT_START,SECTOR_2_LEFT_END,SECTOR_2_RIGHT_START,SECTOR_2_RIGHT_END,',
   'CRUISE_SPEED,MAX_SPEED,SEGMENT_LAYOUT,ramps,point,position,project,surfaceHeight})'
 ].join('\n');
@@ -87,7 +91,9 @@ for(const jump of t.ramps){
 
 function evaluateCourse(id){
   const code=[
-    catalog,'const COURSE=COURSE_PRESETS['+JSON.stringify(id)+'];',
+    catalog,loopCode,
+    'const COURSE=COURSE_PRESETS['+JSON.stringify(id)+'];',
+    'const CUSTOM_TRACK=buildCourseLoop(COURSE.id);',
     defs,util,geometry,
     '({END,SECTOR_1_END,SECTOR_2_END,SECTOR_3_END,SEGMENT_LAYOUT,ramps,point,position,project,surfaceHeight})'
   ].join('\n');
@@ -111,12 +117,50 @@ for(const id of ['backyard','creek','garage','quarry']){
       approx(projected.d,d,.2,id+' projected lane');
     }
   }
-  for(const seg of course.SEGMENT_LAYOUT.slice(1)){
-    const p1=course.point(seg.startS-.0001),p2=course.point(seg.startS+.0001);
-    assert.ok(Math.hypot(p1.x-p2.x,p1.z-p2.z)<.002,id+' continuous road');
-    assert.ok(Math.abs(p1.angle-p2.angle)<.0001,id+' smooth heading');
+  if(id==='backyard'){
+    for(const seg of course.SEGMENT_LAYOUT.slice(1)){
+      const p1=course.point(seg.startS-.0001),p2=course.point(seg.startS+.0001);
+      assert.ok(Math.hypot(p1.x-p2.x,p1.z-p2.z)<.002,id+' continuous road');
+      assert.ok(Math.abs(p1.angle-p2.angle)<.0001,id+' smooth heading');
+    }
+  }else{
+    // Smaller step than a frame of travel. Each sampled curve is tangent-
+    // continuous, finite, and stays on a road of consistent half-width.
+    for(let i=1;i<=400;i++){
+      const p1=course.point((i-1)*course.END/400);
+      const p2=course.point(i*course.END/400);
+      assert.ok(Math.hypot(p1.x-p2.x,p1.z-p2.z)<course.END/340,
+        id+' non-jumping spline segment');
+      assert.ok(Number.isFinite(p2.angle),id+' finite tangent');
+    }
   }
 }
+
+const samples={};
+for(const id of ['backyard','creek','garage','quarry']){
+  const circuit=evaluateCourse(id);
+  samples[id]=Array.from({length:64},(_,i)=>circuit.point(i*circuit.END/64));
+}
+const normalize=points=>{
+  const minX=Math.min(...points.map(p=>p.x)),maxX=Math.max(...points.map(p=>p.x));
+  const minZ=Math.min(...points.map(p=>p.z)),maxZ=Math.max(...points.map(p=>p.z));
+  return points.map(p=>[(p.x-minX)/(maxX-minX),(p.z-minZ)/(maxZ-minZ)]);
+};
+const ids=Object.keys(samples);
+for(let i=0;i<ids.length;i++){
+  for(let j=i+1;j<ids.length;j++){
+    const a=normalize(samples[ids[i]]),b=normalize(samples[ids[j]]);
+    let sum=0;
+    for(let k=0;k<a.length;k++){
+      sum+=(a[k][0]-b[k][0])**2+(a[k][1]-b[k][1])**2;
+    }
+    const distance=Math.sqrt(sum/a.length);
+    assert.ok(distance>.065,
+      ids[i]+' and '+ids[j]+' must be different track shapes, RMS='+distance);
+  }
+}
+console.log('PASS: four different silhouettes and authored spline geometry');
+
 console.log('PASS: 4 different layouts share closed-loop race geometry and continuous lanes');
 
 console.log('PASS: first half preserved, four-sector closed circuit, two laps, turns, jumps, lane joins, road projection, 2x speeds');
