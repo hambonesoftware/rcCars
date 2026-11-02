@@ -393,6 +393,72 @@ export function createMiniatureWorld({
     }
   }
 
+  // A slow local passenger train makes the tabletop feel alive rather than
+  // like an abandoned diorama. One locomotive and two coaches shuttle
+  // beside the station. Their path stays fully outside the racing road.
+  const shuttle=[];
+  const shuttleCount=mobile?2:3;
+  const axleGeometry=new THREE.CylinderGeometry(.42,.42,.36,10);
+  const vehicleGeometry=new THREE.BoxGeometry(3.5,2.4,5.9);
+  const roofGeometry=new THREE.BoxGeometry(3.8,.34,6.15);
+  const windowGeometry=new THREE.BoxGeometry(.11,.80,.86);
+  for(let i=0;i<shuttleCount;i++){
+    const car=new THREE.Group();
+    const chassis=new THREE.Mesh(vehicleGeometry,
+      i===0?mats.trainRed:mats.trainCream);
+    chassis.position.y=1.85;
+    car.add(chassis);
+    const roof=new THREE.Mesh(roofGeometry,mats.roofSlate);
+    roof.position.y=3.18;car.add(roof);
+    for(const xx of [-1.65,1.65]){
+      for(const zz of [-1.70,0,1.70]){
+        const window=new THREE.Mesh(windowGeometry,mats.glass);
+        window.position.set(xx,2.27,zz);car.add(window);
+      }
+      for(const zz of [-1.70,1.70]){
+        const wheel=new THREE.Mesh(axleGeometry,mats.wheels);
+        wheel.position.set(xx,0.71,zz);
+        wheel.rotation.z=Math.PI*.5;
+        car.add(wheel);
+      }
+    }
+    if(i===0){
+      const nose=new THREE.Mesh(
+        new THREE.BoxGeometry(3.2,1.1,1.2),mats.trainRed);
+      nose.position.set(0,1.35,-3.15);car.add(nose);
+      const headlamp=new THREE.Mesh(
+        new THREE.SphereGeometry(.32,9,7),mats.windowGlow);
+      headlamp.position.set(0,1.7,-3.76);car.add(headlamp);
+      const chimney=new THREE.Mesh(
+        new THREE.CylinderGeometry(.36,.48,1.0,10),mats.black);
+      chimney.position.set(0,3.7,-1.55);car.add(chimney);
+    }
+    car.castShadow=false;
+    scene.add(car);
+    shuttle.push(car);
+  }
+  const sidetrack=plan.railway[0];
+  const sidingStart=sidetrack.start*length;
+  const sidingEnd=sidetrack.end*length;
+  const excursion=Math.max(20,sidingEnd-sidingStart-55);
+  let locomotiveClock=0;
+  const moveTrain=dt=>{
+    locomotiveClock+=Math.max(0,Math.min(dt,.05));
+    const progress=(locomotiveClock*3.7)%(excursion*2);
+    const heading=progress<=excursion?1:-1;
+    const lead=sidingStart+27+
+      (progress<=excursion?progress:excursion*2-progress);
+    for(let i=0;i<shuttle.length;i++){
+      const ss=Math.max(sidingStart+2,Math.min(sidingEnd-2,
+        lead-heading*i*7.6));
+      const p=position(ss,sidetrack.side*
+        (halfWidth+(course==='garage'?38:43)));
+      shuttle[i].position.set(p.x,.30,p.z);
+      shuttle[i].rotation.y=p.angle+(heading<0?Math.PI:0);
+    }
+  };
+  moveTrain(0);
+
   // Miniature backdrop hills use simple repeated geometry.
   const hills=course==='garage'?8:mobile?17:29;
   for(let i=0;i<hills;i++){
@@ -446,5 +512,6 @@ export function createMiniatureWorld({
   }
   stats.drawBatches=batches.size;
   stats.instances=Array.from(batches.values()).reduce((n,list)=>n+list.length,0);
-  return stats;
+  stats.animatedTrainCars=shuttle.length;
+  return {...stats,update:moveTrain};
 }
