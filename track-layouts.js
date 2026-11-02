@@ -63,7 +63,9 @@ export function buildCourseLoop(courseId){
   for(let i=0;i<waypoints.length;i++){
     const p=waypoints[i],q=waypoints[(i+1)%waypoints.length];
     const distance=Math.hypot(q[0]-p[0],q[1]-p[1]);
-    const steps=Math.max(12,Math.ceil(distance/1.25));
+    // Dense centerline stations reduce normal-offset projection errors in
+    // the tighter garage hairpins while keeping O(log N) road lookups.
+    const steps=Math.max(22,Math.ceil(distance/.38));
     for(let j=1;j<=steps;j++){
       const next=splinePoint(waypoints,i,j/steps);
       const previous=samples[samples.length-1];
