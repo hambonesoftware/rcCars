@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1">
 <meta name="theme-color" content="#1a3135">
-<meta name="description" content="Micro Mayhem: playable opening quarter-track. Four smooth-shell miniature RC trucks, realistic asphalt, sweeping banked turn and an arcade jump.">
-<title>Sector 01 — Micro Mayhem</title>
+<meta name="description" content="Micro Mayhem: playable connected half-track. Four smooth-shell RC monster trucks, sweeping banked turns, two big jumps and double-speed racing.">
+<title>Micro Mayhem — Sectors 01 & 02</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=DM+Sans:wght@400;500;600;700;800&display=swap');
 :root{--navy:#122c33;--lime:#e5fd7c;--cream:#f7f8eb;--teal:#74e4db;--amber:#ffc970;font-family:'DM Sans',system-ui,sans-serif}
@@ -67,7 +67,7 @@ button,a{font:inherit;-webkit-tap-highlight-color:transparent}button{cursor:poin
 <body>
 <div id="viewport" aria-label="3D RC first-quarter race track"></div><div id="shade"></div>
 <div id="top">
-  <div class="brand"><strong>MICRO MAYHEM</strong><div class="details"><span>TRACK DEVELOPMENT · 01 / 04</span><span>THE OPENING QUARTER</span></div></div>
+  <div class="brand"><strong>MICRO MAYHEM</strong><div class="details"><span>TRACK DEVELOPMENT · 02 / 04</span><span>HALF THE COURSE · DOUBLE THE FUN</span></div></div>
   <div class="tools">
     <button id="camera" class="tool-btn" type="button" aria-label="Switch to complete track overview">OVERVIEW</button>
     <button id="pause" class="tool-btn" type="button">Ⅱ PAUSE</button>
@@ -76,7 +76,7 @@ button,a{font:inherit;-webkit-tap-highlight-color:transparent}button{cursor:poin
 <div id="marker" aria-live="polite"></div><div id="flash" role="status" aria-live="polite"></div>
 <div id="bottom">
   <div class="panel speed-panel"><div class="tiny">RC SPEED</div><div><span id="speed" class="speed-number">0</span> <span class="units">KM/H</span></div><div class="meter-row"><span>MOTOR HEAT</span><span id="heat-label">COOL</span></div><div class="heat-meter"><div id="heat"></div></div></div>
-  <div id="map-panel" class="panel"><div class="map-title"><span>SECTOR MAP</span><span>¼ LAP</span></div><canvas id="map" width="260" height="130"></canvas></div>
+  <div id="map-panel" class="panel"><div class="map-title"><span>SECTOR MAP</span><span>½ COURSE</span></div><canvas id="map" width="260" height="130"></canvas></div>
   <div class="panel stats-panel"><div class="stat-row"><div class="tiny">RACE TIME</div><b id="time">00:00.00</b></div><div class="stat-row"><div class="tiny">POSITION</div><b id="place">4 / 4</b></div><div class="stat-row"><div class="tiny">SECTOR</div><b id="sector">01 / 04</b></div><div class="progress"><div id="progress-fill"></div></div></div>
 </div>
 <div id="controls" aria-label="Touch race controls">
@@ -86,23 +86,24 @@ button,a{font:inherit;-webkit-tap-highlight-color:transparent}button{cursor:poin
 <div id="intro" class="overlay">
   <div class="dialog">
     <div class="kicker">HAMBONE SOFTWARE / TRACK LAB</div>
-    <h1>FIRST<br><em>QUARTER.</em></h1>
-    <p>A polished opening sector, not a pretend full circuit. Four trucks on a real start grid, two rhythm bumps, a launch ramp, a long banked right-hander, and a fast exit to Sector 02.</p>
-    <div class="pills"><span>4-CAR GRID</span><span>BANKED CORNER</span><span>BIG AIR</span><span>3D MONSTER TRUCKS</span></div>
-    <button id="start" class="primary" type="button"><span>TEST SECTOR 01</span><span>↗</span></button>
+    <h1>HALF<br><em>THE TRACK.</em></h1>
+    <p>Two connected arcade racing sectors. Sprint off the four-truck grid, launch over the backyard ramp, carve the first banked corner, then charge through Garden Switchbacks: a long left sweeper, a second jump, a rising right bend, and a Sector 03 handoff.</p>
+    <div class="pills"><span>2 CONNECTED SECTORS</span><span>2 BIG JUMPS</span><span>3 BANKED TURNS</span><span>2× TURBO RACING</span></div>
+    <button id="start" class="primary" type="button"><span>RACE THE FIRST HALF</span><span>↗</span></button>
     <p style="font-size:11px;margin:8px 0 0">Desktop: W / ↑ accelerate · A/D / ←→ steer · S brake · Shift turbo · C camera · Esc pause. Mobile: auto-throttle + touch steering.</p>
     <a href="./vehicle-preview.html" class="secondary" style="display:inline-block">INSPECT TRUCKS</a>
     <a href="./index.html" class="secondary" style="display:inline-block">ORIGINAL RACE BUILD</a>
   </div>
 </div>
 <div id="results" class="overlay hidden">
-  <div class="dialog"><div class="kicker">SECTOR 01 / 04 COMPLETE</div><h1>FIRST<br><em>QUARTER!</em></h1><p>This is the end of the prototype sector. The remaining 75% of the circuit is intentionally not built yet.</p>
-    <div class="split"><div><span>SECTOR TIME</span><strong id="result-time">--:--.--</strong></div><div><span>POSITION</span><strong id="result-place">-- / 4</strong></div></div>
+  <div class="dialog"><div class="kicker">SECTORS 01 + 02 COMPLETE</div><h1>HALFWAY<br><em>THERE!</em></h1><p>You've reached the Sector 03 handoff. The first two connected sectors are playable; the other half remains to be built.</p>
+    <div class="split"><div><span>TOTAL RACE TIME</span><strong id="result-time">--:--.--</strong></div><div><span>POSITION</span><strong id="result-place">-- / 4</strong></div></div>
+    <div class="split"><div><span>SECTOR 01 SPLIT</span><strong id="result-split">--:--.--</strong></div><div><span>SECTOR 02</span><strong>COMPLETE</strong></div></div>
     <button id="retry" class="primary" type="button"><span>RUN IT AGAIN</span><span>↗</span></button><button id="exit" class="secondary" type="button">BACK TO PREVIEW</button>
   </div>
 </div>
 <div id="pause-overlay" class="overlay hidden"><div class="dialog"><div class="kicker">PIT LANE</div><h1>PAUSED.</h1><p>Restart the sector or return to the race.</p><button id="resume" class="primary" type="button"><span>RESUME</span><span>↗</span></button><button id="restart" class="secondary" type="button">RESTART SECTOR</button></div></div>
-<div id="loading">LOADING THE FIRST QUARTER…</div>
+<div id="loading">LOADING GARDEN SWITCHBACKS…</div>
 <script type="module" src="./quarter-track.js"></script>
 </body>
 </html>
