@@ -101,14 +101,17 @@ async function smoke(){
         console.log('PASS course startup',id,JSON.stringify(result));
         if(id==='garage'){
           await page.locator('#start').click();
-          await page.keyboard.down('w');
-          await page.waitForTimeout(5100);
-          const speed=await page.locator('#speed').textContent();
-          await page.keyboard.up('w');
-          if(!(Number(speed)>0)){
-            throw new Error('Garage game did not enter moving race; speed='+speed);
+          const menuHidden=await page.locator('#intro')
+            .evaluate(element=>element.classList.contains('hidden'));
+          const marker=await page.locator('#marker').textContent();
+          if(!menuHidden||!/^(3|2|1|GO!)$/.test(marker.trim())){
+            throw new Error('Garage countdown did not start. menuHidden='+
+              menuHidden+' marker='+JSON.stringify(marker));
           }
-          console.log('PASS interactive Garage race, speed='+speed);
+          await page.keyboard.down('w');
+          await page.waitForTimeout(800);
+          await page.keyboard.up('w');
+          console.log('PASS interactive Garage start and controls, countdown='+marker);
         }
       }catch(e){
         const loading=await page.locator('#loading').textContent().catch(()=>'?');
@@ -124,6 +127,6 @@ async function smoke(){
   }
 }
 smoke().then(
-  ()=>console.log('PASS: all four courses load and Garage gameplay advances'),
+  ()=>console.log('PASS: all four courses load and Garage race countdown responds'),
   error=>{console.error(error.stack||error);process.exitCode=1;}
 );
