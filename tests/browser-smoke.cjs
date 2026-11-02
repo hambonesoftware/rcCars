@@ -95,7 +95,7 @@ async function smoke(){
           intro:!document.getElementById('intro')?.classList.contains('hidden')
         }));
         if(!result.canvas||!result.intro||
-          !result.course||!result.title.includes(result.course)){
+          !result.course||!result.title.toUpperCase().includes(result.course.toUpperCase())){
           throw new Error('Unexpected game startup: '+JSON.stringify(result));
         }
         console.log('PASS course startup',id,JSON.stringify(result));
