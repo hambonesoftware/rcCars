@@ -339,17 +339,23 @@ export function createMiniatureWorld({
       if(i%2===0){
         // Figures and furniture stand between the houses and the road,
         // separated from the truck route by a visual sidewalk.
-        const sidewalk=clearFrame(s+2,thisSide,halfWidth+12.7,halfWidth+1.6);
-        lamp(sidewalk);
-        person(clearFrame(s+3,thisSide,halfWidth+14.2,halfWidth+2.1),
+        const verge=course==='garage'?halfWidth+9.8:halfWidth+12.7;
+        lamp(clearFrame(s+2,thisSide,verge,halfWidth+1.6));
+        person(clearFrame(s+3,thisSide,
+          course==='garage'?halfWidth+9.8:halfWidth+14.2,
+          halfWidth+2.1),
           thisSide,i+district*21);
       }
       if(i%3===1){
-        const d=clearFrame(s-2,thisSide,halfWidth+13.5,halfWidth+2);
+        const d=clearFrame(s-2,thisSide,
+          course==='garage'?halfWidth+10.2:halfWidth+13.5,
+          halfWidth+2);
         mailbox(d);
       }
       if(i%4===2){
-        const d=clearFrame(s+3,thisSide,halfWidth+15.1,halfWidth+3);
+        const d=clearFrame(s+3,thisSide,
+          course==='garage'?halfWidth+11.8:halfWidth+15.1,
+          halfWidth+3);
         parkedCar(d,i+district);
       }
     }
@@ -402,12 +408,12 @@ export function createMiniatureWorld({
         lamp(streetlamp);
         if(i%2===0){
           const passerby=clearFrame(openingS[i]+3,side,
-            halfWidth+13.6,halfWidth+3);
+            halfWidth+9.8,halfWidth+3);
           person(passerby,side,450+i+(side>0?9:0));
         }
         if(i===1){
-          parkedCar(clearFrame(openingS[i]-5,side,
-            halfWidth+14.6,halfWidth+4),i+15);
+          parkedCar(clearFrame(openingS[i]-10,side,
+            halfWidth+11.5,halfWidth+4),i+15);
         }
       }
     }
