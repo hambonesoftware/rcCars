@@ -107,6 +107,50 @@ button,a{font:inherit;-webkit-tap-highlight-color:transparent}button{cursor:poin
 </div>
 <div id="pause-overlay" class="overlay hidden"><div class="dialog"><div class="kicker">PIT LANE</div><h1>PAUSED.</h1><p>Restart the sector or return to the race.</p><button id="resume" class="primary" type="button"><span>RESUME</span><span>↗</span></button><button id="restart" class="secondary" type="button">RESTART SECTOR</button></div></div>
 <div id="loading">BUILDING THE GRAND PRIX CIRCUIT…</div>
+<script>
+// Module-import failures occur before quarter-track.js can show its normal
+// setup-error message. Give players a useful escape instead of an eternal
+// "Building Track" screen, including on Safari and older iPhones.
+(function(){
+  const loading=document.getElementById('loading');
+  let reported=false;
+  function report(message){
+    if(reported||!loading||loading.classList.contains('hidden'))return;
+    reported=true;
+    loading.replaceChildren();
+    loading.style.whiteSpace='normal';
+    loading.style.padding='22px';
+    loading.style.maxWidth='100vw';
+    const info=document.createElement('div');
+    info.textContent=message;
+    loading.append(info);
+    const link=document.createElement('a');
+    link.href='./courses.html';
+    link.textContent='← Choose another course';
+    link.style.cssText='display:block;margin-top:18px;color:#e5fd7c;text-decoration:underline';
+    loading.append(link);
+    const reload=document.createElement('button');
+    reload.type='button';
+    reload.textContent='Retry loading';
+    reload.style.cssText='margin-top:12px;padding:10px 14px;cursor:pointer';
+    reload.addEventListener('click',function(){window.location.reload();});
+    loading.append(reload);
+  }
+  window.addEventListener('error',function(e){
+    if(e.target!==window && e.target && e.target.tagName==='SCRIPT'){
+      report('The racing engine could not load. Check your connection and retry.');
+    }else if(e.message){
+      report('The course could not start: '+e.message);
+    }
+  },true);
+  window.addEventListener('unhandledrejection',function(e){
+    report('The racing engine failed: '+String(e.reason&&e.reason.message||e.reason));
+  });
+  window.setTimeout(function(){
+    report('This course is taking unusually long to build. Please retry or choose another course.');
+  },16000);
+})();
+</script>
 <script type="module" src="./quarter-track.js"></script>
 </body>
 </html>
