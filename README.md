@@ -52,3 +52,11 @@ The procedural assets are deterministic and generated locally—no paid assets, 
 ## 2× race speed tuning
 
 Sector 01 uses double the previous top speeds for the yellow player truck: normal target **30.8 world units/s** (was 15.4), and turbo target **43.2 world units/s** (was 21.6). All three rival trucks use double their previous cruise speeds too. Acceleration, braking, and steering authority are increased to match, the ramp launch is constrained to avoid an oversized airborne shortcut, and the rear-isometric camera follows the faster vehicles more responsively. The HUD remains arcade-scaled rather than measuring physical RC-car road speed. Boost still overheats and cools normally.
+
+## Half-track build: Sectors 01 + 02 (latest)
+
+**[Play the connected half-course](./quarter-track.html)**. Sector 01 remains geometrically unchanged, and its old finish is now a live checkpoint with a timed split. Sector 02, **Garden Switchbacks**, adds an eastward speed section, a broad banked left sweeper, an uphill rhythm section, a second jump, a right-hand sweeper with railings, and an exit straight ending at the Sector 03 gate. The in-race minimap automatically fits both sectors and updates the highlighted truck positions. Race results include the first-sector split and total time.
+
+The refined 3D monster trucks retain the agreed double speed settings: **30.8 game units/s normal** and **43.2 units/s boost**, with proportionally tuned AI rivals. Controls and photographic materials are unchanged. The camera keeps the close rear three-quarter isometric follow angle, with a full half-course overview toggle.
+
+The other half of the circuit and actual multi-lap racing are intentionally not yet built. The GitHub Pages deployment workflow runs Node syntax checks and **tests/track-geometry.test.cjs** before publication; that regression test verifies original Sector 01 coordinates, continuous joins, road projection, both jumps and the speed configuration.
