@@ -93,3 +93,20 @@ The new `courses.html` selection gallery draws actual mathematical course previe
 Course 3 no longer creates zero-count tree instancing meshes. If a JS module fails or the WebGL scene cannot initialize, the loading view now displays a readable problem and offers retry / course selection rather than getting stuck forever.
 
 `tests/track-geometry.test.cjs` checks all course outlines for geometric distinctness, seamless wraparound and lane projection. `tests/browser-smoke.cjs` starts every course in headless Chromium and drives Garage Gauntlet, so publication is blocked if a course cannot boot.
+
+## HO-scale model railway world — latest
+
+Four distinct racecourses now share an elaborate **model-train-table environment** art direction, with their own themed neighborhoods instead of generic outdoor scenery. See [full art direction and four-district course map](docs/MINIATURE_TOWN_ART_DIRECTION.md).
+
+- **Backyard Grand Prix:** Elm Street houses, Hambone Village Main Street, Oak Junction depot and Mill Pond park.
+- **Creekside Scramble:** Creekside Depot, Maple Falls cottages, Willow Landing and River Market.
+- **Garage Gauntlet:** Repair Row, Brickyard, Switching Yard and Freight Works industrial neighborhood.
+- **Sunset Quarry:** Miners Cottages, Stone Works, Quarry Branch and High Ridge.
+
+New **miniature-world.js** procedural scenery is built from batched/instanced architectures, patterned HO-style pitched roofs, windows, shop fronts, sidewalks and curbs, fences, streetlights, model people, parked vehicles, rail ties, steel rails, railway signage, small trains and distant scenic hills. Each rail district has a slow moving passenger locomotive on its own siding, outside the racing line. Every course sits on a finite plywood-edged model table, visible in overview mode.
+
+The camera now uses a slightly elevated rear-three-quarter view and a **subtle tilt-shift focus band**, with stronger blur for the overhead diorama overview. Pause the race and use **TILT-SHIFT FOCUS** to switch the effect on or off; desktop shortcut **V**. The blur is a two-band CSS backdrop-filter approximation that leaves the racing focal area and HUD sharp; no expensive extra WebGL render pass. The scene is not literally rescaled to 1:87, preserving truck readability.
+
+The course selector now draws tiny town buildings and model railroad sidings on the actual mathematically distinct course outlines. GitHub Actions checks the scenery ES module and records full 3D browser screenshots of all four towns as visual review artifacts. Browser smoke tests confirm that the real 3D worlds, stations, buildings, people, rail sleepers and trains were constructed.
+
+**Next:** refine roads and sidewalks into coherent town streets, put playable road geometry through miniature bridges and crossings, then add kart-style drift and shortcut sections.
