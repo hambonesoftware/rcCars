@@ -34,6 +34,8 @@ jobs:
           node --check course-presets.js
           node --check course-picker.js
           node --check track-layouts.js
+          node --check miniature-world.js
+          node --input-type=module --check < miniature-world.js
           test -s courses.html
           node tests/track-geometry.test.cjs
           test -s quarter-track.html
