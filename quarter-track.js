@@ -12,18 +12,69 @@ const ui={
   resultPlace:$('result-place')
 };
 const mobile=matchMedia('(pointer:coarse)').matches;
-const R=64,STRAIGHT=85,TURN=R*Math.PI*.5,EXIT=82,END=STRAIGHT+TURN+EXIT;
+// Connected centerline definition. Each section starts tangent to the
+// previous one, avoiding discontinuities at the quarter-track handoff.
+const R=64,STRAIGHT=85,TURN=R*Math.PI*.5,EXIT=82;
+const SECTOR_1_END=STRAIGHT+TURN+EXIT;
+const SECTOR_2_STRAIGHT=36;
+const SECTOR_2_LEFT_RADIUS=54;
+const SECTOR_2_LEFT_LENGTH=SECTOR_2_LEFT_RADIUS*Math.PI*.5;
+const SECTOR_2_NORTH=45;
+const SECTOR_2_RIGHT_RADIUS=45;
+const SECTOR_2_RIGHT_LENGTH=SECTOR_2_RIGHT_RADIUS*Math.PI*.5;
+const SECTOR_2_EXIT=42;
+const SECTOR_2_LEFT_START=SECTOR_1_END+SECTOR_2_STRAIGHT;
+const SECTOR_2_LEFT_END=SECTOR_2_LEFT_START+SECTOR_2_LEFT_LENGTH;
+const SECTOR_2_RIGHT_START=SECTOR_2_LEFT_END+SECTOR_2_NORTH;
+const SECTOR_2_RIGHT_END=SECTOR_2_RIGHT_START+SECTOR_2_RIGHT_LENGTH;
+const END=SECTOR_2_RIGHT_END+SECTOR_2_EXIT;
+const SEGMENT_LAYOUT=[
+  {kind:'straight',length:STRAIGHT},
+  {kind:'turn',length:TURN,radius:R,sign:1},
+  {kind:'straight',length:EXIT},
+  {kind:'straight',length:SECTOR_2_STRAIGHT},
+  {kind:'turn',length:SECTOR_2_LEFT_LENGTH,radius:SECTOR_2_LEFT_RADIUS,sign:-1},
+  {kind:'straight',length:SECTOR_2_NORTH},
+  {kind:'turn',length:SECTOR_2_RIGHT_LENGTH,radius:SECTOR_2_RIGHT_RADIUS,sign:1},
+  {kind:'straight',length:SECTOR_2_EXIT}
+];
+function pathLayout(){
+  let x=0,z=0,angle=0,s=0;
+  for(const seg of SEGMENT_LAYOUT){
+    seg.startS=s;seg.x=x;seg.z=z;seg.angle=angle;
+    const turnRate=seg.kind==='turn'?seg.sign/seg.radius:0;
+    if(turnRate===0){
+      x+=Math.sin(angle)*seg.length;
+      z+=Math.cos(angle)*seg.length;
+    }else{
+      const finish=angle+seg.length*turnRate;
+      x+=(Math.cos(angle)-Math.cos(finish))/turnRate;
+      z+=(Math.sin(finish)-Math.sin(angle))/turnRate;
+      angle=finish;
+    }
+    s+=seg.length;
+  }
+}
+pathLayout();
 // Double the previous race speed consistently for player and rivals.
 // All values are world-units/second; the speedometer is arcade-scaled.
 const RACE_SPEED_MULTIPLIER=2;
 const HALF=9.1,CRUISE_SPEED=15.4*RACE_SPEED_MULTIPLIER;
 const MAX_SPEED=21.6*RACE_SPEED_MULTIPLIER,GRAVITY=19.5;
 const STARTLINE=19,FINAL_GATE=END-3;
-const ramp={start:58,end:72,height:2.15};
-const rollers=[{start:25,end:35,height:.44},{start:40,end:51,height:.55},
-  {start:213,end:224,height:.42},{start:234,end:244,height:.58}];
+const ramps=[
+  {start:58,end:72,height:2.15,name:'Backyard Launch'},
+  {start:SECTOR_2_LEFT_END+8,end:SECTOR_2_LEFT_END+22,height:2.6,name:'Garden Leap'}
+];
+const rollers=[
+  {start:25,end:35,height:.44},{start:40,end:51,height:.55},
+  {start:213,end:224,height:.42},{start:234,end:244,height:.58},
+  {start:SECTOR_1_END+7,end:SECTOR_1_END+17,height:.42},
+  {start:SECTOR_2_LEFT_END-23,end:SECTOR_2_LEFT_END-13,height:.47},
+  {start:SECTOR_2_RIGHT_END+10,end:SECTOR_2_RIGHT_END+22,height:.58}
+];
 const controls={left:false,right:false,accel:false,brake:false,boost:false,leanBack:false,leanForward:false};
-const game={mode:'intro',time:0,countdown:3.4,camera:'follow',toastUntil:0,shake:0,muted:false};
+const game={mode:'intro',time:0,countdown:3.4,camera:'follow',toastUntil:0,shake:0,muted:false,split1:null};
 const player={
   mesh:null,x:0,y:0,z:0,s:7,d:-3.35,heading:0,speed:0,
   vy:0,grounded:true,airtime:0,pitch:0,roll:0,
@@ -81,23 +132,48 @@ function surfaceHeight(s,d=0){
   for(const b of rollers){
     if(s>=b.start&&s<=b.end)h+=Math.sin(Math.PI*(s-b.start)/(b.end-b.start))*b.height;
   }
-  if(s>=ramp.start&&s<ramp.end)h+=ramp.height*ease(ramp.start,ramp.end,s);
-  if(s>=STRAIGHT&&s<STRAIGHT+TURN){
-    const t=(s-STRAIGHT)/TURN;
-    const banking=Math.pow(Math.sin(t*Math.PI),.8)*.083;
-    h-=d*banking;
+  for(const jump of ramps){
+    if(s>=jump.start&&s<jump.end){
+      h+=jump.height*ease(jump.start,jump.end,s);
+    }
   }
-  // The exit straight tapers back to ground level.
+  // Continuous banking under both sweeping curves; the rightward and
+  // leftward corners bank into opposite shoulders.
+  for(const curve of [
+    {from:STRAIGHT,to:STRAIGHT+TURN,sign:1},
+    {from:SECTOR_2_LEFT_START,to:SECTOR_2_LEFT_END,sign:-1},
+    {from:SECTOR_2_RIGHT_START,to:SECTOR_2_RIGHT_END,sign:1}
+  ]){
+    if(s>=curve.from&&s<=curve.to){
+      const t=(s-curve.from)/(curve.to-curve.from);
+      h-=curve.sign*d*Math.pow(Math.sin(t*Math.PI),1.35)*.078;
+    }
+  }
   return h;
 }
 function point(s){
   const distance=clamp(s,0,END);
-  if(distance<=STRAIGHT)return {x:0,z:distance,angle:0};
-  if(distance<STRAIGHT+TURN){
-    const a=(distance-STRAIGHT)/R;
-    return {x:R*(1-Math.cos(a)),z:STRAIGHT+R*Math.sin(a),angle:a};
+  for(let i=0;i<SEGMENT_LAYOUT.length;i++){
+    const segment=SEGMENT_LAYOUT[i];
+    if(distance<=segment.startS+segment.length||i===SEGMENT_LAYOUT.length-1){
+      const u=clamp(distance-segment.startS,0,segment.length);
+      if(segment.kind==='straight'){
+        return {
+          x:segment.x+Math.sin(segment.angle)*u,
+          z:segment.z+Math.cos(segment.angle)*u,
+          angle:segment.angle
+        };
+      }
+      const k=segment.sign/segment.radius;
+      const angle=segment.angle+k*u;
+      return {
+        x:segment.x+(Math.cos(segment.angle)-Math.cos(angle))/k,
+        z:segment.z+(Math.sin(angle)-Math.sin(segment.angle))/k,
+        angle
+      };
+    }
   }
-  return {x:R+(distance-STRAIGHT-TURN),z:STRAIGHT+R,angle:Math.PI/2};
+  return {x:0,z:0,angle:0};
 }
 function position(s,d=0){
   const p=point(s);
