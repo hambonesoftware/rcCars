@@ -1271,11 +1271,38 @@ function environment(){
 function makeCone(s,d){
   const p=position(s,d);
   const g=new THREE.Group();g.position.set(p.x,p.y,p.z);
+  g.rotation.y=p.angle;
+  let obstacleLabel='CONE';
   if(COURSE.hazard==='barrels'){
-    const base=new THREE.Mesh(new THREE.CylinderGeometry(.76,.77,1.8,12),
-      new THREE.MeshStandardMaterial({color:'#bc6b39',metalness:.26,roughness:.67}));
-    base.position.y=.92;base.castShadow=!mobile;g.add(base);
-    makeBox(g,mats.curbWhite,0,1.1,.73,1.3,.23,.08);
+    const type=Math.floor(s/32)%3;
+    if(type===0){
+      const base=new THREE.Mesh(new THREE.CylinderGeometry(.76,.77,1.8,12),
+        new THREE.MeshStandardMaterial({color:'#bc6b39',metalness:.26,roughness:.67}));
+      base.position.y=.92;base.castShadow=!mobile;g.add(base);
+      makeBox(g,mats.curbWhite,0,1.1,.73,1.3,.23,.08);
+      obstacleLabel='BARREL';
+    }else if(type===1){
+      const crate=makeBox(g,mats.curbYellow,0,.68,0,1.55,1.36,1.48);
+      crate.castShadow=!mobile;
+      for(const dx of [-.52,.52]){
+        makeBox(g,mats.black,dx,.7,.78,.14,1.18,.075);
+      }
+      makeBox(g,mats.black,0,.66,.79,1.3,.13,.07);
+      obstacleLabel='CARGO CRATE';
+    }else{
+      const barricade=makeBox(g,mats.curbYellow,
+        0,1.02,0,2.25,.75,.26);
+      barricade.castShadow=!mobile;
+      for(let i=-2;i<=2;i++){
+        const bar=makeBox(g,mats.black,i*.46,1.03,.15,.21,.78,.04);
+        bar.rotation.z=-.53;
+      }
+      for(const dx of [-.88,.88]){
+        makeBox(g,mats.steel,dx,.50,0,.15,1.0,.2);
+        makeBox(g,mats.black,dx,.09,0,.55,.14,.5);
+      }
+      obstacleLabel='ROAD BARRIER';
+    }
   }else if(COURSE.hazard==='rocks'){
     const rock=new THREE.Mesh(new THREE.DodecahedronGeometry(.91,0),
       new THREE.MeshStandardMaterial({color:'#a88764',flatShading:true,roughness:1}));
@@ -1293,9 +1320,24 @@ function makeCone(s,d){
     const band=new THREE.Mesh(new THREE.CylinderGeometry(.205,.245,.18,10),mats.white);
     band.position.y=.55;g.add(band);
   }
-  scene.add(g);cones.push({s,d,x:p.x,z:p.z,mesh:g});
+  scene.add(g);cones.push({s,d,x:p.x,z:p.z,mesh:g,label:obstacleLabel});
 }
 function createHazards(){
+  if(COURSE.id==='garage'){
+    // The same working collision system, now with obstruction placements
+    // authored for town streets instead of a generic racing track ribbon.
+    const fractions=[
+      .054,.096,.165,.209,.263,.303,.391,.428,.473,
+      .528,.615,.669,.718,.776,.865,.913,.957
+    ];
+    const intersections=[.115,.340,.575,.822].map(f=>f*END);
+    for(let i=0;i<fractions.length;i++){
+      let s=fractions[i]*END;
+      if(intersections.some(j=>Math.abs(s-j)<12))s+=14;
+      makeCone(Math.min(END-8,s),(i%2?1:-1)*(6.1+(i%3)*.38));
+    }
+    return;
+  }
   for(const [s,d] of [
     [31,-6.7],[49,6.5],[107,6.6],[138,5.8],[167,7.2],[218,-6.8],[247,6.4],
     [SECTOR_1_END+23,-6.7],[SECTOR_2_LEFT_START+33,6.6],
@@ -1553,7 +1595,7 @@ function tickPlayer(dt){
       player.collisionCooldown=.8;
       game.shake=.65;
       spark('#ffd05f',10);
-      toast('CONE STRIKE!');
+      toast((ob.label||'CONE')+' STRIKE!');
       sound(140,.15,'sawtooth');
     }
   }
