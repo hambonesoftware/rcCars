@@ -100,7 +100,7 @@ async function smoke(){
         }
         console.log('PASS course startup',id,JSON.stringify(result));
         if(id==='garage'){
-          await page.getByRole('button',{name:/START THE GRAND PRIX/i}).click();
+          await page.locator('#start').click();
           await page.keyboard.down('w');
           await page.waitForTimeout(5100);
           const speed=await page.locator('#speed').textContent();
