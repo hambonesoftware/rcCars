@@ -1003,6 +1003,12 @@ function applyCourseUI(){
   if(startText)startText.textContent='RACE '+COURSE.title.toUpperCase();
   const resultHeading=document.getElementById('result-course-name');
   if(resultHeading)resultHeading.textContent=COURSE.title.toUpperCase()+' · FINISHED';
+  const accent=COURSE.id==='quarry'?'#ffcf83':
+    COURSE.id==='creek'?'#83f2d9':
+    COURSE.id==='garage'?'#ffdc77':'#e5fd7c';
+  document.documentElement.style.setProperty('--lime',accent);
+  const picker=document.getElementById('picker-link');
+  if(picker)picker.href='./courses.html';
   const active=document.querySelector('[data-course="'+COURSE.id+'"]');
   if(active){
     active.classList.add('selected');
@@ -1222,158 +1228,6 @@ function environment(){
       COURSE.id==='creek'?'KEEP IT CLEAN':COURSE.id==='garage'?'BRAKE HARD':'SEND IT');
   }
 }
-function buildCourseLandmarks(){
-  if(COURSE.id==='backyard')return;
-  const wooden=new THREE.MeshStandardMaterial({color:'#9a754a',roughness:.92});
-  const dryWood=new THREE.MeshStandardMaterial({color:'#6f5036',roughness:1});
-  const darkMetal=new THREE.MeshStandardMaterial({color:'#3b4c50',metalness:.48,roughness:.48});
-  const barrelBlue=new THREE.MeshStandardMaterial({color:'#4f8b9f',metalness:.25,roughness:.48});
-  const safetyOrange=new THREE.MeshStandardMaterial({color:'#da9e46',roughness:.78});
-  const creekWater=new THREE.MeshPhysicalMaterial({
-    color:'#4b9eaf',metalness:.12,roughness:.16,
-    transparent:true,opacity:.86,side:THREE.DoubleSide
-  });
-  const rockMaterials=[
-    new THREE.MeshStandardMaterial({color:'#927157',roughness:1,flatShading:true}),
-    new THREE.MeshStandardMaterial({color:'#bd9668',roughness:1,flatShading:true}),
-    new THREE.MeshStandardMaterial({color:'#7f6554',roughness:1,flatShading:true})
-  ];
-  const rockGeometry=new THREE.DodecahedronGeometry(1,0);
-  if(COURSE.id==='creek'){
-    // Small pools and winding streambanks just outside the driving surface.
-    // Groundwater is decorative, not a friction-changing physics trap.
-    for(let i=0;i<38;i++){
-      const s=20+i*(END-65)/37;
-      const side=i%2?1:-1;
-      const p=position(s,side*(HALF+17+rnd(i+219)*10));
-      const lake=new THREE.Mesh(
-        new THREE.CircleGeometry(2.2+rnd(i+1)*3.6,26),creekWater
-      );
-      lake.rotation.x=-Math.PI/2;
-      lake.scale.set(1.45,.75,1);
-      lake.position.set(p.x,-.058,p.z);
-      scene.add(lake);
-      if(i%3===0){
-        for(let r=0;r<7;r++){
-          const a=r*.86;
-          const blade=makeBox(scene,mats.leaves,
-            p.x+Math.sin(a)*(2.0+rnd(r)*1.3),.45,
-            p.z+Math.cos(a)*(2.1+rnd(r+3)*.6),.075,.9,.065);
-          blade.rotation.z=Math.sin(a)*.25;
-        }
-      }
-    }
-    // Short wooden footbridges: raised borders, readable cross planks.
-    for(const s of [SECTOR_1_END+17,SECTOR_3_RIGHT_END+115]){
-      for(let i=0;i<9;i++){
-        const p=position(s+i*.68,-.4);
-        const plank=makeBox(scene,wooden,p.x,p.y+.09,p.z,HALF*1.6,.13,.53);
-        plank.rotation.y=p.angle;
-      }
-      for(const side of [-1,1]){
-        for(let i=0;i<3;i++){
-          const p=position(s+i*2.7,side*(HALF-.8));
-          makeBox(scene,dryWood,p.x,p.y+.55,p.z,.18,1.1,.18);
-        }
-      }
-    }
-  }
-  if(COURSE.id==='garage'){
-    // Giant workshop furniture reads clearly against the compact track.
-    for(let i=0;i<27;i++){
-      const s=22+i*(END-45)/26;
-      const side=i%2?1:-1;
-      const p=position(s,side*(HALF+16+rnd(i+66)*11));
-      const group=new THREE.Group();
-      group.position.set(p.x,0,p.z);
-      group.rotation.y=p.angle+rnd(i)*.25;
-      if(i%3===0){
-        makeBox(group,barrelBlue,0,2.05,0,5,4.1,4);
-        makeBox(group,darkMetal,0,4.27,0,5.4,.4,4.4);
-        makeBox(group,safetyOrange,0,2.8,2.05,4.2,.30,.1);
-      }else if(i%3===1){
-        makeBox(group,wooden,0,1.65,0,6,3.3,5);
-        for(let j=-1;j<=1;j++){
-          makeBox(group,dryWood,j*1.7,1.65,2.54,.22,2.8,.15);
-        }
-      }else{
-        makeBox(group,darkMetal,0,2.8,0,6,5.6,2.4);
-        makeBox(group,barrelBlue,0,4.7,1.3,5.3,1.1,.45);
-      }
-      scene.add(group);
-    }
-    // Hazard stripes across hard braking zones, inlaid into the road.
-    for(const begin of [SECTOR_2_LEFT_START-16,SECTOR_3_SOUTH_END-20]){
-      for(let i=0;i<7;i++){
-        const p=position(begin+i*1.5,-4.6+i*.35);
-        const bar=makeBox(scene,i%2?mats.curbBlack:mats.curbYellow,
-          p.x,p.y+.092,p.z,3.3,.026,.62);
-        bar.rotation.y=p.angle+.35;
-      }
-    }
-  }
-  if(COURSE.id==='quarry'){
-    // Instanced rocky outcrops avoid alpha textures and expensive draw calls.
-    const count=mobile?100:155;
-    const rocks=rockMaterials.map(m=>
-      new THREE.InstancedMesh(rockGeometry,m,Math.ceil(count/3)+1));
-    const transform=new THREE.Object3D(),indices=[0,0,0];
-    for(let i=0;i<count;i++){
-      const s=10+rnd(i+717)*(END-20);
-      const side=i%2?1:-1;
-      const d=side*(HALF+10+rnd(i+1505)*40);
-      const p=position(s,d);
-      const scale=1.4+rnd(i+231)*3.8;
-      transform.position.set(p.x,scale*.45-.05,p.z);
-      transform.scale.set(scale*(.9+rnd(i+342)*.3),
-        scale*(.56+rnd(i+341)*.42),scale);
-      transform.rotation.set(rnd(i+133)*.35,rnd(i+244)*6.28,rnd(i+355)*.3);
-      transform.updateMatrix();
-      rocks[i%3].setMatrixAt(indices[i%3]++,transform.matrix);
-    }
-    for(let i=0;i<3;i++){
-      rocks[i].count=indices[i];
-      rocks[i].instanceMatrix.needsUpdate=true;
-      rocks[i].castShadow=true;
-      rocks[i].receiveShadow=true;
-      scene.add(rocks[i]);
-    }
-    // Larger quarry formations beyond the safety barriers.
-    for(let i=0;i<14;i++){
-      const s=(i+.5)*END/14;
-      const p=position(s,(i%2?1:-1)*(HALF+34));
-      const stone=new THREE.Mesh(
-        new THREE.DodecahedronGeometry(5.5+rnd(i+18)*4.5,1),
-        rockMaterials[i%3]);
-      stone.position.set(p.x,4.1,p.z);
-      stone.scale.set(1.35,.82,.86);
-      stone.rotation.set(0,rnd(i+15)*6.28,0);
-      stone.castShadow=!mobile;
-      scene.add(stone);
-    }
-  }
-}
-function applyCourseUI(){
-  document.title='Micro Mayhem — '+COURSE.title;
-  const title=document.getElementById('course-title');
-  const subtitle=document.getElementById('course-subtitle');
-  const summary=document.getElementById('course-description');
-  const kicker=document.getElementById('course-kicker');
-  const resultKicker=document.getElementById('result-course-name');
-  if(title)title.textContent=COURSE.title;
-  if(subtitle)subtitle.textContent=COURSE.subtitle;
-  if(summary)summary.textContent=COURSE.description;
-  if(kicker)kicker.textContent='COURSE '+String(
-    Object.keys(COURSE_PRESETS).indexOf(COURSE.id)+1).padStart(2,'0')+' / 04';
-  if(resultKicker)resultKicker.textContent=COURSE.title.toUpperCase()+' — FINISHED';
-  const accent=COURSE.id==='quarry'?'#ffcf83':
-    COURSE.id==='creek'?'#83f2d9':
-    COURSE.id==='garage'?'#ffdc77':'#e5fd7c';
-  document.documentElement.style.setProperty('--lime',accent);
-  const route=document.getElementById('picker-link');
-  if(route)route.href='./courses.html';
-}
-
 function makeCone(s,d){
   const p=position(s,d);
   const g=new THREE.Group();g.position.set(p.x,p.y,p.z);
