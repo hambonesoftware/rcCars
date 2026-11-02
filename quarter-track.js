@@ -1323,8 +1323,13 @@ function positionModels(dt){
     rival.mesh.rotation.order='YXZ';
     rival.mesh.rotation.y=p.angle+Math.sin(game.time*.7+rival.seed)*.025;
     rival.mesh.rotation.x=air>0?-.12:0;
-    const rivalRight=(rival.s>STRAIGHT&&rival.s<STRAIGHT+TURN)||
-      (rival.s>SECTOR_2_RIGHT_START&&rival.s<SECTOR_2_RIGHT_END);
+    const rivalRight=[
+      [STRAIGHT,STRAIGHT+TURN],
+      [SECTOR_2_RIGHT_START,SECTOR_2_RIGHT_END],
+      [SECTOR_3_EAST_END,SECTOR_3_RIGHT_END],
+      [SECTOR_3_SOUTH_END,SECTOR_3_END],
+      [SECTOR_4_WEST_END,SECTOR_4_RETURN_END]
+    ].some(([a,b])=>rival.s>a&&rival.s<b);
     const rivalLeft=rival.s>SECTOR_2_LEFT_START&&rival.s<SECTOR_2_LEFT_END;
     rival.mesh.rotation.z=(rivalRight?.07:0)-(rivalLeft?.07:0);
     for(const wheel of rival.mesh.userData.wheels)wheel.rotation.x+=dt*rival.speed*2.25;
@@ -1357,16 +1362,18 @@ function viewport(){
   const aspect=innerWidth/Math.max(1,innerHeight);
   // Closer crop than the old aerial view, but still fits the whole road
   // on portrait phones. Keep the explicit overview as a separate option.
+  const mapWidth=mapBounds.maxX-mapBounds.minX;
+  const mapHeight=mapBounds.maxZ-mapBounds.minZ;
   const height=game.camera==='overview'?
-    Math.max(390,400/Math.max(.35,aspect)):
+    Math.max(mapHeight*1.65,mapWidth*1.55/Math.max(.35,aspect)):
     (aspect<.65?61:aspect<1?54:47);
   camera.top=height*.5;camera.bottom=-height*.5;
   camera.left=-height*aspect*.5;camera.right=height*aspect*.5;
   camera.updateProjectionMatrix();
   // Full-course overview needs a longer draw distance than close follow.
   if(scene?.fog){
-    scene.fog.near=game.camera==='overview'?365:165;
-    scene.fog.far=game.camera==='overview'?1100:385;
+    scene.fog.near=game.camera==='overview'?490:165;
+    scene.fog.far=game.camera==='overview'?1600:385;
   }
   renderer.setSize(innerWidth,innerHeight);
 }
@@ -1376,7 +1383,7 @@ function updateCamera(dt){
     const centerX=(mapBounds.minX+mapBounds.maxX)*.5;
     const centerZ=(mapBounds.minZ+mapBounds.maxZ)*.5;
     look=new THREE.Vector3(centerX,1,centerZ);
-    desire=new THREE.Vector3(centerX+118,261,centerZ-101);
+    desire=new THREE.Vector3(centerX+200,430,centerZ-180);
   }else{
     // Favor the track direction so tight steering doesn't whip the view.
     // A little vehicle heading influences the rear corner perspective.
@@ -1385,7 +1392,7 @@ function updateCamera(dt){
     const tangent=road.angle+driverBias;
     const rightX=Math.cos(tangent),rightZ=-Math.sin(tangent);
     const forwardX=Math.sin(tangent),forwardZ=Math.cos(tangent);
-    const lead=Math.min(END,player.s+cameraConfig.lookAhead+player.speed*.10);
+    const lead=(player.s+cameraConfig.lookAhead+player.speed*.10)%END;
     const focusPoint=position(lead,clamp(player.d,-HALF,HALF)*cameraConfig.lateralFollow);
     look=new THREE.Vector3(
       focusPoint.x,focusPoint.y+1.6,focusPoint.z
@@ -1411,8 +1418,7 @@ function updateCamera(dt){
   sun.position.set(player.x-52,player.y+65,player.z-60);
   sun.target.position.set(player.x,player.y,player.z);
 }
-// A schematic overview that automatically fits the full half-course
-// rather than clipping when Sector 02 extends outside the old quarter map.
+// A schematic overview that automatically fits the full four-sector loop.
 const mapBounds=(()=>{
   const x=[],z=[];
   for(let i=0;i<=400;i++){
@@ -1443,11 +1449,13 @@ function drawMap(){
   ctx.strokeStyle='#727675';ctx.lineWidth=9;ctx.stroke();
   ctx.strokeStyle='#e3cf7c';ctx.lineWidth=1.0;ctx.setLineDash([3,5]);ctx.stroke();
   ctx.setLineDash([]);
-  const checkpoint=pixel(SECTOR_1_END);
-  ctx.fillStyle='#132b30';
-  ctx.fillRect(checkpoint.x-3,checkpoint.y-6,6,12);
-  ctx.fillStyle='#e5fd7c';
-  ctx.fillRect(checkpoint.x-2,checkpoint.y-5,4,10);
+  for(const checkpointS of [SECTOR_1_END,SECTOR_2_END,SECTOR_3_END]){
+    const checkpoint=pixel(checkpointS);
+    ctx.fillStyle='#132b30';
+    ctx.fillRect(checkpoint.x-3,checkpoint.y-6,6,12);
+    ctx.fillStyle='#e5fd7c';
+    ctx.fillRect(checkpoint.x-2,checkpoint.y-5,4,10);
+  }
   const dot=(s,d,color,r)=>{
     const p=position(s,d);
     const q=px(p);
@@ -1462,15 +1470,19 @@ function drawMap(){
   ctx.fillStyle='#e5fd7c';
   const start=pixel(0),end=pixel(END);
   ctx.fillText('START',Math.max(4,start.x-2),Math.min(h-4,start.y-6));
-  ctx.fillText('½',Math.max(4,end.x-5),Math.max(10,end.y+13));
+  ctx.fillText('FINISH',Math.max(4,end.x-12),Math.max(10,end.y+13));
 }
 function updateHUD(){
   ui.speed.textContent=Math.round(player.speed*5.1);
   ui.time.textContent=timeString(game.time);
-  const position=1+ai.filter(a=>a.s>player.s).length;
+  const totalProgress=(game.lap-1)*END+player.s;
+  const position=1+ai.filter(a=>racerProgress(a)>totalProgress).length;
   ui.place.textContent=position+' / 4';
-  ui.progress.style.width=(clamp(player.s/END,0,1)*100).toFixed(1)+'%';
-  ui.sector.textContent=(player.s>=SECTOR_1_END?'02':'01')+' / 04';
+  ui.progress.style.width=(clamp(totalProgress/(END*LAPS),0,1)*100).toFixed(1)+'%';
+  const sector=player.s>=SECTOR_3_END?4:
+    player.s>=SECTOR_2_END?3:player.s>=SECTOR_1_END?2:1;
+  ui.sector.textContent=String(sector).padStart(2,'0')+' / 04';
+  if(ui.lap)ui.lap.textContent=game.lap+' / '+LAPS;
   ui.heat.style.width=(player.heat*100).toFixed(1)+'%';
   ui.heatLabel.textContent=player.overheated?'OVERHEATED':player.heat>.75?'HOT':controls.boost?'BOOSTING':'COOL';
   ui.heatLabel.style.color=player.overheated?'#ff7c62':'#e5fd7c';
@@ -1507,8 +1519,7 @@ function completeLap(){
 }
 function finishSector(){
   if(game.mode!=='racing')return;
-  const finishProgress=END*LAPS;
-  const position=1+ai.filter(a=>racerProgress(a)>finishProgress-.5).length;
+  const position=1+ai.filter(a=>a.done!==null).length;
   game.mode='finished';
   ui.results.classList.remove('hidden');
   ui.resultTime.textContent=timeString(game.time);
