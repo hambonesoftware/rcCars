@@ -431,14 +431,32 @@ function createRoad(){
     createRibbon(side*(HALF+3.6),side*HALF,mats.shoulder);
   }
   createRoadWeathering();
-  // Yellow/black track edge blocks follow the exact sampled bend.
+  // Instanced curbs: two draw calls instead of hundreds of individual
+  // meshes. This offsets the cost of realistic mobile shadow rendering.
+  const curbGeo=new THREE.BoxGeometry(.75,.18,2.35);
+  const curbCapacity=Math.ceil(END/2.4)*2+4;
+  const curbMeshes=[
+    new THREE.InstancedMesh(curbGeo,mats.curbYellow,curbCapacity),
+    new THREE.InstancedMesh(curbGeo,mats.curbBlack,curbCapacity)
+  ];
+  const curbCounts=[0,0],curbTransform=new THREE.Object3D();
   for(let s=2,idx=0;s<END-1;s+=2.4,idx++){
     for(const side of [-1,1]){
       const p=position(s,side*(HALF-.33));
-      const curb=makeBox(scene,idx%2?mats.curbBlack:mats.curbYellow,
-        p.x,p.y+.095,p.z,.75,.18,2.35);
-      curb.rotation.y=p.angle;
+      curbTransform.position.set(p.x,p.y+.095,p.z);
+      curbTransform.rotation.set(0,p.angle,0);
+      curbTransform.scale.set(1,1,1);
+      curbTransform.updateMatrix();
+      const index=idx%2;
+      curbMeshes[index].setMatrixAt(curbCounts[index]++,curbTransform.matrix);
     }
+  }
+  for(let i=0;i<2;i++){
+    curbMeshes[i].count=curbCounts[i];
+    curbMeshes[i].instanceMatrix.needsUpdate=true;
+    curbMeshes[i].receiveShadow=true;
+    curbMeshes[i].castShadow=!mobile;
+    scene.add(curbMeshes[i]);
   }
   // Start-grid approach has more visible pristine dashed paint.
   for(let s=7;s<20;s+=7.6){
@@ -814,12 +832,15 @@ function setup(){
     renderer.setPixelRatio(Math.min(devicePixelRatio||1,mobile?1.4:1.8));
     renderer.outputColorSpace=THREE.SRGBColorSpace;
     renderer.toneMapping=THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure=1.09;
+    renderer.toneMappingExposure=1.065;
     // The reference uses substantial natural shadow contrast. Enable the
     // main shadow pass on phones too; desktop earns a finer shadow atlas.
     renderer.shadowMap.enabled=true;
     renderer.shadowMap.type=THREE.PCFSoftShadowMap;
     renderer.setSize(innerWidth,innerHeight);
+    // Gentle photographic grade, applied only to the 3D layer: avoid
+    // oversaturated neon foliage and clipped highlights on painted bodies.
+    renderer.domElement.style.filter='contrast(1.055) saturate(.955)';
     ui.viewport.appendChild(renderer.domElement);
     scene=new THREE.Scene();
     scene.background=new THREE.Color('#9bb9aa');
