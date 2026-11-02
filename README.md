@@ -30,3 +30,7 @@ Open http://localhost:8000/. The game has no bundling step. Deployment is config
 Files: `index.html` UI, `style.css` responsive presentation, `game.js` Three.js world, physics and game logic.
 
 © Hambone Software. This is an original racing game; it is not affiliated with or based on original Excitebike assets.
+
+## Interactive 3D truck preview
+
+Open **[Vehicle Showroom](./vehicle-preview.html)** to inspect a reusable, real Three.js short-bed monster-truck model. Four paint variants match the red, green, blue and yellow pickup racing reference. Drag to orbit, zoom, tap a vehicle color to inspect it, or change between lineup, detail and overhead camera. Geometry lives in `truck-model.js` and is ready for later integration into gameplay after review.
