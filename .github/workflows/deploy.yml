@@ -30,6 +30,7 @@ jobs:
           node --check truck-model.js
           node --check vehicle-preview.js
           node --check quarter-track.js
+          node --input-type=module --check < quarter-track.js
           node --check course-presets.js
           node --check course-picker.js
           node --check track-layouts.js
