@@ -1,4 +1,5 @@
 import {COURSE_PRESETS} from './course-presets.js';
+import {buildCourseLoop} from './track-layouts.js';
 
 const COURSES=Object.values(COURSE_PRESETS);
 const accents={backyard:'#e4fd7b',creek:'#7bf2d8',garage:'#ffd17c',quarry:'#f8c889'};
@@ -7,6 +8,16 @@ const root=document.getElementById('courses');
 // This overview uses the same analytic 90-degree arcs and closing lengths
 // as the playable race, not a generic decoration or random squiggle.
 function coursePoints(c){
+  const loop=buildCourseLoop(c.id);
+  if(loop){
+    // Exactly the same spline centerline used by the playable game.
+    const steps=600,points=[];
+    for(let i=0;i<=steps;i++){
+      const p=loop.point(loop.length*i/steps);
+      points.push([p.x,p.z]);
+    }
+    return points;
+  }
   const pi=Math.PI;
   const south=c.start+c.r1+c.r2Left+c.s2North+c.r2Right-
     c.r3Right-c.r3Hairpin+c.r4Return+c.s4North;
