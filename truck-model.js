@@ -204,10 +204,10 @@ export function makeRCTrophyTruck(THREE, paint = '#ebcb40') {
     box(car,c.darker,side*.856,1.36,.39,.024,.41,.025);
   }
   // Windshield as an angled solid plane with narrow central reflection.
-  flatQuad([[-.76,1.76,.916],[.76,1.76,.916],[.73,2.395,.455],[-.73,2.395,.455]],c.glass);
-  flatQuad([[-.60,2.36,.477],[-.25,2.36,.477],[-.31,1.88,.815],[-.66,1.88,.815]],c.glassShine);
+  flatQuad([[-.76,1.76,.894],[.76,1.76,.894],[.73,2.395,.551],[-.73,2.395,.551]],c.glass);
+  flatQuad([[-.60,2.36,.563],[-.25,2.36,.563],[-.31,1.88,.844],[-.66,1.88,.844]],c.glassShine);
   // Rear glass slightly above open cargo bed.
-  flatQuad([[-.69,1.85,-.761],[.69,1.85,-.761],[.70,2.36,-.433],[-.70,2.36,-.433]],c.glass);
+  flatQuad([[-.69,1.85,-.727],[.69,1.85,-.727],[.70,2.36,-.487],[-.70,2.36,-.487]],c.glass);
   // Open pickup bed: black textured floor and painted sidewalls / tailgate.
   box(car,c.trim,0,1.28,-1.3,1.60,.085,1.28);
   for(let i=-3;i<=3;i++)box(car,c.chassis,i*.22,1.34,-1.29,.044,.035,1.12);
