@@ -245,6 +245,119 @@ function createGrassTexture(){
   tex.colorSpace=THREE.SRGBColorSpace;
   tex.anisotropy=4;return tex;
 }
+
+function createGravelTexture(){
+  const c=document.createElement('canvas');c.width=c.height=256;
+  const ctx=c.getContext('2d');
+  ctx.fillStyle='#887f68';ctx.fillRect(0,0,256,256);
+  let seed=443981;
+  const random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
+  for(let i=0;i<3400;i++){
+    const x=random()*256,y=random()*256,r=.35+random()*3.6;
+    ctx.fillStyle=random()>.62?'rgba(205,190,146,.34)':'rgba(68,70,60,.31)';
+    ctx.beginPath();ctx.ellipse(x,y,r,r*.64,random()*6.28,0,Math.PI*2);ctx.fill();
+  }
+  const t=new THREE.CanvasTexture(c);
+  t.colorSpace=THREE.SRGBColorSpace;
+  t.wrapS=t.wrapT=THREE.RepeatWrapping;
+  t.anisotropy=4;
+  return t;
+}
+function makeDecalTexture(type){
+  const c=document.createElement('canvas');
+  c.width=128;c.height=512;
+  const ctx=c.getContext('2d');
+  let seed=type==='rubber'?3482:6872;
+  const random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
+  ctx.clearRect(0,0,128,512);
+  if(type==='paint'){
+    ctx.fillStyle='rgba(236,229,202,.79)';
+    ctx.fillRect(0,0,128,512);
+    for(let i=0;i<650;i++){
+      const x=random()*128,y=random()*512;
+      const w=1+random()*13,h=2+random()*17;
+      ctx.clearRect(x,y,w,h);
+    }
+    // Scraped side edges: weathered markings without visible repetition.
+    for(let j=0;j<140;j++){
+      const x=random()>.5?random()*22:111+random()*17;
+      ctx.clearRect(x,random()*512,2+random()*16,2+random()*35);
+    }
+  }else{
+    // Transparent black tyre rubber build-up, split into contact strips.
+    for(const side of [-1,1]){
+      const cx=64+side*27;
+      const gradient=ctx.createLinearGradient(cx-24,0,cx+24,0);
+      gradient.addColorStop(0,'rgba(17,20,18,0)');
+      gradient.addColorStop(.35,'rgba(21,23,22,.30)');
+      gradient.addColorStop(.5,'rgba(18,23,21,.39)');
+      gradient.addColorStop(.65,'rgba(19,23,21,.25)');
+      gradient.addColorStop(1,'rgba(17,20,18,0)');
+      ctx.fillStyle=gradient;
+      ctx.fillRect(cx-24,0,48,512);
+    }
+    for(let i=0;i<1800;i++){
+      const x=random()*128,y=random()*512,w=1+random()*8,h=2+random()*15;
+      ctx.clearRect(x,y,w,h);
+    }
+  }
+  const t=new THREE.CanvasTexture(c);
+  t.colorSpace=THREE.SRGBColorSpace;
+  t.wrapS=t.wrapT=THREE.ClampToEdgeWrapping;
+  return t;
+}
+function addSurfaceStrip(s0,s1,d,width,material){
+  const verts=[],uvs=[],indices=[];
+  const count=Math.max(2,Math.ceil((s1-s0)/.8));
+  for(let j=0;j<=count;j++){
+    const s=s0+(s1-s0)*j/count;
+    for(const sign of [-1,1]){
+      const p=position(s,d+sign*width*.5);
+      verts.push(p.x,p.y+.078,p.z);
+      uvs.push(sign<0?0:1,j/count);
+    }
+  }
+  for(let j=0;j<count;j++){
+    const i=j*2;
+    indices.push(i,i+2,i+1,i+1,i+2,i+3);
+  }
+  const geometry=new THREE.BufferGeometry();
+  geometry.setAttribute('position',new THREE.Float32BufferAttribute(verts,3));
+  geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));
+  geometry.setIndex(indices);
+  geometry.computeVertexNormals();
+  const mesh=new THREE.Mesh(geometry,material);
+  mesh.receiveShadow=false;
+  mesh.renderOrder=2;
+  scene.add(mesh);
+}
+function createRoadWeathering(){
+  const paint=new THREE.MeshStandardMaterial({
+    map:makeDecalTexture('paint'),transparent:true,depthWrite:false,
+    roughness:1,metalness:0,side:THREE.DoubleSide,
+    polygonOffset:true,polygonOffsetFactor:-1
+  });
+  const rubber=new THREE.MeshStandardMaterial({
+    map:makeDecalTexture('rubber'),transparent:true,depthWrite:false,
+    roughness:1,side:THREE.DoubleSide,
+    polygonOffset:true,polygonOffsetFactor:-1
+  });
+  // Dash paint is flush with asphalt and breaks into chipped edges.
+  for(let s=23;s<END-5;s+=7.6){
+    addSurfaceStrip(s,s+3.35,0,.16,paint);
+  }
+  // Darkened braking lines leading into the big right-hand bend.
+  for(const d of [-3.25,3.35]){
+    addSurfaceStrip(84,118,d,1.15,rubber);
+    addSurfaceStrip(125,161,d+.35,1.25,rubber);
+    addSurfaceStrip(174,197,d,1.05,rubber);
+  }
+  // Landing scuffs and worn acceleration lines on both straights.
+  addSurfaceStrip(75,89,-2.5,.95,rubber);
+  addSurfaceStrip(75,90,2.8,1.12,rubber);
+  addSurfaceStrip(235,252,-3.3,1.3,rubber);
+}
+
 function createRibbon(side,inside,material,step=1){
   const vertices=[],uvs=[],indices=[];
   const N=Math.ceil(END/step);
@@ -268,7 +381,7 @@ function createRibbon(side,inside,material,step=1){
   geom.setIndex(indices);
   geom.computeVertexNormals();
   const obj=new THREE.Mesh(geom,material);
-  obj.receiveShadow=!mobile;
+  obj.receiveShadow=true;
   obj.castShadow=false;
   scene.add(obj);
 }
@@ -311,10 +424,13 @@ function createRoad(){
   const road=new THREE.Mesh(g,roadMaterial);
   road.receiveShadow=true;scene.add(road);
 
-  // Packed earth shoulder and verge on both sides follow the bank.
+  // Gravelly road shoulders with actual textured aggregate.
+  mats.shoulder.map=createGravelTexture();
+  mats.shoulder.needsUpdate=true;
   for(const side of [-1,1]){
     createRibbon(side*(HALF+3.6),side*HALF,mats.shoulder);
   }
+  createRoadWeathering();
   // Yellow/black track edge blocks follow the exact sampled bend.
   for(let s=2,idx=0;s<END-1;s+=2.4,idx++){
     for(const side of [-1,1]){
@@ -324,8 +440,8 @@ function createRoad(){
       curb.rotation.y=p.angle;
     }
   }
-  // Faint broken center lane line and strong opening reference line.
-  for(let s=7;s<END-4;s+=7.6){
+  // Start-grid approach has more visible pristine dashed paint.
+  for(let s=7;s<20;s+=7.6){
     const p=position(s,0);
     const paint=makeBox(scene,mats.curbWhite,p.x,p.y+.052,p.z,.13,.024,3.35);
     paint.rotation.y=p.angle;
