@@ -533,81 +533,236 @@ function makeGate(s,caption){
   board.position.set(0,6.28,.56);g.add(board);
   scene.add(g);
 }
+function makeLeafyGeometry(){
+  // Asymmetric, softly rounded leaf clumps. A single shared mesh powers
+  // hundreds of bushes and tree crowns through efficient instancing.
+  const geo=new THREE.IcosahedronGeometry(1,2);
+  const pos=geo.getAttribute('position');
+  for(let i=0;i<pos.count;i++){
+    let x=pos.getX(i),y=pos.getY(i),z=pos.getZ(i);
+    const rip=.93+.07*Math.sin(x*12+y*3+z*19)+.08*Math.sin(x*5.7-z*8);
+    x=x*rip*(1+.09*y);
+    y=y*rip*(1-.09*x);
+    z=z*rip*(1+.06*Math.sin(y*5));
+    pos.setXYZ(i,x,y,z);
+  }
+  geo.computeVertexNormals();
+  return geo;
+}
+function makeGrassBladeGeometry(){
+  // Six curved tapered blades per tuft, with two triangles per blade.
+  // This reads like individual grass rather than tiny rigid cones.
+  const positions=[],colors=[],indices=[];
+  const blades=6;
+  for(let i=0;i<blades;i++){
+    const a=i*Math.PI*2/blades;
+    const dirX=Math.cos(a),dirZ=Math.sin(a);
+    const sideX=-dirZ,sideZ=dirX;
+    const length=.83+.15*Math.sin(a*3.1);
+    const w=.105+.03*Math.sin(a*5);
+    const base=positions.length/3;
+    const coordinates=[
+      [-w,0,0],[w,0,0],
+      [-w*.36,length*.57,.18],[w*.36,length*.57,.18],
+      [0,length,.29]
+    ];
+    const colorsAt=[
+      [.32,.49,.26],[.37,.55,.28],
+      [.68,.81,.45],[.74,.84,.53],
+      [.91,.89,.60]
+    ];
+    for(let j=0;j<coordinates.length;j++){
+      const [sx,y,bend]=coordinates[j];
+      positions.push(
+        sideX*sx+dirX*bend,
+        y,
+        sideZ*sx+dirZ*bend
+      );
+      colors.push(...colorsAt[j]);
+    }
+    indices.push(
+      base,base+1,base+2,
+      base+1,base+3,base+2,
+      base+2,base+3,base+4
+    );
+  }
+  const g=new THREE.BufferGeometry();
+  g.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
+  g.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));
+  g.setIndex(indices);g.computeVertexNormals();
+  return g;
+}
 function environment(){
-  // 3D hedges and layered trees sit beyond the safety verge.
-  const shrubGeo=new THREE.IcosahedronGeometry(1,1);
-  const tuftGeo=new THREE.ConeGeometry(.20,1.1,5);
-  const leavesMaterials=[mats.darkGrass,mats.leaves,mats.leavesLight];
-  const bushes=leavesMaterials.map(m=>new THREE.InstancedMesh(shrubGeo,m,145));
-  const grass=new THREE.InstancedMesh(tuftGeo,mats.darkGrass,1100);
-  const treeTrunks=new THREE.InstancedMesh(new THREE.CylinderGeometry(.28,.4,3.6,7),mats.trunk,34);
-  const crowns=new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1,2),mats.leavesLight,34);
-  const matrix=new THREE.Object3D(),bushIndices=[0,0,0];
-  for(let i=0;i<350;i++){
-    const s=rnd(1200+i)*END;
+  // Instanced naturalistic planting: lumpy, overlapping foliage in three
+  // tones, legible grass blades, varied crown layers and ground patches.
+  // Avoids per-plant draw calls and expensive transparent alpha textures.
+  const shrubGeo=makeLeafyGeometry();
+  const matrix=new THREE.Object3D();
+  const bushMaterials=[
+    new THREE.MeshStandardMaterial({color:'#396a43',roughness:1}),
+    new THREE.MeshStandardMaterial({color:'#568a4d',roughness:1}),
+    new THREE.MeshStandardMaterial({color:'#729455',roughness:1})
+  ];
+  const bushCount=mobile?315:480;
+  const shrubs=bushMaterials.map(m=>new THREE.InstancedMesh(shrubGeo,m,Math.ceil(bushCount/3)+1));
+  const bushIndex=[0,0,0];
+  const tint=new THREE.Color();
+  for(let i=0;i<bushCount;i++){
+    const s=5+rnd(1100+i)*(END-8);
     const side=i%2?1:-1;
-    const d=side*(HALF+6+rnd(2210+i)*39);
+    const d=side*(HALF+4.8+rnd(2301+i)*36);
     const p=position(s,d);
-    const type=i%3,idx=bushIndices[type]++;
-    if(idx>=145)continue;
-    const scale=1.2+rnd(3000+i)*1.9;
-    matrix.position.set(p.x,.3+scale*.33,p.z);
-    matrix.scale.set(scale,scale*(.47+rnd(i+322)*.15),scale*.9);
-    matrix.rotation.set(0,rnd(i+333)*6.28,0);
-    matrix.updateMatrix();bushes[type].setMatrixAt(idx,matrix.matrix);
+    const r=.48+rnd(3100+i)*1.5;
+    matrix.position.set(p.x,r*.60-.07,p.z);
+    matrix.scale.set(r*1.17,r*(.57+rnd(9211+i)*.28),r*(.87+rnd(1731+i)*.3));
+    matrix.rotation.set(0,rnd(i+389)*6.28,0);
+    matrix.updateMatrix();
+    const group=i%3,index=bushIndex[group]++;
+    shrubs[group].setMatrixAt(index,matrix.matrix);
+    tint.setHSL(.30+rnd(i+91)*.045,.35+rnd(i+332)*.13,.67+rnd(i+498)*.16);
+    shrubs[group].setColorAt(index,tint);
   }
-  for(let j=0;j<3;j++){
-    bushes[j].count=bushIndices[j];
-    bushes[j].instanceMatrix.needsUpdate=true;
-    scene.add(bushes[j]);
+  for(let i=0;i<3;i++){
+    shrubs[i].count=bushIndex[i];
+    shrubs[i].instanceMatrix.needsUpdate=true;
+    if(shrubs[i].instanceColor)shrubs[i].instanceColor.needsUpdate=true;
+    shrubs[i].castShadow=true;
+    shrubs[i].receiveShadow=true;
+    scene.add(shrubs[i]);
   }
-  for(let i=0;i<1100;i++){
-    const s=rnd(4520+i)*END,side=i%2?1:-1;
-    const d=side*(HALF+4+rnd(1520+i)*31);
+  // Mottled areas of sun-bleached turf and exposed soil.
+  const patchGeo=new THREE.CircleGeometry(1,14);
+  const patchMat=new THREE.MeshStandardMaterial({
+    color:'#aea06f',transparent:true,opacity:.24,depthWrite:false,
+    side:THREE.DoubleSide,roughness:1
+  });
+  const patches=new THREE.InstancedMesh(patchGeo,patchMat,mobile?135:260);
+  for(let i=0;i<patches.count;i++){
+    const s=rnd(i+9133)*END;
+    const d=(i%2?1:-1)*(HALF+4+rnd(i+819)*28);
     const p=position(s,d);
-    const size=.38+rnd(7930+i)*.8;
-    matrix.position.set(p.x,size*.35,p.z);
-    matrix.scale.set(size,size*.8,size);
-    matrix.rotation.set(0,rnd(3437+i)*6.28,0);
-    matrix.updateMatrix();grass.setMatrixAt(i,matrix.matrix);
+    const scale=.8+rnd(i+712)*2.4;
+    matrix.position.set(p.x,-.056,p.z);
+    matrix.scale.set(scale*1.5,scale,1);
+    matrix.rotation.set(-Math.PI/2,0,rnd(i+880)*6.28);
+    matrix.updateMatrix();patches.setMatrixAt(i,matrix.matrix);
   }
-  grass.instanceMatrix.needsUpdate=true;
-  scene.add(grass);
-  for(let i=0;i<34;i++){
-    const s=15+rnd(i+888)*END;
+  patches.instanceMatrix.needsUpdate=true;scene.add(patches);
+
+  const grassGeo=makeGrassBladeGeometry();
+  const grassMaterials=[
+    new THREE.MeshStandardMaterial({color:'#b7c987',vertexColors:true,roughness:1,side:THREE.DoubleSide}),
+    new THREE.MeshStandardMaterial({color:'#90b36c',vertexColors:true,roughness:1,side:THREE.DoubleSide}),
+    new THREE.MeshStandardMaterial({color:'#c5b980',vertexColors:true,roughness:1,side:THREE.DoubleSide})
+  ];
+  const grassTotal=mobile?1500:2600;
+  const grassMeshes=grassMaterials.map(m=>new THREE.InstancedMesh(grassGeo,m,Math.ceil(grassTotal/3)+1));
+  const grassIndices=[0,0,0];
+  for(let i=0;i<grassTotal;i++){
+    const s=rnd(4200+i)*END;
     const side=i%2?1:-1;
-    const d=side*(HALF+25+rnd(1131+i)*18);
-    const p=position(s,d),scale=1.1+rnd(i+2234)*.75;
+    const d=side*(HALF+3.7+rnd(i+1301)*36);
+    const p=position(s,d);
+    const size=.33+rnd(7100+i)*.93;
+    matrix.position.set(p.x,-.035,p.z);
+    matrix.scale.set(size,size*(.76+rnd(i+321)*.65),size);
+    matrix.rotation.set(0,rnd(i+511)*6.28,0);
+    matrix.updateMatrix();
+    const type=i%3,index=grassIndices[type]++;
+    grassMeshes[type].setMatrixAt(index,matrix.matrix);
+  }
+  for(let i=0;i<3;i++){
+    grassMeshes[i].count=grassIndices[i];
+    grassMeshes[i].instanceMatrix.needsUpdate=true;
+    grassMeshes[i].castShadow=false;
+    grassMeshes[i].receiveShadow=false;
+    scene.add(grassMeshes[i]);
+  }
+
+  // Trees have separate tapered trunks and overlapping irregular crowns.
+  // Instance count is bounded so the phone shadow pass remains affordable.
+  const trees=mobile?28:45;
+  const trunks=new THREE.InstancedMesh(
+    new THREE.CylinderGeometry(.18,.35,3.6,7),
+    mats.trunk,trees);
+  const leaves=new THREE.InstancedMesh(
+    shrubGeo,new THREE.MeshStandardMaterial({color:'#4b8450',roughness:.94}),
+    trees*4);
+  for(let i=0;i<trees;i++){
+    const s=10+rnd(i+889)*(END-12);
+    const side=i%2?1:-1;
+    const d=side*(HALF+21+rnd(i+1143)*23);
+    const p=position(s,d);
+    const scale=1.1+rnd(i+2234)*.85;
     matrix.position.set(p.x,1.8*scale,p.z);
     matrix.scale.set(scale,scale,scale);
-    matrix.rotation.set(0,0,0);matrix.updateMatrix();
-    treeTrunks.setMatrixAt(i,matrix.matrix);
-    matrix.position.set(p.x,4.1*scale,p.z);
-    matrix.scale.set(scale*2.55,scale*2.2,scale*2.45);
+    matrix.rotation.set(0,rnd(i+300)*Math.PI*2,0);
     matrix.updateMatrix();
-    crowns.setMatrixAt(i,matrix.matrix);
+    trunks.setMatrixAt(i,matrix.matrix);
+    for(let lobe=0;lobe<4;lobe++){
+      const a=lobe*Math.PI*.5+rnd(i+12)*.3;
+      const offset=lobe===0?0:1.25*scale;
+      const crownScale=(lobe===0?2.35:1.7)*scale;
+      matrix.position.set(
+        p.x+Math.cos(a)*offset,
+        (lobe===0?4.7:4.2)*scale+rnd(i+121+lobe)*.45,
+        p.z+Math.sin(a)*offset
+      );
+      matrix.scale.set(
+        crownScale*(.88+rnd(i+333+lobe)*.15),
+        crownScale*(.58+rnd(i+511+lobe)*.2),
+        crownScale*(.86+rnd(i+621+lobe)*.19)
+      );
+      matrix.rotation.set(0,rnd(i+323+lobe)*6.28,0);
+      matrix.updateMatrix();
+      leaves.setMatrixAt(i*4+lobe,matrix.matrix);
+      tint.setHSL(.33+rnd(i+15+lobe)*.045,.26+rnd(i+93+lobe)*.17,
+        .68+rnd(i+61+lobe)*.18);
+      leaves.setColorAt(i*4+lobe,tint);
+    }
   }
-  treeTrunks.instanceMatrix.needsUpdate=true;crowns.instanceMatrix.needsUpdate=true;
-  treeTrunks.castShadow=!mobile;crowns.castShadow=!mobile;
-  scene.add(treeTrunks,crowns);
+  trunks.instanceMatrix.needsUpdate=true;
+  leaves.instanceMatrix.needsUpdate=true;
+  if(leaves.instanceColor)leaves.instanceColor.needsUpdate=true;
+  trunks.castShadow=true;leaves.castShadow=true;
+  trunks.receiveShadow=true;leaves.receiveShadow=true;
+  scene.add(trunks,leaves);
 
-  // Photo-inspired gravel turnout near the start and a few maintenance props.
-  for(let i=0;i<29;i++){
-    const s=8+i*3.8;
-    const p=position(s,-(HALF+3.9+rnd(i)*3.5));
-    const stone=new THREE.Mesh(new THREE.DodecahedronGeometry(.26+rnd(i+1)*.35,0),
-      i%2?mats.shoulder:mats.curbWhite);
-    stone.position.set(p.x,.12,p.z);stone.rotation.set(.1,i*.4,.3);
-    scene.add(stone);
+  // Gravel turnout, and sparse scale-setting maintenance props.
+  const gravelColors=[
+    new THREE.MeshStandardMaterial({color:'#b2ab96',roughness:1}),
+    new THREE.MeshStandardMaterial({color:'#5e6359',roughness:1})
+  ];
+  const stoneGeo=new THREE.DodecahedronGeometry(.6,0);
+  const stoneGroups=gravelColors.map(m=>new THREE.InstancedMesh(stoneGeo,m,45));
+  for(let i=0;i<75;i++){
+    const s=8+i*1.35;
+    const p=position(s,-(HALF+4.5+rnd(i+7)*5.5));
+    const scale=.24+rnd(i+3)*.44;
+    matrix.position.set(p.x,.055,p.z);
+    matrix.scale.set(scale,scale*.43,scale);
+    matrix.rotation.set(.2,i*.5,0);
+    matrix.updateMatrix();
+    stoneGroups[i%2].setMatrixAt(Math.floor(i/2),matrix.matrix);
   }
-  // A recognizable infield scene, positioned away from the racing line.
+  for(let i=0;i<2;i++){
+    stoneGroups[i].count=i===0?38:37;
+    stoneGroups[i].instanceMatrix.needsUpdate=true;
+    scene.add(stoneGroups[i]);
+  }
+
+  // A few believable infield maintenance barrels with dark cavities.
   for(const [s,d] of [[121,HALF+29],[174,-HALF-24],[241,HALF+24]]){
     const p=position(s,d);
     const group=new THREE.Group();group.position.set(p.x,0,p.z);
-    const bucket=new THREE.Mesh(new THREE.CylinderGeometry(2.6,2.15,4.2,14),mats.curbYellow);
-    bucket.position.y=2.1;bucket.castShadow=!mobile;group.add(bucket);
-    const lip=new THREE.Mesh(new THREE.TorusGeometry(2.58,.14,8,24),mats.curbBlack);
-    lip.rotation.x=Math.PI/2;lip.position.y=4.24;group.add(lip);
+    const bucket=new THREE.Mesh(
+      new THREE.CylinderGeometry(2.25,2.08,3.6,16),mats.curbYellow);
+    bucket.position.y=1.8;bucket.castShadow=true;group.add(bucket);
+    const lip=new THREE.Mesh(new THREE.TorusGeometry(2.23,.12,7,24),mats.curbBlack);
+    lip.rotation.x=Math.PI/2;lip.position.y=3.62;group.add(lip);
+    const inner=new THREE.Mesh(
+      new THREE.CircleGeometry(2.05,20),mats.black);
+    inner.rotation.x=-Math.PI/2;inner.position.y=3.61;group.add(inner);
     scene.add(group);
   }
   makeGate(STARTLINE-12,'START');
