@@ -709,12 +709,26 @@ function positionModels(dt){
   }
 }
 const focus=new THREE.Vector3(),target=new THREE.Vector3();
+// Camera tuned for a close, elevated rear-three-quarter RC arcade view.
+// Orthographic projection preserves the isometric model proportions while
+// a rotating track-relative follow offset reveals the truck's back and side.
+const cameraConfig={
+  side:18.5,
+  behind:26,
+  elevation:39,
+  lookAhead:9.5,
+  lateralFollow:.78,
+  followDamping:4.3,
+  focusDamping:5.1
+};
 function viewport(){
   if(!camera||!renderer)return;
-  const aspect=innerWidth/innerHeight;
+  const aspect=innerWidth/Math.max(1,innerHeight);
+  // Closer crop than the old aerial view, but still fits the whole road
+  // on portrait phones. Keep the explicit overview as a separate option.
   const height=game.camera==='overview'?
     (aspect<.65?310:aspect<1?270:210):
-    (aspect<.65?88:aspect<1?80:67);
+    (aspect<.65?61:aspect<1?54:47);
   camera.top=height*.5;camera.bottom=-height*.5;
   camera.left=-height*aspect*.5;camera.right=height*aspect*.5;
   camera.updateProjectionMatrix();
@@ -726,20 +740,29 @@ function updateCamera(dt){
     look=new THREE.Vector3(61,1,95);
     desire=new THREE.Vector3(129,176,-12);
   }else{
-    const ahead=point(Math.min(END,player.s+17));
-    const tangent=point(player.s).angle;
+    // Favor the track direction so tight steering doesn't whip the view.
+    // A little vehicle heading influences the rear corner perspective.
+    const road=point(player.s);
+    const driverBias=clamp(modAngle(player.heading-road.angle),-.48,.48)*.16;
+    const tangent=road.angle+driverBias;
     const rightX=Math.cos(tangent),rightZ=-Math.sin(tangent);
     const forwardX=Math.sin(tangent),forwardZ=Math.cos(tangent);
-    look=new THREE.Vector3(ahead.x+player.d*rightX*.58,1.4,ahead.z+player.d*rightZ*.58);
+    const lead=Math.min(END,player.s+cameraConfig.lookAhead+player.speed*.10);
+    const focusPoint=position(lead,clamp(player.d,-HALF,HALF)*cameraConfig.lateralFollow);
+    look=new THREE.Vector3(
+      focusPoint.x,focusPoint.y+1.6,focusPoint.z
+    );
+    const altitude=player.grounded?0:clamp(player.y-surfaceHeight(player.s,player.d),0,8);
     desire=new THREE.Vector3(
-      player.x-rightX*31-forwardX*35,
-      player.y+(mobile?78:72),
-      player.z-rightZ*31-forwardZ*35
+      player.x-rightX*cameraConfig.side-forwardX*cameraConfig.behind,
+      player.y+cameraConfig.elevation+altitude*.08,
+      player.z-rightZ*cameraConfig.side-forwardZ*cameraConfig.behind
     );
   }
-  const f=1-Math.exp(-(game.mode==='intro'?2.2:4.6)*Math.max(dt,.001));
+  const t=Math.max(dt,.001);
+  const f=1-Math.exp(-(game.mode==='intro'?2.2:cameraConfig.followDamping)*t);
   camera.position.lerp(desire,f);
-  target.lerp(look,1-Math.exp(-5*Math.max(dt,.001)));
+  target.lerp(look,1-Math.exp(-cameraConfig.focusDamping*t));
   if(game.shake>0){
     camera.position.x+=(Math.random()-.5)*game.shake*.13;
     game.shake=Math.max(0,game.shake-dt*2.1);
@@ -868,10 +891,11 @@ function handleKey(e,isDown){
 }
 function toggleView(){
   game.camera=game.camera==='follow'?'overview':'follow';
-  ui.camera.textContent=game.camera==='follow'?'OVERVIEW':'FOLLOW CAR';
+  ui.camera.textContent=game.camera==='follow'?'OVERVIEW':'REAR ISO';
+  ui.camera.setAttribute('aria-label',game.camera==='follow'?'Switch to entire sector overview':'Return to close rear-quarter isometric camera');
   ui.camera.classList.toggle('active',game.camera==='overview');
   viewport();
-  toast(game.camera==='overview'?'COMPLETE QUARTER OVERVIEW':'AERIAL FOLLOW CAMERA');
+  toast(game.camera==='overview'?'COMPLETE QUARTER OVERVIEW':'CLOSE REAR-QUARTER ISO');
 }
 document.addEventListener('keydown',e=>handleKey(e,true),{passive:false});
 document.addEventListener('keyup',e=>handleKey(e,false),{passive:false});
