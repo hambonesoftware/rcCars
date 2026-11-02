@@ -409,8 +409,8 @@ export function createMiniatureWorld({
   // The plywood edge frames the scenery like a real exhibition table.
   // It is BELOW road level; racing remains unchanged.
   const board={
-    minX:bounds.minX-65,maxX:bounds.maxX+65,
-    minZ:bounds.minZ-65,maxZ:bounds.maxZ+65
+    minX:bounds.minX-105,maxX:bounds.maxX+105,
+    minZ:bounds.minZ-105,maxZ:bounds.maxZ+105
   };
   const centerX=(board.minX+board.maxX)*.5;
   const centerZ=(board.minZ+board.maxZ)*.5;
