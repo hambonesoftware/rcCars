@@ -109,7 +109,7 @@ const rollers=[
   {start:SECTOR_4_RETURN_END+10,end:SECTOR_4_RETURN_END+21,height:.44}
 ];
 const controls={left:false,right:false,accel:false,brake:false,boost:false,leanBack:false,leanForward:false};
-const game={mode:'intro',time:0,countdown:3.4,camera:'follow',toastUntil:0,shake:0,muted:false,split1:null,split2:null,split3:null,lap:1,lapSplits:[]};
+const game={mode:'intro',time:0,countdown:3.4,camera:'follow',toastUntil:0,shake:0,muted:false,split1:null,split2:null,split3:null,lap:1,lapSplits:[],lapStartTime:0,nextCheckpoint:0,checkpoints:[],bestLap:null};
 const player={
   mesh:null,x:0,y:0,z:0,s:7,d:-3.35,heading:0,speed:0,
   vy:0,grounded:true,airtime:0,pitch:0,roll:0,
@@ -1054,7 +1054,7 @@ function setup(){
       {color:'#65c654',name:'GREEN',s:12,d:3.35,cruise:13.9*RACE_SPEED_MULTIPLIER,seed:2.9},
       {color:'#4e83d9',name:'BLUE',s:7,d:3.35,cruise:13.5*RACE_SPEED_MULTIPLIER,seed:4.1}
     ];
-    ai=rivals.map(data=>({...data,mesh:makeRCTrophyTruck(THREE,data.color),speed:0,done:null}));
+    ai=rivals.map(data=>({...data,mesh:makeRCTrophyTruck(THREE,data.color),speed:0,done:null,lap:1}));
     for(const rival of ai){
       scene.add(rival.mesh);
       rivalShadows.push(makeShadow());
@@ -1074,13 +1074,16 @@ function reset(start){
     vy:0,grounded:true,airtime:0,pitch:0,roll:0,
     heat:0,overheated:false,collisionCooldown:0,launchConsumed:false
   });
-  for(const a of ai){a.s=a.seed===4.1?7:12;a.speed=0;a.done=null;}
+  for(const a of ai){a.s=a.seed===4.1?7:12;a.speed=0;a.done=null;a.lap=1;}
   for(const k in controls)controls[k]=false;
   document.querySelectorAll('[data-key]').forEach(b=>b.classList.remove('pressed'));
   ui.results.classList.add('hidden');
   ui.pauseOverlay.classList.add('hidden');
   ui.intro.classList.toggle('hidden',start);
-  game.time=0;game.countdown=3.45;game.split1=null;
+  game.time=0;game.countdown=3.45;
+  game.split1=null;game.split2=null;game.split3=null;
+  game.lap=1;game.lapSplits=[];game.lapStartTime=0;
+  game.nextCheckpoint=0;game.checkpoints=[];
   game.mode=start?'countdown':'intro';
   ui.marker.textContent=start?'3':'';
   ui.flash.classList.remove('show');
@@ -1164,7 +1167,8 @@ function tickPlayer(dt){
   // At double speed the truck covers twice the road each second. Follow
   // the approaching tangent and double turn authority to retain the same
   // approximate metres-per-steering-input around the banked corner.
-  const guide=point(Math.min(END,player.s+clamp(player.speed*.19,3,8)));
+  const guideS=Math.min(END,player.s+clamp(player.speed*.19,3,8));
+  const guide=point(guideS);
   const align=modAngle(guide.angle-player.heading);
   const assist=offRoad?.64:3.7;
   player.heading+=align*assist*dt;
@@ -1248,26 +1252,46 @@ function tickPlayer(dt){
       player.airtime=0;
     }
   }
-  const onBend=
-    (player.s>STRAIGHT&&player.s<STRAIGHT+TURN)||
-    (player.s>SECTOR_2_RIGHT_START&&player.s<SECTOR_2_RIGHT_END);
+  const onBend=[
+    [STRAIGHT,STRAIGHT+TURN],
+    [SECTOR_2_RIGHT_START,SECTOR_2_RIGHT_END],
+    [SECTOR_3_EAST_END,SECTOR_3_RIGHT_END],
+    [SECTOR_3_SOUTH_END,SECTOR_3_END],
+    [SECTOR_4_WEST_END,SECTOR_4_RETURN_END]
+  ].some(([a,b])=>player.s>a&&player.s<b);
   const onLeft=player.s>SECTOR_2_LEFT_START&&player.s<SECTOR_2_LEFT_END;
   player.roll=THREE.MathUtils.damp(player.roll,
     -steer*.08+(onBend?.07:0)-(onLeft?.07:0),5,dt);
-  if(player.s>=SECTOR_1_END&&game.split1===null){
-    game.split1=game.time;
-    toast('SECTOR 01 COMPLETE! · '+timeString(game.time),2.25);
-    sound(1080,.17,'triangle');
+  const checkpoints=[SECTOR_1_END,SECTOR_2_END,SECTOR_3_END];
+  while(game.nextCheckpoint<checkpoints.length&&player.s>=checkpoints[game.nextCheckpoint]){
+    const i=game.nextCheckpoint++;
+    const split=game.time-game.lapStartTime;
+    game.checkpoints.push(split);
+    if(game.lap===1){
+      if(i===0)game.split1=split;
+      if(i===1)game.split2=split;
+      if(i===2)game.split3=split;
+    }
+    toast('LAP '+game.lap+' · SECTOR '+String(i+1).padStart(2,'0')+' COMPLETE!',1.25);
+    sound(950+i*85,.13,'triangle');
   }
-  if(player.s>=END-3&&Math.abs(player.d)<HALF+4)finishSector();
+  if(player.s>=END-3&&Math.abs(player.d)<HALF+4)completeLap();
 }
 function tickAI(dt){
   for(const rival of ai){
     if(rival.done!==null)continue;
     const speed=rival.cruise+Math.sin(game.time*.42+rival.seed)*2.0;
     rival.speed=THREE.MathUtils.damp(rival.speed,speed,3.6,dt);
-    rival.s=Math.min(END,rival.s+rival.speed*dt);
-    if(rival.s>=END)rival.done=game.time;
+    rival.s+=rival.speed*dt;
+    if(rival.s>=END-3){
+      if(rival.lap>=LAPS){
+        rival.s=END-3;
+        rival.done=game.time;
+      }else{
+        rival.lap++;
+        rival.s=Math.max(0,rival.s-(END-3));
+      }
+    }
   }
 }
 function positionModels(dt){
@@ -1452,18 +1476,54 @@ function updateHUD(){
   ui.heatLabel.style.color=player.overheated?'#ff7c62':'#e5fd7c';
   drawMap();
 }
+function racerProgress(racer){
+  return (racer.lap-1)*END+racer.s;
+}
+function completeLap(){
+  if(game.mode!=='racing')return;
+  const lapTime=game.time-game.lapStartTime;
+  const sectorTimes=game.checkpoints.slice();
+  game.lapSplits.push({lap:game.lap,time:lapTime,sectors:sectorTimes});
+  if(game.bestLap===null||lapTime<game.bestLap)game.bestLap=lapTime;
+  if(game.lap>=LAPS){
+    finishSector();
+    return;
+  }
+  game.lap++;
+  game.lapStartTime=game.time;
+  game.nextCheckpoint=0;
+  game.checkpoints=[];
+  // The course centerline is physically closed: relocate the remaining
+  // ~3 units from the finish trigger to an equivalent position just beyond
+  // the checkered start, avoiding the projection ambiguity at 0/END.
+  const lane=clamp(player.d,-HALF+1,HALF-1);
+  const p=position(1.4,lane);
+  player.s=1.4;player.d=lane;player.x=p.x;player.z=p.z;
+  player.y=p.y+.045;player.vy=0;player.grounded=true;player.airtime=0;
+  player.pitch=0;
+  player.heading=0;
+  toast('LAP 1 COMPLETE · LAP 2 GO!',2.3);
+  sound(1060,.28,'triangle');
+}
 function finishSector(){
   if(game.mode!=='racing')return;
-  const position=1+ai.filter(a=>a.s>player.s).length;
+  const finishProgress=END*LAPS;
+  const position=1+ai.filter(a=>racerProgress(a)>finishProgress-.5).length;
   game.mode='finished';
   ui.results.classList.remove('hidden');
   ui.resultTime.textContent=timeString(game.time);
   ui.resultPlace.textContent=position+' / 4';
   if(ui.resultSplit)ui.resultSplit.textContent=
-    game.split1!==null?timeString(game.split1):'--:--.--';
+    game.lapSplits.length?timeString(game.lapSplits[0].time):'--:--.--';
+  if(ui.resultLap2)ui.resultLap2.textContent=
+    game.lapSplits.length>1?timeString(game.lapSplits[1].time):'--:--.--';
+  if(ui.resultBest)ui.resultBest.textContent=
+    game.bestLap===null?'--:--.--':timeString(game.bestLap);
   ui.marker.textContent='';
+  toast(position===1?'🏆 FIRST PLACE!':'🏁 FINISH LINE!',2);
   sound(position===1?970:640,.25,'triangle');
 }
+
 function pause(){
   if(game.mode!=='racing')return;
   game.mode='paused';
