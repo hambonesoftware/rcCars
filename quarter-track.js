@@ -13,7 +13,11 @@ const ui={
 };
 const mobile=matchMedia('(pointer:coarse)').matches;
 const R=64,STRAIGHT=85,TURN=R*Math.PI*.5,EXIT=82,END=STRAIGHT+TURN+EXIT;
-const HALF=9.1,MAX_SPEED=21.6,GRAVITY=19.5;
+// Double the previous race speed consistently for player and rivals.
+// All values are world-units/second; the speedometer is arcade-scaled.
+const RACE_SPEED_MULTIPLIER=2;
+const HALF=9.1,CRUISE_SPEED=15.4*RACE_SPEED_MULTIPLIER;
+const MAX_SPEED=21.6*RACE_SPEED_MULTIPLIER,GRAVITY=19.5;
 const STARTLINE=19,FINAL_GATE=END-3;
 const ramp={start:58,end:72,height:2.15};
 const rollers=[{start:25,end:35,height:.44},{start:40,end:51,height:.55},
@@ -873,9 +877,9 @@ function setup(){
     scene.add(player.mesh);
     shadow=makeShadow();
     const rivals=[
-      {color:'#d95643',name:'RED',s:12,d:-3.35,cruise:13.0,seed:1.7},
-      {color:'#65c654',name:'GREEN',s:12,d:3.35,cruise:13.9,seed:2.9},
-      {color:'#4e83d9',name:'BLUE',s:7,d:3.35,cruise:13.5,seed:4.1}
+      {color:'#d95643',name:'RED',s:12,d:-3.35,cruise:13.0*RACE_SPEED_MULTIPLIER,seed:1.7},
+      {color:'#65c654',name:'GREEN',s:12,d:3.35,cruise:13.9*RACE_SPEED_MULTIPLIER,seed:2.9},
+      {color:'#4e83d9',name:'BLUE',s:7,d:3.35,cruise:13.5*RACE_SPEED_MULTIPLIER,seed:4.1}
     ];
     ai=rivals.map(data=>({...data,mesh:makeRCTrophyTruck(THREE,data.color),speed:0,done:null}));
     for(const rival of ai){
@@ -975,19 +979,24 @@ function tickPlayer(dt){
   }
   if(player.overheated&&player.heat<.33)player.overheated=false;
   const offRoad=Math.abs(player.d)>HALF-.65;
-  const target=(boosting?MAX_SPEED:15.4)*(offRoad?.58:1);
-  const accel=throttle?8.0:5.3;
-  if(throttle)player.speed=Math.min(target,player.speed+accel*dt+(boosting?5.5*dt:0));
-  else player.speed=Math.max(0,player.speed-6*dt);
-  if(player.speed>target)player.speed=Math.max(target,player.speed-(offRoad?10:3.5)*dt);
-  if(controls.brake)player.speed=Math.max(0,player.speed-20*dt);
-  if(!player.grounded)player.speed=Math.max(3,player.speed-.5*dt);
+  const target=(boosting?MAX_SPEED:CRUISE_SPEED)*(offRoad?.58:1);
+  const accel=throttle?16.0:10.6;
+  if(throttle)player.speed=Math.min(target,player.speed+accel*dt+(boosting?11*dt:0));
+  else player.speed=Math.max(0,player.speed-12*dt);
+  if(player.speed>target)player.speed=Math.max(target,player.speed-(offRoad?20:7)*dt);
+  if(controls.brake)player.speed=Math.max(0,player.speed-40*dt);
+  if(!player.grounded)player.speed=Math.max(6,player.speed-1*dt);
   // Free-steering world-space motion. A modest heading assist makes the
   // banked bend approachable on touch without locking the car to the spline.
-  const align=modAngle(point(player.s).angle-player.heading);
-  const assist=offRoad?.32:1.85;
+  // At double speed the truck covers twice the road each second. Follow
+  // the approaching tangent and double turn authority to retain the same
+  // approximate metres-per-steering-input around the banked corner.
+  const guide=point(Math.min(END,player.s+clamp(player.speed*.19,3,8)));
+  const align=modAngle(guide.angle-player.heading);
+  const assist=offRoad?.64:3.7;
   player.heading+=align*assist*dt;
-  const steerPower=(.55+Math.min(1,player.speed/12)*.8)*(player.grounded?1:.42);
+  const steerPower=(.55+Math.min(1,player.speed/24)*.8)*
+    (player.grounded?1:.42)*RACE_SPEED_MULTIPLIER;
   player.heading+=steer*steerPower*dt;
   player.heading=modAngle(player.heading);
   const lastS=player.s;
@@ -998,7 +1007,7 @@ function tickPlayer(dt){
   if(Math.abs(player.d)>HALF+18){
     const safe=position(Math.max(5,player.s-3),0);
     player.x=safe.x;player.z=safe.z;
-    player.heading=safe.angle;player.speed=6;
+    player.heading=safe.angle;player.speed=12;
     player.s=Math.max(5,player.s-3);player.d=0;
     player.grounded=true;player.vy=0;player.airtime=0;player.y=safe.y+.04;
     game.time+=2.0;
@@ -1031,7 +1040,9 @@ function tickPlayer(dt){
   if(player.grounded){
     if(lastS<=ramp.end&&player.s>ramp.end){
       player.grounded=false;
-      player.vy=Math.max(6.0,player.speed*.44);
+      // Preserve a readable arcade jump rather than launching halfway
+      // across the banked turn as velocity doubles.
+      player.vy=clamp(player.speed*.24,6,9.2);
       player.airtime=.015;
       player.pitch=-.2;
       toast('↗ BIG AIR!');
@@ -1056,7 +1067,7 @@ function tickPlayer(dt){
         toast('ROUGH LANDING!');
         game.shake=.45;
       }else{
-        player.speed=Math.min(MAX_SPEED,player.speed+1.25);
+        player.speed=Math.min(MAX_SPEED,player.speed+2.5);
         toast('CLEAN LANDING · +SPEED!');
         sound(850,.12,'triangle');
       }
@@ -1070,8 +1081,8 @@ function tickPlayer(dt){
 function tickAI(dt){
   for(const rival of ai){
     if(rival.done!==null)continue;
-    const speed=rival.cruise+Math.sin(game.time*.42+rival.seed)*1.0;
-    rival.speed=THREE.MathUtils.damp(rival.speed,speed,1.8,dt);
+    const speed=rival.cruise+Math.sin(game.time*.42+rival.seed)*2.0;
+    rival.speed=THREE.MathUtils.damp(rival.speed,speed,3.6,dt);
     rival.s=Math.min(END,rival.s+rival.speed*dt);
     if(rival.s>=END)rival.done=game.time;
   }
@@ -1096,8 +1107,8 @@ function positionModels(dt){
     const lane=rival.d+Math.sin(game.time*.87+rival.seed)*.25;
     const p=position(rival.s,lane);
     let air=0;
-    if(rival.s>ramp.end&&rival.s<ramp.end+15){
-      air=Math.sin((rival.s-ramp.end)/15*Math.PI)*1.6;
+    if(rival.s>ramp.end&&rival.s<ramp.end+26){
+      air=Math.sin((rival.s-ramp.end)/26*Math.PI)*2.2;
     }
     rival.mesh.position.set(p.x,p.y+.035+air,p.z);
     rival.mesh.rotation.order='YXZ';
