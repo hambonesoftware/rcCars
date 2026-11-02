@@ -1011,7 +1011,7 @@ function reset(start){
   ui.results.classList.add('hidden');
   ui.pauseOverlay.classList.add('hidden');
   ui.intro.classList.toggle('hidden',start);
-  game.time=0;game.countdown=3.45;
+  game.time=0;game.countdown=3.45;game.split1=null;
   game.mode=start?'countdown':'intro';
   ui.marker.textContent=start?'3':'';
   ui.flash.classList.remove('show');
@@ -1179,7 +1179,17 @@ function tickPlayer(dt){
       player.airtime=0;
     }
   }
-  player.roll=THREE.MathUtils.damp(player.roll,-steer*.08+(player.s>STRAIGHT&&player.s<STRAIGHT+TURN?.07:0),5,dt);
+  const onBend=
+    (player.s>STRAIGHT&&player.s<STRAIGHT+TURN)||
+    (player.s>SECTOR_2_RIGHT_START&&player.s<SECTOR_2_RIGHT_END);
+  const onLeft=player.s>SECTOR_2_LEFT_START&&player.s<SECTOR_2_LEFT_END;
+  player.roll=THREE.MathUtils.damp(player.roll,
+    -steer*.08+(onBend?.07:0)-(onLeft?.07:0),5,dt);
+  if(player.s>=SECTOR_1_END&&game.split1===null){
+    game.split1=game.time;
+    toast('SECTOR 01 COMPLETE! · '+timeString(game.time),2.25);
+    sound(1080,.17,'triangle');
+  }
   if(player.s>=END-3&&Math.abs(player.d)<HALF+4)finishSector();
 }
 function tickAI(dt){
@@ -1220,7 +1230,10 @@ function positionModels(dt){
     rival.mesh.rotation.order='YXZ';
     rival.mesh.rotation.y=p.angle+Math.sin(game.time*.7+rival.seed)*.025;
     rival.mesh.rotation.x=air>0?-.12:0;
-    rival.mesh.rotation.z=rival.s>STRAIGHT&&rival.s<STRAIGHT+TURN?.07:0;
+    const rivalRight=(rival.s>STRAIGHT&&rival.s<STRAIGHT+TURN)||
+      (rival.s>SECTOR_2_RIGHT_START&&rival.s<SECTOR_2_RIGHT_END);
+    const rivalLeft=rival.s>SECTOR_2_LEFT_START&&rival.s<SECTOR_2_LEFT_END;
+    rival.mesh.rotation.z=(rivalRight?.07:0)-(rivalLeft?.07:0);
     for(const wheel of rival.mesh.userData.wheels)wheel.rotation.x+=dt*rival.speed*2.25;
     const shade=rivalShadows[i];
     if(shade){
@@ -1298,34 +1311,58 @@ function updateCamera(dt){
   sun.position.set(player.x-52,player.y+65,player.z-60);
   sun.target.position.set(player.x,player.y,player.z);
 }
+// A schematic overview that automatically fits the full half-course
+// rather than clipping when Sector 02 extends outside the old quarter map.
+const mapBounds=(()=>{
+  const x=[],z=[];
+  for(let i=0;i<=400;i++){
+    const p=point(i/400*END);
+    x.push(p.x);z.push(p.z);
+  }
+  return {minX:Math.min(...x)-12,maxX:Math.max(...x)+12,
+    minZ:Math.min(...z)-12,maxZ:Math.max(...z)+12};
+})();
 function drawMap(){
   const canvas=ui.map,ctx=canvas.getContext('2d');
   if(!ctx)return;
   const w=canvas.width,h=canvas.height;
   ctx.clearRect(0,0,w,h);
   ctx.fillStyle='#193d3a';ctx.fillRect(0,0,w,h);
-  const pixel=s=>{const p=point(s);return {x:12+p.x*1.48,y:120-p.z*.69};};
+  const px=p=>({
+    x:12+(p.x-mapBounds.minX)/(mapBounds.maxX-mapBounds.minX)*(w-24),
+    y:h-12-(p.z-mapBounds.minZ)/(mapBounds.maxZ-mapBounds.minZ)*(h-24)
+  });
+  const pixel=s=>px(point(s));
   ctx.beginPath();
-  for(let i=0;i<=160;i++){
-    const q=pixel(END*i/160);
+  for(let i=0;i<=260;i++){
+    const q=pixel(END*i/260);
     if(i===0)ctx.moveTo(q.x,q.y);else ctx.lineTo(q.x,q.y);
   }
   ctx.lineJoin='round';ctx.lineCap='round';
-  ctx.strokeStyle='#b3aaa0';ctx.lineWidth=13;ctx.stroke();
-  ctx.strokeStyle='#727675';ctx.lineWidth=10;ctx.stroke();
-  ctx.strokeStyle='#e3cf7c';ctx.lineWidth=1.0;ctx.setLineDash([3,5]);ctx.stroke();ctx.setLineDash([]);
-  const dot=(s,d,color,r)=>{
-    const q=pixel(s),p=point(s);
-    const px=q.x+Math.cos(p.angle)*d*.75;
-    const py=q.y+Math.sin(p.angle)*d*.4;
-    ctx.fillStyle='#142d33';ctx.beginPath();ctx.arc(px,py,r+1.5,0,Math.PI*2);ctx.fill();
-    ctx.fillStyle=color;ctx.beginPath();ctx.arc(px,py,r,0,Math.PI*2);ctx.fill();
-  };
-  for(const rival of ai)dot(rival.s,rival.d,rival.color,3.6);
-  dot(player.s,player.d,'#e5fd7c',4.5);
+  ctx.strokeStyle='#b3aaa0';ctx.lineWidth=12;ctx.stroke();
+  ctx.strokeStyle='#727675';ctx.lineWidth=9;ctx.stroke();
+  ctx.strokeStyle='#e3cf7c';ctx.lineWidth=1.0;ctx.setLineDash([3,5]);ctx.stroke();
+  ctx.setLineDash([]);
+  const checkpoint=pixel(SECTOR_1_END);
+  ctx.fillStyle='#132b30';
+  ctx.fillRect(checkpoint.x-3,checkpoint.y-6,6,12);
   ctx.fillStyle='#e5fd7c';
-  ctx.font='bold 10px Arial';ctx.fillText('S',7,116);
-  ctx.fillText('Q1',232,21);
+  ctx.fillRect(checkpoint.x-2,checkpoint.y-5,4,10);
+  const dot=(s,d,color,r)=>{
+    const p=position(s,d);
+    const q=px(p);
+    ctx.fillStyle='#142d33';
+    ctx.beginPath();ctx.arc(q.x,q.y,r+1.4,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle=color;
+    ctx.beginPath();ctx.arc(q.x,q.y,r,0,Math.PI*2);ctx.fill();
+  };
+  for(const rival of ai)dot(rival.s,rival.d,rival.color,3.5);
+  dot(player.s,player.d,'#e5fd7c',4.5);
+  ctx.font='bold 10px Arial';
+  ctx.fillStyle='#e5fd7c';
+  const start=pixel(0),end=pixel(END);
+  ctx.fillText('START',Math.max(4,start.x-2),Math.min(h-4,start.y-6));
+  ctx.fillText('½',Math.max(4,end.x-5),Math.max(10,end.y+13));
 }
 function updateHUD(){
   ui.speed.textContent=Math.round(player.speed*5.1);
@@ -1333,6 +1370,7 @@ function updateHUD(){
   const position=1+ai.filter(a=>a.s>player.s).length;
   ui.place.textContent=position+' / 4';
   ui.progress.style.width=(clamp(player.s/END,0,1)*100).toFixed(1)+'%';
+  ui.sector.textContent=(player.s>=SECTOR_1_END?'02':'01')+' / 04';
   ui.heat.style.width=(player.heat*100).toFixed(1)+'%';
   ui.heatLabel.textContent=player.overheated?'OVERHEATED':player.heat>.75?'HOT':controls.boost?'BOOSTING':'COOL';
   ui.heatLabel.style.color=player.overheated?'#ff7c62':'#e5fd7c';
@@ -1345,6 +1383,8 @@ function finishSector(){
   ui.results.classList.remove('hidden');
   ui.resultTime.textContent=timeString(game.time);
   ui.resultPlace.textContent=position+' / 4';
+  if(ui.resultSplit)ui.resultSplit.textContent=
+    game.split1!==null?timeString(game.split1):'--:--.--';
   ui.marker.textContent='';
   sound(position===1?970:640,.25,'triangle');
 }
