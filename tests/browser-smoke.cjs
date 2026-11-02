@@ -108,6 +108,21 @@ async function smoke(){
             JSON.stringify(result));
         }
         console.log('PASS course startup',id,JSON.stringify(result));
+        // Archive an unobstructed overview of each miniature model table.
+        // These screenshots are generated in the same real Chromium run
+        // used for startup QA, not mockups.
+        const screenshotDir=path.join(ROOT,'tests','screenshots');
+        fs.mkdirSync(screenshotDir,{recursive:true});
+        await page.locator('#intro').evaluate(element=>{
+          element.style.visibility='hidden';
+        });
+        await page.screenshot({
+          path:path.join(screenshotDir,id+'.png'),
+          animations:'disabled'
+        });
+        await page.locator('#intro').evaluate(element=>{
+          element.style.visibility='';
+        });
         if(id==='garage'){
           await page.locator('#start').click();
           const menuHidden=await page.locator('#intro')
