@@ -97,13 +97,15 @@ async function smoke(){
           people:Number(document.body.dataset.miniaturePeople||0),
           railTies:Number(document.body.dataset.miniatureRailTies||0),
           trainCars:Number(document.body.dataset.miniatureTrainCars||0),
+          landmarks:Number(document.body.dataset.miniatureLandmarks||0),
           districts:(document.body.dataset.miniatureDistricts||'').split(' / '),
           tiltShift:!!document.querySelector('#tiltshift .lens-far')
         }));
         if(!result.canvas||!result.intro||
           !result.course||!result.title.toUpperCase().includes(result.course.toUpperCase())||
           result.buildings<20||result.people<8||result.railTies<20||
-          result.trainCars<2||result.districts.length!==4||!result.tiltShift){
+          result.trainCars<2||result.landmarks!==1||
+          result.districts.length!==4||!result.tiltShift){
           throw new Error('Miniature railroad world failed construction: '+
             JSON.stringify(result));
         }
