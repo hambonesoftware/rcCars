@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
+  <meta name="theme-color" content="#102b32"/>
+  <meta name="description" content="Micro Mayhem: Backyard Blitz. Tiny RC cars, enormous backyard, big-air arcade racing."/>
+  <title>Micro Mayhem — Backyard Blitz</title>
+  <link rel="stylesheet" href="./style.css"/>
+</head>
+<body>
+  <div id="game" aria-label="3D miniature RC racing game"></div>
+  <div id="vignette" aria-hidden="true"></div>
+  <div id="toast" role="status" aria-live="polite"></div>
+  <section id="menu" class="overlay" aria-label="Main menu">
+    <div class="menu-panel">
+      <div class="eyebrow"><span class="status-dot"></span> HAMBONE SOFTWARE <span class="dot-separator">/</span> ARCADE GARAGE</div>
+      <h1>MICRO<br/><span>MAYHEM</span></h1>
+      <div class="title-line"><span class="pill">BACKYARD BLITZ</span><span class="edition">VOL. 01 · THE BIG LITTLE RACE</span></div>
+      <p class="lead">Small wheels. Huge jumps. An absolutely unreasonable backyard.</p>
+      <div class="feature-list"><span>⚡ TURBO &amp; HEAT</span><span>↗ BIG AIR</span><span>🏁 4-WAY RACING</span></div>
+      <button id="play" class="big-button"><span>START YOUR ENGINES</span><span class="button-arrow">↗</span></button>
+      <p class="menu-hint">W / ↑ accelerate · A D / ← → steer · S / ↓ brake · SHIFT boost · Q E lean in air</p>
+      <p class="menu-hint touch-hint">On touch screens, use the on-screen controls. Auto-throttle is on.</p>
+    </div>
+    <div class="menu-side"><div class="vertical-tag">01 / DIY RACE SERIES</div><div class="large-number">01</div><div class="side-subtitle">THE BACKYARD<br/>IS YOUR TRACK.</div></div>
+  </section>
+  <section id="hud" class="hidden" aria-label="Race heads-up display">
+    <div class="hud-top">
+      <div class="hud-tile position-tile"><div class="hud-label">POSITION</div><div class="hud-number"><span id="place">4</span><small>/4</small></div></div>
+      <div class="hud-tile time-tile"><div class="hud-label">RACE TIME</div><div id="timer" class="timer-text">00:00.00</div><div class="tiny-meta" id="best-hud">BEST --:--.--</div></div>
+      <div class="hud-tile section-tile"><div class="hud-label">ON THE COURSE</div><div id="section" class="section-text">START LINE</div><div class="progress-track"><div id="progress" class="progress-fill"></div></div></div>
+      <div class="hud-buttons"><button id="sound" class="small-button" aria-label="Toggle sound">♫</button><button id="pause" class="small-button" aria-label="Pause game">Ⅱ</button></div>
+    </div>
+    <div id="countdown" class="countdown" aria-live="polite"></div>
+    <div class="race-bottom">
+      <div class="speedometer"><span id="speed">0</span><div><strong>KM/H</strong><small>RC SCALE</small></div></div>
+      <div class="race-right">
+        <div class="heat-label"><span>BOOST TEMP</span><span id="heat-label">COOL</span></div>
+        <div class="heat-track"><div id="heat-fill"></div></div>
+        <div class="boost-instruction">SHIFT / ⚡ HOLD TO BOOST <span>·</span> RELEASE TO COOL</div>
+      </div>
+    </div>
+    <div id="touch-controls" aria-label="Touch race controls">
+      <div class="touch-steer"><button class="touch-button steer" data-control="left" aria-label="Steer left">◀</button><button class="touch-button steer" data-control="right" aria-label="Steer right">▶</button></div>
+      <div class="touch-actions"><button class="touch-button brake" data-control="brake" aria-label="Brake">BRAKE</button><button class="touch-button boost" data-control="boost" aria-label="Turbo boost">⚡<span>BOOST</span></button></div>
+    </div>
+  </section>
+  <section id="pause-screen" class="overlay dialog-overlay hidden" aria-label="Paused">
+    <div class="dialog"><div class="eyebrow">PIT STOP</div><h2>PAUSED.</h2><p>Catch your breath. The yard isn't going anywhere.</p><button id="resume" class="big-button">BACK TO THE RACE ↗</button><button id="restart-pause" class="text-button">RESTART RACE</button><button id="quit-pause" class="text-button">MAIN MENU</button></div>
+  </section>
+  <section id="finish-screen" class="overlay dialog-overlay hidden" aria-label="Race result">
+    <div class="dialog results"><div class="eyebrow">RACE COMPLETE <span>·</span> BACKYARD BLITZ</div><h2 id="finish-title">NICE RUN!</h2><div id="medal" class="medal">★ ★ ★</div>
+      <div class="result-row"><span>YOUR TIME</span><strong id="finish-time">00:00.00</strong></div>
+      <div class="result-row"><span>FINISH POSITION</span><strong id="finish-place">1ST / 4</strong></div>
+      <div class="result-row"><span>PERSONAL BEST</span><strong id="finish-best">00:00.00</strong></div>
+      <div id="new-best" class="new-best hidden">✦ NEW PERSONAL BEST!</div>
+      <button id="again" class="big-button">RACE AGAIN ↗</button><button id="quit-finish" class="text-button">BACK TO GARAGE</button>
+    </div>
+  </section>
+  <div id="fallback" class="hidden">3D graphics couldn't start. Please open in an up-to-date browser with WebGL and an internet connection.</div>
+  <script type="module" src="./game.js"></script>
+</body>
+</html>
