@@ -9,7 +9,7 @@ const ui={
   marker:$('marker'),flash:$('flash'),speed:$('speed'),time:$('time'),
   place:$('place'),sector:$('sector'),heat:$('heat'),heatLabel:$('heat-label'),
   progress:$('progress-fill'),map:$('map'),resultTime:$('result-time'),
-  resultPlace:$('result-place')
+  resultPlace:$('result-place'),resultSplit:$('result-split')
 };
 const mobile=matchMedia('(pointer:coarse)').matches;
 // Connected centerline definition. Each section starts tangent to the
@@ -1265,18 +1265,25 @@ function viewport(){
   // Closer crop than the old aerial view, but still fits the whole road
   // on portrait phones. Keep the explicit overview as a separate option.
   const height=game.camera==='overview'?
-    (aspect<.65?310:aspect<1?270:210):
+    Math.max(390,400/Math.max(.35,aspect)):
     (aspect<.65?61:aspect<1?54:47);
   camera.top=height*.5;camera.bottom=-height*.5;
   camera.left=-height*aspect*.5;camera.right=height*aspect*.5;
   camera.updateProjectionMatrix();
+  // Full-course overview needs a longer draw distance than close follow.
+  if(scene?.fog){
+    scene.fog.near=game.camera==='overview'?365:165;
+    scene.fog.far=game.camera==='overview'?1100:385;
+  }
   renderer.setSize(innerWidth,innerHeight);
 }
 function updateCamera(dt){
   let desire,look;
   if(game.camera==='overview'||game.mode==='intro'){
-    look=new THREE.Vector3(61,1,95);
-    desire=new THREE.Vector3(129,176,-12);
+    const centerX=(mapBounds.minX+mapBounds.maxX)*.5;
+    const centerZ=(mapBounds.minZ+mapBounds.maxZ)*.5;
+    look=new THREE.Vector3(centerX,1,centerZ);
+    desire=new THREE.Vector3(centerX+118,261,centerZ-101);
   }else{
     // Favor the track direction so tight steering doesn't whip the view.
     // A little vehicle heading influences the rear corner perspective.
