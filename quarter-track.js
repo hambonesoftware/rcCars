@@ -516,17 +516,25 @@ function createHazards(){
   }
 }
 function makeShadow(){
-  const c=document.createElement('canvas');c.width=c.height=64;
+  // A cheap soft occlusion decal beneath each vehicle. The directional
+  // shadow map supplies the long shadow; this supplies tire/body contact.
+  const c=document.createElement('canvas');c.width=c.height=96;
   const ctx=c.getContext('2d');
-  const gr=ctx.createRadialGradient(32,32,2,32,32,31);
-  gr.addColorStop(0,'rgba(0,0,0,.39)');
-  gr.addColorStop(.65,'rgba(0,0,0,.14)');
+  const gr=ctx.createRadialGradient(48,48,3,48,48,46);
+  gr.addColorStop(0,'rgba(0,0,0,.80)');
+  gr.addColorStop(.31,'rgba(0,0,0,.47)');
+  gr.addColorStop(.68,'rgba(0,0,0,.15)');
   gr.addColorStop(1,'rgba(0,0,0,0)');
-  ctx.fillStyle=gr;ctx.fillRect(0,0,64,64);
+  ctx.fillStyle=gr;ctx.fillRect(0,0,96,96);
   const tex=new THREE.CanvasTexture(c);
-  const mesh=new THREE.Mesh(new THREE.PlaneGeometry(3.9,5.8),
-    new THREE.MeshBasicMaterial({map:tex,transparent:true,depthWrite:false}));
+  tex.colorSpace=THREE.SRGBColorSpace;
+  const mesh=new THREE.Mesh(new THREE.PlaneGeometry(4.25,5.3),
+    new THREE.MeshBasicMaterial({
+      map:tex,transparent:true,depthWrite:false,opacity:.62,
+      polygonOffset:true,polygonOffsetFactor:-1
+    }));
   mesh.rotation.x=-Math.PI/2;
+  mesh.renderOrder=3;
   scene.add(mesh);return mesh;
 }
 function setup(){
@@ -535,24 +543,35 @@ function setup(){
     renderer.setPixelRatio(Math.min(devicePixelRatio||1,mobile?1.4:1.8));
     renderer.outputColorSpace=THREE.SRGBColorSpace;
     renderer.toneMapping=THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure=1.35;
-    renderer.shadowMap.enabled=!mobile;
+    renderer.toneMappingExposure=1.09;
+    // The reference uses substantial natural shadow contrast. Enable the
+    // main shadow pass on phones too; desktop earns a finer shadow atlas.
+    renderer.shadowMap.enabled=true;
     renderer.shadowMap.type=THREE.PCFSoftShadowMap;
     renderer.setSize(innerWidth,innerHeight);
     ui.viewport.appendChild(renderer.domElement);
     scene=new THREE.Scene();
-    scene.background=new THREE.Color('#a4c0b1');
-    scene.fog=new THREE.Fog('#a4c0b1',110,310);
+    scene.background=new THREE.Color('#9bb9aa');
+    scene.fog=new THREE.Fog('#9bb9aa',165,385);
+    // Environment reflections give the smooth single-shell clearcoat a
+    // broad daylight highlight, instead of pure, uniformly coloured plastic.
+    scene.environment=createSkyEnvironment();
+    scene.environmentIntensity=mobile?.48:.62;
     camera=new THREE.OrthographicCamera(-70,70,45,-45,.2,700);
-    scene.add(new THREE.HemisphereLight('#eaf4eb','#5b7450',2.3));
-    sun=new THREE.DirectionalLight('#fff2d4',2.45);
-    sun.position.set(-54,90,-12);
-    sun.castShadow=!mobile;
-    sun.shadow.mapSize.set(1024,1024);
-    sun.shadow.camera.left=-68;sun.shadow.camera.right=68;
-    sun.shadow.camera.top=68;sun.shadow.camera.bottom=-68;
-    sun.shadow.camera.near=1;sun.shadow.camera.far=220;
-    sun.shadow.bias=-.0002;
+    scene.add(new THREE.HemisphereLight('#cbdde5','#64735b',1.10));
+    scene.add(new THREE.AmbientLight('#f0e8d7',.12));
+    sun=new THREE.DirectionalLight('#fff0d5',3.15);
+    sun.position.set(-52,65,-60);
+    sun.castShadow=true;
+    const atlasSize=mobile?1024:2048;
+    sun.shadow.mapSize.set(atlasSize,atlasSize);
+    // Tight frustum means much sharper truck and wheel shadows.
+    sun.shadow.camera.left=-51;sun.shadow.camera.right=51;
+    sun.shadow.camera.top=51;sun.shadow.camera.bottom=-51;
+    sun.shadow.camera.near=.5;sun.shadow.camera.far=178;
+    sun.shadow.bias=-.00016;
+    sun.shadow.normalBias=.025;
+    sun.shadow.radius=1.7;
     scene.add(sun);scene.add(sun.target);
     createRoad();
     environment();
@@ -567,7 +586,10 @@ function setup(){
       {color:'#4e83d9',name:'BLUE',s:7,d:3.35,cruise:13.5,seed:4.1}
     ];
     ai=rivals.map(data=>({...data,mesh:makeRCTrophyTruck(THREE,data.color),speed:0,done:null}));
-    for(const rival of ai)scene.add(rival.mesh);
+    for(const rival of ai){
+      scene.add(rival.mesh);
+      rivalShadows.push(makeShadow());
+    }
     reset(false);
     ui.loading.classList.add('hidden');
     requestAnimationFrame(frame);
@@ -771,14 +793,14 @@ function positionModels(dt){
     player.mesh.rotation.z=player.roll;
     for(const wheel of player.mesh.userData.wheels)wheel.rotation.x+=dt*player.speed*2.25;
     const under=position(player.s,player.d);
-    shadow.position.set(player.x,under.y+.035,player.z);
+    shadow.position.set(player.x,under.y+.07,player.z);
     shadow.rotation.z=-player.heading;
     const alt=Math.max(0,player.y-under.y);
     const factor=1+alt*.12;
     shadow.scale.set(factor,factor,factor);
-    shadow.material.opacity=clamp(.33-alt*.026,.08,.33);
+    shadow.material.opacity=clamp(.70-alt*.073,.08,.70);
   }
-  for(const rival of ai){
+  for(const [i,rival] of ai.entries()){
     const lane=rival.d+Math.sin(game.time*.87+rival.seed)*.25;
     const p=position(rival.s,lane);
     let air=0;
@@ -791,6 +813,14 @@ function positionModels(dt){
     rival.mesh.rotation.x=air>0?-.12:0;
     rival.mesh.rotation.z=rival.s>STRAIGHT&&rival.s<STRAIGHT+TURN?.07:0;
     for(const wheel of rival.mesh.userData.wheels)wheel.rotation.x+=dt*rival.speed*2.25;
+    const shade=rivalShadows[i];
+    if(shade){
+      shade.position.set(p.x,p.y+.07,p.z);
+      shade.rotation.z=-p.angle;
+      const sc=1+air*.13;
+      shade.scale.set(sc,sc,sc);
+      shade.material.opacity=clamp(.67-air*.15,.15,.67);
+    }
   }
 }
 const focus=new THREE.Vector3(),target=new THREE.Vector3();
@@ -853,8 +883,10 @@ function updateCamera(dt){
     game.shake=Math.max(0,game.shake-dt*2.1);
   }
   camera.lookAt(target);
-  sun.position.set(player.x-54,88,player.z-30);
-  sun.target.position.set(player.x,0,player.z);
+  // Track-relative shadow camera, fixed sun direction. The low afternoon
+  // light places long directional shadows consistently across the bend.
+  sun.position.set(player.x-52,player.y+65,player.z-60);
+  sun.target.position.set(player.x,player.y,player.z);
 }
 function drawMap(){
   const canvas=ui.map,ctx=canvas.getContext('2d');
