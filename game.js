@@ -6,7 +6,8 @@ const el = {
   finish: $('finish-screen'), toast: $('toast'), countdown: $('countdown'),
   timer: $('timer'), speed: $('speed'), place: $('place'), section: $('section'),
   progress: $('progress'), heat: $('heat-fill'), heatLabel: $('heat-label'),
-  bestHUD: $('best-hud'), sound: $('sound'), pauseButton: $('pause'),
+  bestHUD: $('best-hud'), sound: $('sound'), cameraButton: $('camera-mode'),
+  radar: $('radar'), pauseButton: $('pause'),
   finishTime: $('finish-time'), finishPlace: $('finish-place'), finishBest: $('finish-best'),
   finishTitle: $('finish-title'), medal: $('medal'), newBest: $('new-best'),
   fallback: $('fallback')
@@ -67,10 +68,11 @@ const player = {
   grounded: true, launchVy: 0, heat: 0, overheated: false, airtime: 0,
   lastGroundZ: 12, hit: new Set(), collected: new Set(), boostActive: false
 };
-const game = {mode:'menu', time:0, countdown:3.35, autoThrottle:isTouch, toastUntil:0, shake:0, best:null, muted:false};
+const game = {mode:'menu', time:0, countdown:3.35, autoThrottle:isTouch, toastUntil:0, shake:0, best:null, muted:false, cameraMode:'iso'};
+const cameraTarget = new THREE.Vector3();
 try { const n = Number(localStorage.getItem('micro-mayhem-best-v1')); if (n > 0 && n < 10000) game.best = n; } catch (_) {}
 
-function centerAt(z) { return Math.sin(z / 115) * 3.1 + Math.sin(z / 48) * 1.4; }
+function centerAt(z) { return Math.sin(z / 110) * 9.0 + Math.sin(z / 38) * 2.2; }
 function heightAt(z) {
   let h = 0;
   for (const ramp of ramps) {
@@ -132,7 +134,8 @@ try {
   scene = new THREE.Scene();
   scene.background = new THREE.Color('#a6e6f0');
   scene.fog = new THREE.Fog('#a6e6f0', 72, isTouch ? 185 : 230);
-  camera = new THREE.PerspectiveCamera(65,innerWidth/innerHeight,0.1,550);
+  camera = new THREE.OrthographicCamera(-48,48,30,-30,0.1,900);
+  updateCameraFrustum();
   scene.add(new THREE.HemisphereLight('#fffdf0','#6e9a75',2.25));
   sun = new THREE.DirectionalLight('#fff0c7',2.8);
   sun.position.set(-33,65,-32);
@@ -146,6 +149,9 @@ try {
   scene.add(sun.target);
   buildWorld();
   resetRace(false);
+  camera.position.set(centerAt(12)+31,77,-25);
+  cameraTarget.set(centerAt(33),2,33);
+  camera.lookAt(cameraTarget);
   requestAnimationFrame(frame);
 } catch (error) {
   console.error('Micro Mayhem failed to initialise',error);
@@ -238,6 +244,17 @@ function createGround() {
       const x=centerAt(z)+side*(TRACK_HALF-1);
       const skid=addBox(scene,.075,.024,3.3,materials.soil,x,heightAt(z)+.08,z);
       skid.rotation.y=-(centerAt(z+1)-centerAt(z-1))/2;
+    }
+  }
+  // Large painted arrows improve the course's direction cues in the overhead view.
+  for(let z=64;z<FINISH-42;z+=116){
+    const x=centerAt(z);
+    const y=heightAt(z)+.13;
+    const shaft=addBox(scene,1.25,.045,3.2,materials.yellow,x,y,z);
+    shaft.rotation.y=-(centerAt(z+2)-centerAt(z-2))/4;
+    for(const side of [-1,1]){
+      const tip=addBox(scene,2.6,.045,.82,materials.yellow,x+side*.88,y,z+2.3);
+      tip.rotation.y=side*.68;
     }
   }
   // Raised curbs on launch ramps; their brightly coloured tops read at speed.
@@ -665,32 +682,105 @@ function updateEffects(dt,time){
   }
   if(el.toast.classList.contains('show')&&performance.now()>game.toastUntil)el.toast.classList.remove('show');
 }
+function cameraViewHeight(){
+  const aspect=innerWidth/Math.max(1,innerHeight);
+  const baseline=aspect<.72?79:aspect<1?71:63;
+  return baseline*(game.cameraMode==='top'?1.14:1);
+}
+function updateCameraFrustum(){
+  if(!camera)return;
+  const viewHeight=cameraViewHeight();
+  const viewWidth=viewHeight*innerWidth/Math.max(1,innerHeight);
+  camera.left=-viewWidth/2;
+  camera.right=viewWidth/2;
+  camera.top=viewHeight/2;
+  camera.bottom=-viewHeight/2;
+  camera.updateProjectionMatrix();
+}
+function toggleCameraMode(){
+  game.cameraMode=game.cameraMode==='iso'?'top':'iso';
+  el.cameraButton.textContent=game.cameraMode==='iso'?'ISO':'TOP';
+  el.cameraButton.setAttribute('aria-label',
+    game.cameraMode==='iso'?'Camera: angled aerial. Switch to bird’s-eye.':'Camera: bird’s-eye. Switch to angled aerial.');
+  updateCameraFrustum();
+  showToast(game.cameraMode==='iso'?'ISOMETRIC RACE VIEW':'BIRD’S-EYE RACE VIEW');
+}
 function cameraUpdate(dt,time){
-  if(game.mode==='menu'){
-    const x=centerAt(12)+3;
-    const desired=new THREE.Vector3(x+12,8,12-18);
-    camera.position.lerp(desired,1-Math.exp(-2*Math.max(.001,dt)));
-    camera.lookAt(centerAt(16),2.2,31);
-    camera.fov=62;camera.updateProjectionMatrix();
-  }else{
-    const speed=player.speed;
-    const back=16+speed*.12;
-    const height=6.4+speed*.033;
-    const desired=new THREE.Vector3(centerAt(player.z)+player.x*.72,player.y+height,player.z-back);
-    if(game.shake>0){
-      desired.x+=(Math.random()-.5)*game.shake;
-      desired.y+=(Math.random()-.5)*game.shake*.45;
-      game.shake=Math.max(0,game.shake-dt*2);
-    }
-    camera.position.lerp(desired,1-Math.exp(-5*Math.max(.001,dt)));
-    const look=new THREE.Vector3(centerAt(player.z+18)+player.x*.45,Math.max(1,player.y+1.1),player.z+19);
-    camera.lookAt(look);
-    const targetFOV=65+speed*.16+(player.grounded?0:4);
-    camera.fov=THREE.MathUtils.damp(camera.fov,targetFOV,4,Math.max(.001,dt));
-    camera.updateProjectionMatrix();
+  // R.C. Pro-Am inspired screen-space composition: the camera moves over
+  // the course rather than sitting on the rear bumper. Orthographic scale
+  // keeps nearby and distant RC cars readable at consistent sizes.
+  const onMenu=game.mode==='menu';
+  const z=onMenu?12:player.z;
+  const lane=onMenu?0:player.x;
+  const iso=game.cameraMode==='iso';
+  const lead=iso?20:17;
+  const targetZ=Math.min(FINISH,Math.max(5,z+lead));
+  const lookX=centerAt(targetZ)+lane*.66;
+  const desired=new THREE.Vector3(
+    centerAt(z)+lane*.65+(iso?32:6),
+    heightAt(z)+(iso?80:116),
+    z-(iso?36:18)
+  );
+  if(game.shake>0){
+    desired.x+=(Math.random()-.5)*game.shake*.28;
+    desired.y+=(Math.random()-.5)*game.shake*.18;
+    game.shake=Math.max(0,game.shake-dt*2);
   }
+  const t=Math.max(.001,dt);
+  const smoothing=1-Math.exp(-(onMenu?2.3:4.5)*t);
+  camera.position.lerp(desired,smoothing);
+  cameraTarget.lerp(new THREE.Vector3(lookX,heightAt(targetZ)+1.4,targetZ),
+    1-Math.exp(-(onMenu?2.3:5)*t));
+  camera.lookAt(cameraTarget);
   sun.position.set(centerAt(player.z)-35,58,player.z+12);
   sun.target.position.set(centerAt(player.z),0,player.z);
+}
+function drawTrackRadar(){
+  const canvas=el.radar;
+  if(!canvas)return;
+  const ctx=canvas.getContext('2d');
+  if(!ctx)return;
+  const w=canvas.width,h=canvas.height;
+  ctx.clearRect(0,0,w,h);
+  ctx.fillStyle='#173c45';
+  ctx.fillRect(0,0,w,h);
+  // A rolling local map shows the next corners, rivals, hazards and coolant.
+  const behind=22, ahead=145;
+  const zStart=Math.max(0,player.z-behind);
+  const zEnd=Math.min(FINISH,player.z+ahead);
+  const span=behind+ahead;
+  const ref=centerAt(player.z);
+  const mx=z=>w*.5+(centerAt(z)-ref)*1.5;
+  const my=z=>h-(z-(player.z-behind))*h/span;
+  const path=()=>{
+    ctx.beginPath();
+    for(let z=zStart,first=true;z<=zEnd+4;z+=4){
+      const zz=Math.min(z,zEnd);
+      if(first){ctx.moveTo(mx(zz),my(zz));first=false;}
+      else ctx.lineTo(mx(zz),my(zz));
+    }
+  };
+  ctx.lineCap='round';ctx.lineJoin='round';
+  path();ctx.lineWidth=32;ctx.strokeStyle='#5e513c';ctx.stroke();
+  path();ctx.lineWidth=27;ctx.strokeStyle='#c28d54';ctx.stroke();
+  path();ctx.lineWidth=1.8;ctx.strokeStyle='#f5e5b1';ctx.setLineDash([4,8]);ctx.stroke();
+  ctx.setLineDash([]);
+  const dot=(x,z,color,size)=>{
+    if(z<player.z-behind||z>player.z+ahead)return;
+    ctx.fillStyle=color;
+    ctx.beginPath();
+    ctx.arc(w*.5+(centerAt(z)+x-ref)*1.5,my(z),size,0,Math.PI*2);
+    ctx.fill();
+  };
+  for(const r of ramps)dot(0,r.z+r.length*.6,'#ffe166',2.8);
+  for(const o of obstacleData)dot(o.x,o.z,'#ff8167',2.6);
+  for(let i=0;i<pickupData.length;i++)if(!player.collected.has(i)){
+    const p=pickupData[i];dot(p.x,p.z,'#75f9ec',2.8);
+  }
+  for(const a of aiCars)dot(a.lane,a.z,a.color,4);
+  dot(player.x,player.z,'#e1ff6a',5.1);
+  ctx.fillStyle='#e1ff6a';
+  ctx.fillRect(0,0,w,3);
 }
 function updateHUD(){
   const place=1+aiCars.filter(a=>a.z>player.z).length;
@@ -704,6 +794,7 @@ function updateHUD(){
   el.heatLabel.textContent=player.overheated?'OVERHEAT!':player.heat>.72?'HOT':player.boostActive?'TURBO!':'COOL';
   el.heatLabel.style.color=player.overheated?'#ff705a':player.boostActive?'#e1ff6a':'#b6f4e7';
   el.bestHUD.textContent='BEST '+(game.best?formatTime(game.best):'--:--.--');
+  drawTrackRadar();
 }
 function finishRace(){
   if(game.mode!=='racing')return;
@@ -818,6 +909,7 @@ function handleKey(event,down){
     else if(game.mode==='paused')resumeRace();
     event.preventDefault();return;
   }
+  if(event.code==='KeyC'&&down&&!event.repeat){toggleCameraMode();event.preventDefault();return;}
   if(event.code==='KeyT'&&down){game.autoThrottle=!game.autoThrottle;showToast(game.autoThrottle?'AUTO THROTTLE ON':'AUTO THROTTLE OFF');}
   const key=mapping[event.code];
   if(key){
@@ -850,6 +942,7 @@ $('restart-pause').addEventListener('click',()=>resetRace(true));
 $('quit-pause').addEventListener('click',()=>{resetRace(false);stopEngine();});
 $('quit-finish').addEventListener('click',()=>{resetRace(false);stopEngine();});
 el.pauseButton.addEventListener('click',pauseRace);
+el.cameraButton.addEventListener('click',toggleCameraMode);
 el.sound.addEventListener('click',()=>{
   game.muted=!game.muted;
   el.sound.textContent=game.muted?'♪̸':'♫';
@@ -858,8 +951,7 @@ el.sound.addEventListener('click',()=>{
 });
 window.addEventListener('resize',()=>{
   if(!renderer||!camera)return;
-  camera.aspect=innerWidth/innerHeight;
-  camera.updateProjectionMatrix();
+  updateCameraFrustum();
   renderer.setPixelRatio(Math.min(devicePixelRatio||1,isTouch?1.5:2));
   renderer.setSize(innerWidth,innerHeight);
 });
