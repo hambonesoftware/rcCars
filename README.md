@@ -110,3 +110,15 @@ The camera now uses a slightly elevated rear-three-quarter view and a **subtle t
 The course selector now draws tiny town buildings and model railroad sidings on the actual mathematically distinct course outlines. GitHub Actions checks the scenery ES module and records full 3D browser screenshots of all four towns as visual review artifacts. Browser smoke tests confirm that the real 3D worlds, stations, buildings, people, rail sleepers and trains were constructed.
 
 **Next:** refine roads and sidewalks into coherent town streets, put playable road geometry through miniature bridges and crossings, then add kart-style drift and shortcut sections.
+
+## Garage Gauntlet — real town street racing (first playable pass)
+
+Garage Gauntlet now uses its **existing drivable kart course as the primary route through a miniature industrial town**. Rather than circling a separate track beside the town, the truck races on an asphalt street with concrete curbs, raised sidewalks, center markings and four industrial intersections. The town storefronts, figures and secondary building rows were pulled toward the street and spaced away from the four open cross-street junctions. The HO model train and district landmarks remain.
+
+The new `town-streets.js` module constructs continuous sidewalks, gutters and curbs that follow the real race spline and road elevation; four junctions with eight scenic side street branches; zebra crossings, double-yellow lines, edge stripes, parking bays, stop bars and traffic signals; and industrial roadwork sections. Garage racing obstacles are now a mixture of construction barricades, cargo crates and maintenance barrels, all using the original collision and feedback physics.
+
+**Important scope distinction:** The cross-street branches are scenic town streets, not alternate playable racing routes yet. The original closed-course timing, AI line, road-edge penalties, ramps and race navigation are preserved. The branches should not be described as working shortcuts until a true branching path/racing-lap system is implemented.
+
+The street meshes use batching and instancing for mobile performance. Browser regression checks validate all four Garage junctions, eight branches, raised pavements and eight signals, plus a phone-sized touch start. Other circuits keep their prior road geometry.
+
+**Next:** design and integrate real drivable side routes; convert the other three course roads to appropriate city streets; build railway crossings and elevated bridges; tune town-sized obstacles and the camera against actual player-drive screenshots.
