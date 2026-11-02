@@ -9,6 +9,7 @@ const ui={
   viewport:$('viewport'),loading:$('loading'),intro:$('intro'),results:$('results'),
   pauseOverlay:$('pause-overlay'),start:$('start'),pause:$('pause'),resume:$('resume'),
   retry:$('retry'),restart:$('restart'),exit:$('exit'),camera:$('camera'),
+  focusToggle:$('focus-toggle'),
   marker:$('marker'),flash:$('flash'),speed:$('speed'),time:$('time'),
   place:$('place'),sector:$('sector'),lap:$('lap'),
   heat:$('heat'),heatLabel:$('heat-label'),
@@ -137,6 +138,19 @@ const player={
   heat:0,overheated:false,collisionCooldown:0,launchConsumed:false
 };
 let renderer,scene,camera,sun;
+let miniatureFocusEnabled=!(typeof matchMedia==='function'&&
+  matchMedia('(prefers-reduced-transparency: reduce)').matches);
+function setMiniatureFocus(on){
+  miniatureFocusEnabled=Boolean(on);
+  const lens=document.getElementById('tiltshift');
+  if(lens)lens.dataset.effect=miniatureFocusEnabled?'on':'off';
+  if(ui.focusToggle){
+    ui.focusToggle.textContent='TILT-SHIFT FOCUS: '+
+      (miniatureFocusEnabled?'ON':'OFF');
+    ui.focusToggle.setAttribute('aria-pressed',
+      String(miniatureFocusEnabled));
+  }
+}
 let ai=[];
 let shadow;
 const rivalShadows=[];
@@ -1307,6 +1321,7 @@ function makeShadow(){
 function setup(){
   try{
     applyCourseUI();
+    setMiniatureFocus(miniatureFocusEnabled);
     renderer=new THREE.WebGLRenderer({antialias:!mobile,powerPreference:'high-performance'});
     renderer.setPixelRatio(Math.min(devicePixelRatio||1,mobile?1.4:1.8));
     renderer.outputColorSpace=THREE.SRGBColorSpace;
@@ -1925,6 +1940,11 @@ function handleKey(e,isDown){
   if(e.code==='KeyC'&&isDown&&!e.repeat){
     toggleView();e.preventDefault();return;
   }
+  if(e.code==='KeyV'&&isDown&&!e.repeat){
+    setMiniatureFocus(!miniatureFocusEnabled);
+    toast(miniatureFocusEnabled?'MINIATURE LENS ON':'MINIATURE LENS OFF');
+    e.preventDefault();return;
+  }
   const control=maps[e.code];
   if(control){controls[control]=isDown;e.preventDefault();}
 }
@@ -1960,6 +1980,9 @@ ui.restart.addEventListener('click',()=>reset(true));
 ui.pause.addEventListener('click',pause);
 ui.resume.addEventListener('click',resume);
 ui.camera.addEventListener('click',toggleView);
+if(ui.focusToggle)ui.focusToggle.addEventListener('click',()=>{
+  setMiniatureFocus(!miniatureFocusEnabled);
+});
 ui.exit.addEventListener('click',()=>window.location.assign('./courses.html'));
 window.addEventListener('resize',viewport);
 window.addEventListener('contextmenu',e=>e.preventDefault());
