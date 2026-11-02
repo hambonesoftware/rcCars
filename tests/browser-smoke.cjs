@@ -76,7 +76,7 @@ async function smoke(){
       const errors=[];
       page.on('pageerror',error=>errors.push(error.message));
       page.on('requestfailed',request=>{
-        if(/three\.module\.js|course-presets|track-layouts|miniature-world|quarter-track/.test(request.url())){
+        if(/three\.module\.js|course-presets|track-layouts|miniature-world|town-streets|quarter-track/.test(request.url())){
           errors.push('Failed required resource: '+request.url()+' '+request.failure()?.errorText);
         }
       });
@@ -98,6 +98,10 @@ async function smoke(){
           railTies:Number(document.body.dataset.miniatureRailTies||0),
           trainCars:Number(document.body.dataset.miniatureTrainCars||0),
           landmarks:Number(document.body.dataset.miniatureLandmarks||0),
+          junctions:Number(document.body.dataset.streetJunctions||0),
+          sidewalks:Number(document.body.dataset.streetSidewalks||0),
+          streetSignals:Number(document.body.dataset.streetSignals||0),
+          streetBranches:Number(document.body.dataset.streetBranches||0),
           districts:(document.body.dataset.miniatureDistricts||'').split(' / '),
           tiltShift:!!document.querySelector('#tiltshift .lens-far')
         }));
@@ -108,6 +112,15 @@ async function smoke(){
           result.districts.length!==4||!result.tiltShift){
           throw new Error('Miniature railroad world failed construction: '+
             JSON.stringify(result));
+        }
+        if(id==='garage'&&(
+          result.junctions!==4||result.streetBranches!==8||
+          result.streetSignals!==8||result.sidewalks<8)){
+          throw new Error('Garage industrial streets are missing: '+
+            JSON.stringify(result));
+        }
+        if(id!=='garage'&&result.junctions!==0){
+          throw new Error('Other tracks must retain their original road infrastructure');
         }
         console.log('PASS course startup',id,JSON.stringify(result));
         // Archive an unobstructed overview of each miniature model table.
@@ -137,6 +150,10 @@ async function smoke(){
           await page.keyboard.down('w');
           await page.waitForTimeout(800);
           await page.keyboard.up('w');
+          await page.screenshot({
+            path:path.join(screenshotDir,'garage-street-race.png'),
+            animations:'disabled'
+          });
           console.log('PASS interactive Garage start and controls, countdown='+marker);
         }
       }catch(e){
