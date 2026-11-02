@@ -383,6 +383,38 @@ export function createMiniatureWorld({
       area.title,side);
   }
 
+  // The opening grid must already feel like a town street. The usual
+  // Repair Row district begins later along the lap, so populate both
+  // frontages at the starting straight as an actual industrial village.
+  // These lots stay outside the original racing and obstacle corridor.
+  if(course==='garage'){
+    const openingS=[14,30,46];
+    for(let i=0;i<openingS.length;i++){
+      for(const side of [-1,1]){
+        const f=clearFrame(openingS[i],side,halfWidth+16.5,
+          halfWidth+7.2);
+        const industrial=(i+Math.max(0,side))%2===0;
+        building(f,side,industrial?'industrial':'mainstreet',
+          310+i+(side>0?5:0),
+          industrial?'wallBrick':'wallOchre');
+        const streetlamp=clearFrame(openingS[i]+5,side,
+          halfWidth+10.6,halfWidth+2);
+        lamp(streetlamp);
+        if(i%2===0){
+          const passerby=clearFrame(openingS[i]+3,side,
+            halfWidth+13.6,halfWidth+3);
+          person(passerby,side,450+i+(side>0?9:0));
+        }
+        if(i===1){
+          parkedCar(clearFrame(openingS[i]-5,side,
+            halfWidth+14.6,halfWidth+4),i+15);
+        }
+      }
+    }
+    sign(clearFrame(51,-1,halfWidth+18,halfWidth+7),
+      'REPAIR ROW',-1);
+  }
+
   // Bespoke signature features keep each HO display memorable, as on
   // elaborate real model railway layouts rather than generic asset scatter.
   if(course==='backyard'){
