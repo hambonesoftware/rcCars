@@ -1905,6 +1905,9 @@ function frame(t){
   const dt=clamp((t-lastFrame)/1000,0,.042);
   lastFrame=t;
   worldClock+=dt;
+  // A modest, independent train animation gives the surrounding HO display
+  // a little life without coupling it to racing physics or AI.
+  if(scene?.userData?.miniature?.update)scene.userData.miniature.update(dt);
   if(game.mode==='countdown'){
     const old=Math.ceil(game.countdown);
     game.countdown-=dt;
