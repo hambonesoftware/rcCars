@@ -436,6 +436,12 @@ function createRoadWeathering(){
   addSurfaceStrip(75,89,-2.5,.95,rubber);
   addSurfaceStrip(75,90,2.8,1.12,rubber);
   addSurfaceStrip(235,252,-3.3,1.3,rubber);
+  // Sector 02 adds broad braking zones into its alternating sweepers.
+  for(const d of [-3.4,3.2]){
+    addSurfaceStrip(SECTOR_2_LEFT_START-12,SECTOR_2_LEFT_START+22,d,1.28,rubber);
+    addSurfaceStrip(SECTOR_2_RIGHT_START-10,SECTOR_2_RIGHT_START+23,d,1.16,rubber);
+  }
+  addSurfaceStrip(ramps[1].end+6,ramps[1].end+23,1.8,1.15,rubber);
 }
 
 function createRibbon(side,inside,material,step=1){
@@ -563,29 +569,36 @@ function createRoad(){
       line.rotation.y=q.angle;
     }
   }
-  // Launch-ramp chevrons convey elevation and speed from overhead.
-  for(let s=60;s<ramp.end;s+=4.4){
-    const p=position(s,0);
-    for(const side of [-1,1]){
-      const d=side*2.4;
-      const edge=position(s,d);
-      const m=makeBox(scene,mats.curbYellow,edge.x,edge.y+.08,edge.z,3.4,.035,.32);
-      m.rotation.y=edge.angle+side*.38;
+  // Two distinct ramp complexes, both visible from the rear-iso camera.
+  for(const ramp of ramps){
+    for(let s=ramp.start+2;s<ramp.end;s+=4){
+      for(const side of [-1,1]){
+        const edge=position(s,side*2.4);
+        const m=makeBox(scene,mats.curbYellow,
+          edge.x,edge.y+.08,edge.z,3.4,.035,.32);
+        m.rotation.y=edge.angle+side*.38;
+      }
     }
   }
-  // A visible safety railing on the outside of the banked corner.
-  const outer=-1;
-  const lower=[],upper=[];
-  for(let s=STRAIGHT+5;s<STRAIGHT+TURN-4;s+=2.5){
-    const p=position(s,outer*(HALF+2.8));
-    lower.push([p.x,p.y+.73,p.z]);
-    upper.push([p.x,p.y+1.12,p.z]);
-    if(Math.floor(s/5)%2===0){
-      const post=makeBox(scene,mats.steel,p.x,p.y+.55,p.z,.12,1.1,.13);
-      post.rotation.y=p.angle;
+  // Safety railings line the outside edge of each significant turn.
+  for(const bend of [
+    {start:STRAIGHT+5,end:STRAIGHT+TURN-4,outer:-1},
+    {start:SECTOR_2_LEFT_START+5,end:SECTOR_2_LEFT_END-4,outer:1},
+    {start:SECTOR_2_RIGHT_START+5,end:SECTOR_2_RIGHT_END-4,outer:-1}
+  ]){
+    const lower=[],upper=[];
+    for(let s=bend.start;s<bend.end;s+=2.5){
+      const p=position(s,bend.outer*(HALF+2.8));
+      lower.push([p.x,p.y+.73,p.z]);
+      upper.push([p.x,p.y+1.12,p.z]);
+      if(Math.floor(s/5)%2===0){
+        const post=makeBox(scene,mats.steel,p.x,p.y+.55,p.z,.12,1.1,.13);
+        post.rotation.y=p.angle;
+      }
     }
+    tube(lower,.06,mats.rail);
+    tube(upper,.063,mats.rail);
   }
-  tube(lower,.06,mats.rail);tube(upper,.063,mats.rail);
 }
 function signTexture(title,caption){
   const c=document.createElement('canvas');c.width=768;c.height=276;
@@ -850,7 +863,12 @@ function environment(){
   }
 
   // A few believable infield maintenance barrels with dark cavities.
-  for(const [s,d] of [[121,HALF+29],[174,-HALF-24],[241,HALF+24]]){
+  for(const [s,d] of [
+    [121,HALF+29],[174,-HALF-24],[241,HALF+24],
+    [SECTOR_2_LEFT_START+17,HALF+28],
+    [SECTOR_2_LEFT_END+32,-HALF-24],
+    [SECTOR_2_RIGHT_START+21,HALF+27]
+  ]){
     const p=position(s,d);
     const group=new THREE.Group();group.position.set(p.x,0,p.z);
     const bucket=new THREE.Mesh(
@@ -864,10 +882,14 @@ function environment(){
     scene.add(group);
   }
   makeGate(STARTLINE-12,'START');
-  makeGate(FINAL_GATE,'SECTOR 02');
+  makeGate(SECTOR_1_END,'SECTOR 02');
+  makeGate(FINAL_GATE,'SECTOR 03');
   makeBillboard(54,-HALF-11,'JUMP','KEEP IT LEVEL');
   makeBillboard(121,-HALF-15,'BERM','HOLD YOUR LINE');
   makeBillboard(226,HALF+13,'EXIT','SEND IT');
+  makeBillboard(SECTOR_2_LEFT_START+19,HALF+15,'SWEEPER','HOLD THE OUTSIDE');
+  makeBillboard(ramps[1].start-6,-HALF-15,'AIRTIME','FLY INTO THE GARDEN');
+  makeBillboard(SECTOR_2_RIGHT_START+14,-HALF-15,'S-BEND','BRAKE OR BOOST');
 }
 function makeCone(s,d){
   const p=position(s,d);
@@ -880,7 +902,13 @@ function makeCone(s,d){
   scene.add(g);cones.push({s,d,x:p.x,z:p.z,mesh:g});
 }
 function createHazards(){
-  for(const [s,d] of [[31,-6.7],[49,6.5],[107,6.6],[138,5.8],[167,7.2],[218,-6.8],[247,6.4]]){
+  for(const [s,d] of [
+    [31,-6.7],[49,6.5],[107,6.6],[138,5.8],[167,7.2],[218,-6.8],[247,6.4],
+    [SECTOR_1_END+23,-6.7],[SECTOR_2_LEFT_START+33,6.6],
+    [SECTOR_2_LEFT_END+34,-6.6],
+    [SECTOR_2_RIGHT_START+24,6.7],
+    [SECTOR_2_RIGHT_END+22,-6.9]
+  ]){
     makeCone(s,d);
   }
 }
@@ -1114,14 +1142,14 @@ function tickPlayer(dt){
   }
   const ground=surfaceHeight(player.s,player.d)+.045;
   if(player.grounded){
-    if(lastS<=ramp.end&&player.s>ramp.end){
+    const launch=ramps.find(r=>lastS<=r.end&&player.s>r.end);
+    if(launch){
       player.grounded=false;
-      // Preserve a readable arcade jump rather than launching halfway
-      // across the banked turn as velocity doubles.
+      // High-speed takeoff remains tuned for clean landing opportunities.
       player.vy=clamp(player.speed*.24,6,9.2);
       player.airtime=.015;
       player.pitch=-.2;
-      toast('↗ BIG AIR!');
+      toast('↗ '+launch.name.toUpperCase()+'!');
       sound(690,.09,'triangle');
     }else{
       player.y=ground;
@@ -1183,8 +1211,10 @@ function positionModels(dt){
     const lane=rival.d+Math.sin(game.time*.87+rival.seed)*.25;
     const p=position(rival.s,lane);
     let air=0;
-    if(rival.s>ramp.end&&rival.s<ramp.end+26){
-      air=Math.sin((rival.s-ramp.end)/26*Math.PI)*2.2;
+    for(const jump of ramps){
+      if(rival.s>jump.end&&rival.s<jump.end+26){
+        air=Math.sin((rival.s-jump.end)/26*Math.PI)*2.2;
+      }
     }
     rival.mesh.position.set(p.x,p.y+.035+air,p.z);
     rival.mesh.rotation.order='YXZ';
