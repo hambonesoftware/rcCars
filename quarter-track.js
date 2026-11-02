@@ -3,6 +3,7 @@ import {makeRCTrophyTruck} from './truck-model.js';
 import {COURSE_PRESETS,getCourse} from './course-presets.js';
 import {buildCourseLoop} from './track-layouts.js';
 import {createMiniatureWorld} from './miniature-world.js';
+import {createTownStreets} from './town-streets.js';
 
 const $=id=>document.getElementById(id);
 const ui={
@@ -606,15 +607,30 @@ function createRoad(){
   const road=new THREE.Mesh(g,roadMaterial);
   road.receiveShadow=true;scene.add(road);
 
-  // Gravelly road shoulders with actual textured aggregate.
-  mats.shoulder.map=createGravelTexture();
-  mats.shoulder.needsUpdate=true;
-  for(const side of [-1,1]){
-    createRibbon(side*(HALF+3.6),side*HALF,mats.shoulder);
+  // Ordinary courses retain the original racing shoulder. Garage is now
+  // a real town road bordered by sidewalks and concrete storm gutters.
+  if(COURSE.id!=='garage'){
+    mats.shoulder.map=createGravelTexture();
+    mats.shoulder.needsUpdate=true;
+    for(const side of [-1,1]){
+      createRibbon(side*(HALF+3.6),side*HALF,mats.shoulder);
+    }
   }
   createRoadWeathering();
+  if(COURSE.id==='garage'){
+    const street=createTownStreets({
+      THREE,scene,course:COURSE.id,position,length:END,
+      halfWidth:HALF,mobile
+    });
+    scene.userData.streets=street;
+    document.body.dataset.streetJunctions=String(street.junctions);
+    document.body.dataset.streetSidewalks=String(street.sidewalkSegments);
+    document.body.dataset.streetSignals=String(street.signals);
+    document.body.dataset.streetBranches=String(street.branchStreets);
+  }
   // Instanced curbs: two draw calls instead of hundreds of individual
   // meshes. This offsets the cost of realistic mobile shadow rendering.
+  if(COURSE.id!=='garage'){
   const curbGeo=new THREE.BoxGeometry(.75,.18,2.35);
   const curbCapacity=Math.ceil(END/2.4)*2+4;
   const curbMeshes=[
@@ -639,6 +655,7 @@ function createRoad(){
     curbMeshes[i].receiveShadow=true;
     curbMeshes[i].castShadow=!mobile;
     scene.add(curbMeshes[i]);
+  }
   }
   // Start-grid approach has more visible pristine dashed paint.
   for(let s=7;s<20;s+=7.6){
@@ -676,8 +693,9 @@ function createRoad(){
       }
     }
   }
-  // Safety railings line the outside edge of each significant turn.
-  for(const bend of [
+  // Classic safety railings are omitted in downtown streets; their
+  // barriers are sidewalks, construction fences, and town road furniture.
+  if(COURSE.id!=='garage')for(const bend of [
     {start:STRAIGHT+5,end:STRAIGHT+TURN-4,outer:-1},
     {start:SECTOR_2_LEFT_START+5,end:SECTOR_2_LEFT_END-4,outer:1},
     {start:SECTOR_2_RIGHT_START+5,end:SECTOR_2_RIGHT_END-4,outer:-1},
