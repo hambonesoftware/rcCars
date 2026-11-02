@@ -21,7 +21,7 @@ export const COURSE_PRESETS={
   },
   garage:{
     id:'garage',title:'Garage Gauntlet',subtitle:'BRICK INDUSTRIAL TOWN · FREIGHT SIDINGS',
-    description:'Drift through Brickyard's brick storefronts, Repair Row, freight sidings and the Switching Yard model railway district.',
+    description:'Drift through Brickyard brick storefronts, Repair Row, freight sidings and the Switching Yard model railway district.',
     ground:'#6d7470',grass:'#626b67',road:'#686c6a',sky:'#b0c7c4',fog:'#b0c4c2',
     sun:'#eef4f1',sunPower:2.65,ambient:1.16,exposure:1.02,
     shoulder:'#888579',hazard:'barrels',feature:'garage',
