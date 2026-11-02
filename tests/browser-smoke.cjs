@@ -76,7 +76,7 @@ async function smoke(){
       const errors=[];
       page.on('pageerror',error=>errors.push(error.message));
       page.on('requestfailed',request=>{
-        if(/three\.module\.js|course-presets|track-layouts|quarter-track/.test(request.url())){
+        if(/three\.module\.js|course-presets|track-layouts|miniature-world|quarter-track/.test(request.url())){
           errors.push('Failed required resource: '+request.url()+' '+request.failure()?.errorText);
         }
       });
@@ -92,11 +92,19 @@ async function smoke(){
           title:document.title,
           course:document.getElementById('course-title')?.textContent,
           canvas:document.querySelectorAll('#viewport canvas').length,
-          intro:!document.getElementById('intro')?.classList.contains('hidden')
+          intro:!document.getElementById('intro')?.classList.contains('hidden'),
+          buildings:Number(document.body.dataset.miniatureBuildings||0),
+          people:Number(document.body.dataset.miniaturePeople||0),
+          railTies:Number(document.body.dataset.miniatureRailTies||0),
+          districts:(document.body.dataset.miniatureDistricts||'').split(' / '),
+          tiltShift:!!document.querySelector('#tiltshift .lens-far')
         }));
         if(!result.canvas||!result.intro||
-          !result.course||!result.title.toUpperCase().includes(result.course.toUpperCase())){
-          throw new Error('Unexpected game startup: '+JSON.stringify(result));
+          !result.course||!result.title.toUpperCase().includes(result.course.toUpperCase())||
+          result.buildings<20||result.people<8||result.railTies<20||
+          result.districts.length!==4||!result.tiltShift){
+          throw new Error('Miniature railroad world failed construction: '+
+            JSON.stringify(result));
         }
         console.log('PASS course startup',id,JSON.stringify(result));
         if(id==='garage'){
