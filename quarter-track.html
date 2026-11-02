@@ -4,14 +4,42 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1">
 <meta name="theme-color" content="#1a3135">
-<meta name="description" content="Micro Mayhem: complete four-sector two-lap arcade race with 3D monster RC trucks, four stunt jumps and fast banked turns.">
+<meta name="description" content="Micro Mayhem: miniature RC kart racing across four elaborate handcrafted HO-scale model railway towns, with cinematic tilt-shift and two-lap races.">
 <title>Micro Mayhem — Full Circuit Rally</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=DM+Sans:wght@400;500;600;700;800&display=swap');
 :root{--navy:#122c33;--lime:#e5fd7c;--cream:#f7f8eb;--teal:#74e4db;--amber:#ffc970;font-family:'DM Sans',system-ui,sans-serif}
 *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;touch-action:none;overscroll-behavior:none;background:#8db0aa;color:var(--cream);-webkit-user-select:none;user-select:none}
 button,a{font:inherit;-webkit-tap-highlight-color:transparent}button{cursor:pointer}button:focus-visible,a:focus-visible{outline:3px solid var(--lime);outline-offset:3px}#viewport,#viewport canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
-#shade{position:fixed;inset:0;background:linear-gradient(0deg,#0e222c88 0%,transparent 29%),linear-gradient(180deg,#152c3866 0%,transparent 18%);pointer-events:none}
+#viewport{z-index:0}
+/* Faux tilt-shift lens: a crisp middle focal strip with selectively
+   blurred foreground/background. Real world geometry remains fully 3D.
+   Avoid fullscreen extra WebGL passes on phones and keep HUD unblurred. */
+#tiltshift{position:fixed;inset:0;z-index:1;pointer-events:none;overflow:hidden}
+#tiltshift .lens-far,#tiltshift .lens-near{
+  position:absolute;left:0;right:0;
+  -webkit-backdrop-filter:blur(2.2px);backdrop-filter:blur(2.2px)
+}
+#tiltshift .lens-far{top:0;height:27%;
+  -webkit-mask-image:linear-gradient(to bottom,#000,transparent);
+  mask-image:linear-gradient(to bottom,#000,transparent)}
+#tiltshift .lens-near{bottom:0;height:21%;
+  -webkit-mask-image:linear-gradient(to top,#000,transparent);
+  mask-image:linear-gradient(to top,#000,transparent)}
+#tiltshift[data-view="overview"] .lens-far{height:39%;
+  -webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
+#tiltshift[data-view="overview"] .lens-near{height:30%;
+  -webkit-backdrop-filter:blur(3.2px);backdrop-filter:blur(3.2px)}
+#tiltshift[data-effect="off"]{display:none}
+#shade{position:fixed;inset:0;z-index:2;background:linear-gradient(0deg,#0e222c88 0%,transparent 29%),linear-gradient(180deg,#152c3866 0%,transparent 18%);pointer-events:none}
+#top,#bottom,#marker,#flash{z-index:5}
+@media(pointer:coarse){
+  #tiltshift .lens-far,#tiltshift .lens-near{
+    -webkit-backdrop-filter:blur(1.2px);backdrop-filter:blur(1.2px)}
+  #tiltshift[data-view="overview"] .lens-far,#tiltshift[data-view="overview"] .lens-near{
+    -webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px)}
+}
+@media(prefers-reduced-transparency:reduce){#tiltshift{display:none}}
 .hidden{display:none!important}
 #top{position:fixed;left:max(18px,env(safe-area-inset-left));right:max(18px,env(safe-area-inset-right));top:max(18px,env(safe-area-inset-top));display:flex;justify-content:space-between;align-items:flex-start;gap:12px;pointer-events:none}
 .brand{background:#112b33e6;display:flex;align-items:center;gap:14px;border:1px solid #f6f8de44;border-left:5px solid var(--lime);border-radius:4px;padding:10px 15px;box-shadow:0 8px 24px #14262d30}
@@ -65,7 +93,8 @@ button,a{font:inherit;-webkit-tap-highlight-color:transparent}button{cursor:poin
 </style>
 </head>
 <body>
-<div id="viewport" aria-label="3D RC first-quarter race track"></div><div id="shade"></div>
+<div id="viewport" aria-label="3D RC first-quarter race track"></div><div id="tiltshift" data-view="overview" data-effect="on" aria-hidden="true"><div class="lens-far"></div><div class="lens-near"></div></div>
+<div id="shade"></div>
 <div id="top">
   <div class="brand"><strong>MICRO MAYHEM</strong><div class="details"><span id="course-kicker">COURSE 01 / 04</span><span id="course-title">Backyard Grand Prix</span></div></div>
   <div class="tools">
@@ -105,7 +134,7 @@ button,a{font:inherit;-webkit-tap-highlight-color:transparent}button{cursor:poin
     <button id="retry" class="primary" type="button"><span>RUN IT AGAIN</span><span>↗</span></button><button id="exit" class="secondary" type="button">CHOOSE ANOTHER COURSE</button>
   </div>
 </div>
-<div id="pause-overlay" class="overlay hidden"><div class="dialog"><div class="kicker">PIT LANE</div><h1>PAUSED.</h1><p>Restart the sector or return to the race.</p><button id="resume" class="primary" type="button"><span>RESUME</span><span>↗</span></button><button id="restart" class="secondary" type="button">RESTART SECTOR</button></div></div>
+<div id="pause-overlay" class="overlay hidden"><div class="dialog"><div class="kicker">PIT LANE</div><h1>PAUSED.</h1><p>Restart the sector, change the miniature lens, or return to the race.</p><button id="resume" class="primary" type="button"><span>RESUME</span><span>↗</span></button><button id="restart" class="secondary" type="button">RESTART RACE</button><button id="focus-toggle" class="secondary" type="button" aria-pressed="true">TILT-SHIFT FOCUS: ON</button></div></div>
 <div id="loading">BUILDING THE GRAND PRIX CIRCUIT…</div>
 <script>
 // Module-import failures occur before quarter-track.js can show its normal
