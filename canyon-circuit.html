@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1">
+<meta name="theme-color" content="#1a3135">
+<meta name="description" content="Micro Mayhem: complete four-sector two-lap arcade race with 3D monster RC trucks, four stunt jumps and fast banked turns.">
+<title>Micro Mayhem — Canyon Thunder</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=DM+Sans:wght@400;500;600;700;800&display=swap');
+:root{--navy:#122c33;--lime:#e5fd7c;--cream:#f7f8eb;--teal:#74e4db;--amber:#ffc970;font-family:'DM Sans',system-ui,sans-serif}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;touch-action:none;overscroll-behavior:none;background:#8db0aa;color:var(--cream);-webkit-user-select:none;user-select:none}
+button,a{font:inherit;-webkit-tap-highlight-color:transparent}button{cursor:pointer}button:focus-visible,a:focus-visible{outline:3px solid var(--lime);outline-offset:3px}#viewport,#viewport canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
+#shade{position:fixed;inset:0;background:linear-gradient(0deg,#0e222c88 0%,transparent 29%),linear-gradient(180deg,#152c3866 0%,transparent 18%);pointer-events:none}
+.hidden{display:none!important}
+#top{position:fixed;left:max(18px,env(safe-area-inset-left));right:max(18px,env(safe-area-inset-right));top:max(18px,env(safe-area-inset-top));display:flex;justify-content:space-between;align-items:flex-start;gap:12px;pointer-events:none}
+.brand{background:#112b33e6;display:flex;align-items:center;gap:14px;border:1px solid #f6f8de44;border-left:5px solid var(--lime);border-radius:4px;padding:10px 15px;box-shadow:0 8px 24px #14262d30}
+.brand strong{font:italic 900 28px/.9 'Barlow Condensed',sans-serif;letter-spacing:.03em}
+.brand .details{display:flex;flex-direction:column;gap:4px}.brand .details span:first-child{color:var(--lime);font-size:10px;letter-spacing:.2em;font-weight:900}.brand .details span:last-child{font-size:11px;font-weight:700;letter-spacing:.1em}
+.tools{display:flex;gap:8px;pointer-events:auto}
+.tool-btn{border:1px solid #f8fced77;background:#112b33dc;color:#f4fae7;border-radius:5px;padding:10px 13px;font-size:11px;font-weight:900;letter-spacing:.08em}
+.tool-btn.active{background:var(--lime);color:var(--navy);border-color:var(--lime)}
+#marker{position:fixed;top:19%;left:50%;transform:translate(-50%,-50%);font:italic 900 clamp(68px,16vw,165px)/.9 'Barlow Condensed',Impact,sans-serif;text-shadow:5px 7px 0 #173943b0;color:var(--lime);white-space:nowrap;pointer-events:none}
+#flash{position:fixed;top:29%;left:50%;transform:translate(-50%,-30%);padding:9px 18px;background:#152d35e8;border:2px solid var(--lime);border-radius:4px;opacity:0;pointer-events:none;font:italic 900 clamp(18px,3.2vw,32px) 'Barlow Condensed',sans-serif;letter-spacing:.07em;transition:opacity .14s,transform .14s;text-align:center}
+#flash.show{opacity:1;transform:translate(-50%,0)}
+#bottom{position:fixed;left:max(15px,env(safe-area-inset-left));right:max(15px,env(safe-area-inset-right));bottom:max(15px,env(safe-area-inset-bottom));display:flex;justify-content:space-between;align-items:end;gap:12px;pointer-events:none}
+.panel{background:#142d36eb;border:1px solid #f1f4dc33;border-radius:6px;border-top:3px solid var(--lime);box-shadow:0 8px 26px #11242e55;pointer-events:auto}
+.speed-panel{width:205px;padding:11px 15px}
+.tiny{color:var(--teal);font-size:10px;letter-spacing:.16em;font-weight:900}
+.speed-number{font:italic 900 71px/.98 'Barlow Condensed',Impact,sans-serif;letter-spacing:-.035em}
+.units{font-size:11px;letter-spacing:.06em;color:#cad6d0;font-weight:900}
+.meter-row{display:flex;align-items:center;justify-content:space-between;margin-top:10px;font-size:9px;letter-spacing:.1em;font-weight:900}
+.heat-meter{height:9px;background:#304a4b;border-radius:2px;margin-top:7px;overflow:hidden}
+#heat{height:100%;width:0;background:linear-gradient(90deg,#74e4db 0%,#e5fd7c 48%,#f9ac5b 75%,#fa614f 100%);transition:width .1s}
+#map-panel{width:220px;padding:9px 10px;text-align:center}
+.map-title{font-size:9px;font-weight:900;letter-spacing:.16em;color:var(--lime);margin-bottom:5px;display:flex;justify-content:space-between}
+#map{width:100%;height:94px;display:block;border-radius:3px;background:#193a3c}
+.stats-panel{width:218px;padding:12px 16px}
+.stat-row{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:8px}
+.stat-row:last-child{margin-bottom:0}
+.stat-row b{font:italic 900 29px/.9 'Barlow Condensed',Impact,sans-serif}
+.stat-row .tiny{font-size:9px}
+.progress{height:7px;background:#36575b;margin:12px 0 0;border-radius:8px;overflow:hidden}
+#progress-fill{width:0;height:100%;background:var(--lime)}
+#controls{display:none}
+.pad{display:flex;gap:9px}
+.pad button{pointer-events:auto;touch-action:none;border:2px solid #ffffffbb;background:#15333fe3;color:white;min-width:65px;min-height:65px;border-radius:12px;box-shadow:0 5px 0 #09232dc0;font:900 20px 'Barlow Condensed',sans-serif}
+.pad button:active,.pad button.pressed{transform:translateY(4px);box-shadow:0 1px 0 #09232d;background:var(--lime);color:#112b33}
+.pad button.boost{background:#f08e4f;color:#112b33}.pad button.brake{font-size:15px}.pad button.boost span{display:block;font-size:11px;letter-spacing:.1em}
+.overlay{position:fixed;inset:0;background:#0b2229aa;backdrop-filter:blur(9px);display:flex;align-items:center;justify-content:center;padding:16px;z-index:11}
+.dialog{width:min(465px,100%);padding:30px;background:#142b33;border:1px solid #f1f6e055;border-top:5px solid var(--lime);box-shadow:14px 14px 0 #07191c8a}
+.kicker{color:var(--lime);font-size:11px;font-weight:900;letter-spacing:.2em}
+.dialog h1{font:italic 900 clamp(60px,12vw,104px)/.8 'Barlow Condensed',Impact,sans-serif;margin:20px 0}
+.dialog h1 em{color:var(--lime);font-style:inherit}
+.dialog p{line-height:1.6;color:#d5e2db;font-size:14px}
+.primary{margin:17px 0 10px;width:100%;padding:16px;border:0;border-radius:4px;background:var(--lime);color:#102d31;font-size:14px;font-weight:900;letter-spacing:.09em;box-shadow:5px 5px 0 #07161a;display:flex;justify-content:space-between}
+.secondary{color:#d9eade;border:0;background:transparent;font-size:12px;font-weight:900;padding:10px;text-decoration:underline;text-underline-offset:4px}
+.pills{display:flex;gap:7px;flex-wrap:wrap;margin-top:18px}.pills span{border:1px solid #d1f1cf63;background:#ffffff10;border-radius:3px;padding:8px;font-size:10px;font-weight:900;letter-spacing:.05em}
+.split{display:flex;gap:12px;margin-top:14px;justify-content:space-between}.split>div{background:#ffffff0d;border:1px solid #ffffff26;padding:12px;flex:1}.split strong{display:block;font:italic 900 34px 'Barlow Condensed',sans-serif}.split span{font-size:10px;letter-spacing:.09em;color:#bcd3d0;font-weight:900}
+#loading{position:fixed;inset:0;background:#172d32;z-index:20;display:flex;align-items:center;justify-content:center;color:var(--lime);font:italic 900 30px 'Barlow Condensed',sans-serif;padding:25px;text-align:center}
+@media(pointer:coarse){#controls{display:flex;position:fixed;bottom:max(15px,env(safe-area-inset-bottom));left:max(13px,env(safe-area-inset-left));right:max(13px,env(safe-area-inset-right));z-index:4;justify-content:space-between;pointer-events:none}#bottom{bottom:max(96px,calc(env(safe-area-inset-bottom) + 88px))}}
+@media(max-width:740px){.brand{padding:8px 11px;gap:6px}.brand strong{font-size:24px}.brand .details span:first-child{font-size:8px}.brand .details span:last-child{font-size:9px}.tool-btn{font-size:10px;padding:9px}.speed-panel,.stats-panel{width:136px;padding:8px 10px}.speed-number{font-size:48px}.stat-row{margin-bottom:5px}.stat-row b{font-size:21px}.tiny{font-size:8px}.meter-row{font-size:8px}.units{font-size:9px}#map-panel{width:115px;padding:7px}#map{height:70px}#bottom{gap:5px}.map-title{font-size:7px}.dialog{padding:24px}.dialog h1{font-size:70px}}
+@media(max-width:480px){.brand .details span:last-child{display:none}.brand strong{font-size:22px}.tool-btn{padding:8px 9px}#map-panel{display:none}#bottom{justify-content:space-between}.speed-panel,.stats-panel{width:44%}.stat-row b{font-size:24px}}
+@media(max-height:550px){#map-panel{display:none}#bottom{bottom:max(7px,env(safe-area-inset-bottom))}body:has(#controls:not(.hidden)) #bottom{bottom:max(66px,calc(env(safe-area-inset-bottom) + 64px))}.pad button{min-height:47px;min-width:54px}.dialog h1{font-size:55px;margin:9px 0}.dialog p{font-size:12px;margin:7px 0}.dialog{padding:17px}.pills{margin-top:8px}}
+</style>
+</head>
+<body>
+<div id="viewport" aria-label="3D RC first-quarter race track"></div><div id="shade"></div>
+<div id="top">
+  <div class="brand"><strong>MICRO MAYHEM</strong><div class="details"><span>CANYON THUNDER</span><span>CANYON THUNDER</span></div></div>
+  <div class="tools">
+    <button id="camera" class="tool-btn" type="button" aria-label="Switch to complete track overview">OVERVIEW</button>
+    <button id="pause" class="tool-btn" type="button">Ⅱ PAUSE</button>
+  </div>
+</div>
+<div id="marker" aria-live="polite"></div><div id="flash" role="status" aria-live="polite"></div>
+<div id="bottom">
+  <div class="panel speed-panel"><div class="tiny">RC SPEED</div><div><span id="speed" class="speed-number">0</span> <span class="units">KM/H</span></div><div class="meter-row"><span>MOTOR HEAT</span><span id="heat-label">COOL</span></div><div class="heat-meter"><div id="heat"></div></div></div>
+  <div id="map-panel" class="panel"><div class="map-title"><span>CIRCUIT MAP</span><span>4 SECTORS</span></div><canvas id="map" width="260" height="130"></canvas></div>
+  <div class="panel stats-panel"><div class="stat-row"><div class="tiny">RACE TIME</div><b id="time">00:00.00</b></div><div class="stat-row"><div class="tiny">POSITION</div><b id="place">4 / 4</b></div><div class="stat-row"><div class="tiny">SECTOR</div><b id="sector">01 / 04</b></div><div class="stat-row"><div class="tiny">LAP</div><b id="lap">1 / 2</b></div><div class="progress"><div id="progress-fill"></div></div></div>
+</div>
+<div id="controls" aria-label="Touch race controls">
+  <div class="pad"><button data-key="left" aria-label="Steer left">◀</button><button data-key="right" aria-label="Steer right">▶</button></div>
+  <div class="pad"><button data-key="brake" class="brake" aria-label="Brake">BRAKE</button><button data-key="boost" class="boost" aria-label="Boost">⚡<span>BOOST</span></button></div>
+</div>
+<div id="intro" class="overlay">
+  <div class="dialog">
+    <div class="kicker">HAMBONE SOFTWARE / TRACK LAB</div>
+    <h1>FULL<br><em>THROTTLE.</em></h1>
+    <p>Wide-open desert thunder run · 24% larger course · long high-speed sections. Four smooth-shell RC monster trucks. Four connected sectors. Two laps. Race through Backyard Launch, Garden Switchbacks, Canyon Rush, and the Home Run—with sweeping banked corners, giant jumps, and a last-second finish-line fight.</p>
+    <div class="pills"><span>FULL LOOP</span><span>4 BIG JUMPS</span><span>4 SECTORS</span><span>2-LAP GRAND PRIX</span></div>
+    <button id="start" class="primary" type="button"><span>START THE GRAND PRIX</span><span>↗</span></button>
+    <p style="font-size:11px;margin:8px 0 0">Desktop: W / ↑ accelerate · A/D / ←→ steer · S brake · Shift turbo · C camera · Esc pause. Mobile: auto-throttle + touch steering.</p>
+    <a href="./vehicle-preview.html" class="secondary" style="display:inline-block">INSPECT TRUCKS</a>
+    <a href="./index.html" class="secondary" style="display:inline-block">ORIGINAL RACE BUILD</a>
+  </div>
+</div>
+<div id="results" class="overlay hidden">
+  <div class="dialog"><div class="kicker">THE BACKYARD GRAND PRIX — FINISHED</div><h1>CHECKERED<br><em>FLAG!</em></h1><p>Two complete laps of the full four-sector circuit. Want to shave seconds off your time?</p>
+    <div class="split"><div><span>TOTAL RACE TIME</span><strong id="result-time">--:--.--</strong></div><div><span>FINISH PLACE</span><strong id="result-place">-- / 4</strong></div></div>
+    <div class="split"><div><span>LAP 01</span><strong id="result-split">--:--.--</strong></div><div><span>LAP 02</span><strong id="result-lap2">--:--.--</strong></div></div>
+    <div class="split"><div><span>FASTEST LAP</span><strong id="result-best">--:--.--</strong></div><div><span>TRACK</span><strong>4 / 4</strong></div></div>
+    <button id="retry" class="primary" type="button"><span>RUN IT AGAIN</span><span>↗</span></button><button id="exit" class="secondary" type="button">BACK TO PREVIEW</button>
+  </div>
+</div>
+<div id="pause-overlay" class="overlay hidden"><div class="dialog"><div class="kicker">PIT LANE</div><h1>PAUSED.</h1><p>Restart the sector or return to the race.</p><button id="resume" class="primary" type="button"><span>RESUME</span><span>↗</span></button><button id="restart" class="secondary" type="button">RESTART SECTOR</button></div></div>
+<div id="loading">BUILDING THE GRAND PRIX CIRCUIT…</div>
+<script type="module" src="./canyon-circuit.js"></script>
+</body>
+</html>
