@@ -7,6 +7,8 @@
  * and train cars avoid hundreds of WebGL draw calls on mobile devices.
  * No network textures, GLTF downloads or postprocess render passes.
  */
+import {getTownJunctions} from './town-streets.js';
+
 export const MODEL_TOWN_PLANS=Object.freeze({
   backyard:{
     districts:[
@@ -73,6 +75,9 @@ export function createMiniatureWorld({
 }){
   const plan=MODEL_TOWN_PLANS[course];
   if(!plan)throw new Error('Unknown miniature town course '+course);
+  const streetJunctions=getTownJunctions(course,length);
+  const onStreetJunction=(s,padding=11)=>
+    streetJunctions.some(j=>Math.abs(j-s)<padding);
   const base=new THREE.Object3D();
   const axes={
     y:new THREE.Vector3(0,1,0),z:new THREE.Vector3(0,0,1)
@@ -318,10 +323,16 @@ export function createMiniatureWorld({
     const allowedStart=Math.max(25,centerS-count*step*.53);
     for(let i=0;i<count;i++){
       const s=Math.min(length-28,allowedStart+i*step);
+      // The real racing street now runs through these town blocks.
+      // Keep the cross-street approaches clear of large building meshes.
+      if(course==='garage'&&onStreetJunction(s,10.6))continue;
       const isSecondaryRow=i%5===4;
       const thisSide=isSecondaryRow?-side:side;
-      const distance=halfWidth+(area.type==='industrial'?20:17)+
-        (i%3)*2.8+(isSecondaryRow?8:0);
+      const distance=course==='garage'
+        ? halfWidth+(area.type==='industrial'?17.3:15.5)+
+            (i%3)*1.8+(isSecondaryRow?8:0)
+        : halfWidth+(area.type==='industrial'?20:17)+
+            (i%3)*2.8+(isSecondaryRow?8:0);
       const f=clearFrame(s,thisSide,distance,halfWidth+10.5);
       const wall=plan.palette[(i+district)%plan.palette.length];
       building(f,thisSide,area.type,i+district*19,wall);
@@ -351,6 +362,7 @@ export function createMiniatureWorld({
       for(let row=0;row<rearCount;row++){
         const s=Math.max(28,Math.min(length-30,
           center+(row-(rearCount-1)*.5)*step*1.3));
+        if(course==='garage'&&onStreetJunction(s,13))continue;
         const farFrame=clearFrame(s,side,halfWidth+43,halfWidth+16);
         const style=area.type==='industrial'?'industrial':
           area.type==='mainstreet'?'mainstreet':'residential';
@@ -359,6 +371,7 @@ export function createMiniatureWorld({
       }
       for(let i=-7;i<=7;i++){
         const ss=Math.max(24,Math.min(length-25,center+i*step*.43));
+        if(course==='garage'&&onStreetJunction(ss,9))continue;
         const lane=clearFrame(ss,side,halfWidth+32,halfWidth+15);
         add('sidewalk',lane,[0,.035,0],[5.5,.09,step*.46+.15]);
         if(i%3===0){
