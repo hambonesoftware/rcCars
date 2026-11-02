@@ -2,6 +2,7 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.m
 import {makeRCTrophyTruck} from './truck-model.js';
 import {COURSE_PRESETS,getCourse} from './course-presets.js';
 import {buildCourseLoop} from './track-layouts.js';
+import {createMiniatureWorld} from './miniature-world.js';
 
 const $=id=>document.getElementById(id);
 const ui={
@@ -546,11 +547,18 @@ function createRibbon(side,inside,material,step=1){
   scene.add(obj);
 }
 function createRoad(){
+  // The scenery sits on a finite, beautifully edged model railway table.
+  const tabletop={
+    minX:mapBounds.minX-65,maxX:mapBounds.maxX+65,
+    minZ:mapBounds.minZ-65,maxZ:mapBounds.maxZ+65
+  };
   const ground=new THREE.Mesh(
-    new THREE.PlaneGeometry(1100,1100),
+    new THREE.PlaneGeometry(tabletop.maxX-tabletop.minX,tabletop.maxZ-tabletop.minZ),
     new THREE.MeshStandardMaterial({map:createGrassTexture(),roughness:1})
   );
-  ground.rotation.x=-Math.PI/2;ground.position.set(170,-.07,80);
+  ground.rotation.x=-Math.PI/2;
+  ground.position.set((tabletop.minX+tabletop.maxX)*.5,-.07,
+    (tabletop.minZ+tabletop.maxZ)*.5);
   ground.receiveShadow=true;scene.add(ground);
 
   // Full-resolution banked road ribbon with actual elevation changes.
@@ -1340,6 +1348,16 @@ function setup(){
     scene.add(sun);scene.add(sun.target);
     createRoad();
     environment();
+    const diorama=createMiniatureWorld({
+      THREE,scene,course:COURSE.id,position,length:END,
+      halfWidth:HALF,mobile,bounds:mapBounds
+    });
+    scene.userData.miniature=diorama;
+    // Expose only bounded scene counts to regression tests, not game state.
+    document.body.dataset.miniatureBuildings=String(diorama.buildings);
+    document.body.dataset.miniaturePeople=String(diorama.people);
+    document.body.dataset.miniatureRailTies=String(diorama.railTies);
+    document.body.dataset.miniatureDistricts=diorama.districts.join(' / ');
     createHazards();
     player.mesh=makeRCTrophyTruck(THREE,'#f2c33e');
     player.mesh.name='Player / yellow smooth-shell truck';
@@ -1648,10 +1666,12 @@ const focus=new THREE.Vector3(),target=new THREE.Vector3();
 // Orthographic projection preserves the isometric model proportions while
 // a rotating track-relative follow offset reveals the truck's back and side.
 const cameraConfig={
-  side:18.5,
-  behind:26,
-  elevation:39,
-  lookAhead:9.5,
+  // An elevated 3/4 miniature-photography framing, still tight enough
+  // to see where the RC truck needs to steer next.
+  side:19.5,
+  behind:27.5,
+  elevation:46,
+  lookAhead:11.5,
   lateralFollow:.78,
   // Faster damping prevents the 2x-speed truck outrunning the isometric view.
   followDamping:7.5,
@@ -1666,7 +1686,7 @@ function viewport(){
   const mapHeight=mapBounds.maxZ-mapBounds.minZ;
   const height=game.camera==='overview'?
     Math.max(mapHeight*1.65,mapWidth*1.55/Math.max(.35,aspect)):
-    (aspect<.65?61:aspect<1?54:47);
+    (aspect<.65?67:aspect<1?60:51);
   camera.top=height*.5;camera.bottom=-height*.5;
   camera.left=-height*aspect*.5;camera.right=height*aspect*.5;
   camera.updateProjectionMatrix();
@@ -1678,6 +1698,11 @@ function viewport(){
   renderer.setSize(innerWidth,innerHeight);
 }
 function updateCamera(dt){
+  if(typeof document!=='undefined'){
+    const miniature=document.getElementById('tiltshift');
+    if(miniature)miniature.dataset.view=
+      (game.camera==='overview'||game.mode==='intro')?'overview':'race';
+  }
   let desire,look;
   if(game.camera==='overview'||game.mode==='intro'){
     const centerX=(mapBounds.minX+mapBounds.maxX)*.5;
