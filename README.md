@@ -6,11 +6,12 @@ A tiny RC buggy racer with the arcade jump rhythm and risk/reward of classic mot
 
 On a desktop or mobile browser, open `index.html` from GitHub Pages (or serve this folder with a static HTTP server). The game uses Three.js from a public CDN, so internet access is required for the first load.
 
-**Desktop:** W / ↑ accelerate, A/D or ←/→ steer, S / ↓ brake, Shift boost, Q/E lean in midair, Escape pause. **Touch:** auto-throttle, on-screen steering, brake and boost.
+**Desktop:** W / ↑ accelerate, A/D or ←/→ steer, S / ↓ brake, Shift boost, Q/E lean in midair, C switch angled-isometric/bird's-eye cameras, Escape pause. **Touch:** auto-throttle, on-screen steering, brake and boost.
 
 ## The first playable
 
-- Full point-to-point backyard course with six named sections, six big takeoff ramps, small rollers, lane obstacles and varied scenery
+- RC Pro-Am-inspired angled overhead isometric camera (default), optional more vertical bird's-eye view, smoothly scrolling ahead of the buggy, and compact rolling track radar
+- Full point-to-point backyard course with more pronounced sweeping bends, painted direction arrows, six named sections, six big takeoff ramps, small rollers, lane obstacles and varied scenery
 - Three AI competitors, a start countdown, race position, speedometer, boost overheat/cooling and finishing results
 - Airborne pitch control, landing bonus/penalty, speed loss from collisions and off-track surfaces
 - Procedural 3D artwork (no external model files), responsive on-screen controls and synthesised audio
