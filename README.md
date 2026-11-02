@@ -77,7 +77,7 @@ Double-speed handling remains unchanged: 30.8 game units/s normal and 43.2 turbo
 The GitHub Pages workflow requires JavaScript syntax checks plus `tests/track-geometry.test.cjs`. The geometry test verifies original Quarter 1 coordinates, smooth centerline joins, a physically closed loop, four ramps, two laps, and lane projection. Passing CI does not substitute for visual and phone playtesting.
 ## Course selection — four playable circuits
 
-Open **[Choose a Course](./courses.html)** (now the main menu launch). Courses use the same Three.js engine, smooth-shell monster trucks, 2× regular/turbo speeds, four AI competitors total, two laps, checkpoints, race map, and rear-three-quarter isometric camera. Each is a different analytically closed circuit generated from the shared `course-presets.js` catalog, not just a recolor.
+Open **[Choose a Course](./courses.html)** (now the main menu launch). Courses use the same Three.js engine, smooth-shell monster trucks, 2× regular/turbo speeds, four AI competitors total, two laps, checkpoints, race map, and rear-three-quarter isometric camera. The Backyard route preserves its original analytic turns, while the three new venues use independent, closed, arc-length-parameterized Catmull-Rom centerlines authored in `track-layouts.js`. They no longer share the same path outline.
 
 - **Backyard Grand Prix** (`?course=backyard`) — the original layout, lighting and racing personality.
 - **Creekside Scramble** (`?course=creek`) — flowing, shorter forest track; creek pools, timber crossings, reeds and log hazards.
@@ -85,3 +85,11 @@ Open **[Choose a Course](./courses.html)** (now the main menu launch). Courses u
 - **Sunset Quarry** (`?course=quarry`) — longer, faster open layout; warm sunset colors, big quarry rock features and boulder hazards.
 
 The new `courses.html` selection gallery draws actual mathematical course previews using the same track dimensions. The game itself dynamically selects the geometry, terrain, jump spacing, vegetation density and lights via `quarter-track.html?course=<id>`. The Gallery can be reopened from the race HUD and the finish screen. `tests/track-geometry.test.cjs` validates all four circuits for closed endpoints, smooth joins, lane projection and jumps. Manual browser and device testing is still recommended.
+
+### Distinct course geometry and launch diagnostics
+
+`track-layouts.js` defines three independent point-to-point waypoint loops: Creekside has long serpentine forest bends and broad flowing S-curves; Garage is the shortest technical course with close-spaced workshop hairpins; and Quarry has wide sweeping high-speed loops. `quarter-track.js` uses the actual authored road geometry for road mesh generation, kart movement, AI, physics banking, camera, course checkpoints and circuit minimap. `course-picker.js` renders that same geometry instead of a generic preview.
+
+Course 3 no longer creates zero-count tree instancing meshes. If a JS module fails or the WebGL scene cannot initialize, the loading view now displays a readable problem and offers retry / course selection rather than getting stuck forever.
+
+`tests/track-geometry.test.cjs` checks all course outlines for geometric distinctness, seamless wraparound and lane projection. `tests/browser-smoke.cjs` starts every course in headless Chromium and drives Garage Gauntlet, so publication is blocked if a course cannot boot.
