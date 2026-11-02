@@ -1136,8 +1136,9 @@ const cameraConfig={
   elevation:39,
   lookAhead:9.5,
   lateralFollow:.78,
-  followDamping:4.3,
-  focusDamping:5.1
+  // Faster damping prevents the 2x-speed truck outrunning the isometric view.
+  followDamping:7.5,
+  focusDamping:9.0
 };
 function viewport(){
   if(!camera||!renderer)return;
