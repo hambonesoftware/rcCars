@@ -563,8 +563,8 @@ function createRibbon(side,inside,material,step=1){
 function createRoad(){
   // The scenery sits on a finite, beautifully edged model railway table.
   const tabletop={
-    minX:mapBounds.minX-65,maxX:mapBounds.maxX+65,
-    minZ:mapBounds.minZ-65,maxZ:mapBounds.maxZ+65
+    minX:mapBounds.minX-105,maxX:mapBounds.maxX+105,
+    minZ:mapBounds.minZ-105,maxZ:mapBounds.maxZ+105
   };
   const ground=new THREE.Mesh(
     new THREE.PlaneGeometry(tabletop.maxX-tabletop.minX,tabletop.maxZ-tabletop.minZ),
@@ -1343,7 +1343,7 @@ function setup(){
     // broad daylight highlight, instead of pure, uniformly coloured plastic.
     scene.environment=createSkyEnvironment();
     scene.environmentIntensity=mobile?.48:.62;
-    camera=new THREE.OrthographicCamera(-70,70,45,-45,.2,700);
+    camera=new THREE.OrthographicCamera(-70,70,45,-45,.2,1800);
     scene.add(new THREE.HemisphereLight(
       COURSE.id==='quarry'?'#ffe6c3':'#cbdde5',
       COURSE.id==='quarry'?'#806748':'#64735b',COURSE.ambient));
@@ -1700,7 +1700,7 @@ function viewport(){
   const mapWidth=mapBounds.maxX-mapBounds.minX;
   const mapHeight=mapBounds.maxZ-mapBounds.minZ;
   const height=game.camera==='overview'?
-    Math.max(mapHeight*1.65,mapWidth*1.55/Math.max(.35,aspect)):
+    Math.max((mapHeight+210)*1.24,(mapWidth+210)*1.20/Math.max(.35,aspect)):
     (aspect<.65?67:aspect<1?60:51);
   camera.top=height*.5;camera.bottom=-height*.5;
   camera.left=-height*aspect*.5;camera.right=height*aspect*.5;
