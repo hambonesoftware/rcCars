@@ -60,3 +60,18 @@ Sector 01 uses double the previous top speeds for the yellow player truck: norma
 The refined 3D monster trucks retain the agreed double speed settings: **30.8 game units/s normal** and **43.2 units/s boost**, with proportionally tuned AI rivals. Controls and photographic materials are unchanged. The camera keeps the close rear three-quarter isometric follow angle, with a full half-course overview toggle.
 
 The other half of the circuit and actual multi-lap racing are intentionally not yet built. The GitHub Pages deployment workflow runs Node syntax checks and **tests/track-geometry.test.cjs** before publication; that regression test verifies original Sector 01 coordinates, continuous joins, road projection, both jumps and the speed configuration.
+
+## Full circuit Grand Prix — Sectors 01–04 (current)
+
+**[Drive the four-sector Grand Prix](./quarter-track.html)**. The circuit closes cleanly back onto the original starting straight, with four continuous sections:
+
+- **01: Backyard Launch** — four-car checkered start, rhythm rollers, first ramp, banked right corner.
+- **02: Garden Switchbacks** — banked left sweeper, garden jump, opposing turn and speed exit.
+- **03: Canyon Rush** — outside 90° turn, long speed section, third jump, and dramatic hairpin.
+- **04: Home Run** — high-speed return straight, final launcher, 90° bend and finishing chute.
+
+The Grand Prix has **two complete laps**, AI cars on the same closed route, timing gates at each sector, live lap/sector indicators, lap-time results, and a minimap showing all four sectors. The default camera remains the close rear-three-quarter isometric follow angle; **Overview** reveals the complete track.
+
+Double-speed handling remains unchanged: 30.8 game units/s normal and 43.2 turbo (with overheating). Road shaders, smooth single-shell trucks, tire shadows and mobile-instanced environment remain intact.
+
+The GitHub Pages workflow requires JavaScript syntax checks plus `tests/track-geometry.test.cjs`. The geometry test verifies original Quarter 1 coordinates, smooth centerline joins, a physically closed loop, four ramps, two laps, and lane projection. Passing CI does not substitute for visual and phone playtesting.
