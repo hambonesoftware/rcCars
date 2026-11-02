@@ -100,7 +100,9 @@ const HALF=9.1,CRUISE_SPEED=15.4*RACE_SPEED_MULTIPLIER;
 const MAX_SPEED=21.6*RACE_SPEED_MULTIPLIER,GRAVITY=19.5;
 const STARTLINE=19,FINAL_GATE=END-3;
 const ramps=[
-  {start:STRAIGHT*.68,end:STRAIGHT*.83,height:2.15*COURSE.rampScale,
+  {start:COURSE.id==='backyard'?58:STRAIGHT*.68,
+    end:COURSE.id==='backyard'?72:STRAIGHT*.83,
+    height:2.15*COURSE.rampScale,
     name:COURSE.id==='backyard'?'Backyard Launch':COURSE.id==='creek'?'Creek Hop':COURSE.id==='garage'?'Toolbox Takeoff':'Quarry Kick'},
   {start:SECTOR_2_LEFT_END+7,end:SECTOR_2_LEFT_END+20,height:2.6*COURSE.rampScale,
     name:COURSE.id==='creek'?'Stream Leap':COURSE.id==='garage'?'Ramp Alley':'Garden Leap'},
@@ -964,8 +966,13 @@ function applyCourseUI(){
   document.title='Micro Mayhem — '+COURSE.title;
   const description=document.querySelector('meta[name="description"]');
   if(description)description.content=COURSE.description;
-  const brand=document.querySelector('#top .details span:last-child');
+  const brand=document.getElementById('course-title');
   if(brand)brand.textContent=COURSE.title.toUpperCase();
+  const courseOrder=['backyard','creek','garage','quarry'].indexOf(COURSE.id);
+  const kicker=document.getElementById('course-kicker');
+  if(kicker)kicker.textContent='COURSE 0'+(courseOrder+1)+' / 04';
+  const subtitle=document.getElementById('course-subtitle');
+  if(subtitle)subtitle.textContent=COURSE.subtitle;
   const heading=document.querySelector('#intro h1');
   if(heading){
     const names={
@@ -976,7 +983,7 @@ function applyCourseUI(){
     };
     heading.innerHTML=names[COURSE.id];
   }
-  const introDescription=document.querySelector('#intro .course-description');
+  const introDescription=document.getElementById('course-description');
   if(introDescription)introDescription.textContent=COURSE.description+
     ' Four sectors, four jumps, two laps and full-speed RC racing.';
   const pills=document.querySelector('#intro .pills');
@@ -984,7 +991,7 @@ function applyCourseUI(){
     '<span>2-LAP GRAND PRIX</span><span>2× BOOST</span>';
   const startText=document.querySelector('#start span:first-child');
   if(startText)startText.textContent='RACE '+COURSE.title.toUpperCase();
-  const resultHeading=document.querySelector('#results .kicker');
+  const resultHeading=document.getElementById('result-course-name');
   if(resultHeading)resultHeading.textContent=COURSE.title.toUpperCase()+' · FINISHED';
   const active=document.querySelector('[data-course="'+COURSE.id+'"]');
   if(active){
@@ -2031,7 +2038,7 @@ function toggleView(){
   ui.camera.setAttribute('aria-label',game.camera==='follow'?'Switch to entire sector overview':'Return to close rear-quarter isometric camera');
   ui.camera.classList.toggle('active',game.camera==='overview');
   viewport();
-  toast(game.camera==='overview'?'COMPLETE QUARTER OVERVIEW':'CLOSE REAR-QUARTER ISO');
+  toast(game.camera==='overview'?'FULL CIRCUIT OVERVIEW':'CLOSE REAR-QUARTER ISO');
 }
 document.addEventListener('keydown',e=>handleKey(e,true),{passive:false});
 document.addEventListener('keyup',e=>handleKey(e,false),{passive:false});
