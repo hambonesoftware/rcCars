@@ -27,7 +27,27 @@ const SECTOR_2_LEFT_START=SECTOR_1_END+SECTOR_2_STRAIGHT;
 const SECTOR_2_LEFT_END=SECTOR_2_LEFT_START+SECTOR_2_LEFT_LENGTH;
 const SECTOR_2_RIGHT_START=SECTOR_2_LEFT_END+SECTOR_2_NORTH;
 const SECTOR_2_RIGHT_END=SECTOR_2_RIGHT_START+SECTOR_2_RIGHT_LENGTH;
-const END=SECTOR_2_RIGHT_END+SECTOR_2_EXIT;
+const SECTOR_2_END=SECTOR_2_RIGHT_END+SECTOR_2_EXIT;
+// Sector 03: long outside loop with a fast eastern straight and south turn.
+// Sector 04: return westward, final northern hairpin, and the start-line chute.
+const SECTOR_3_EAST=48;
+const SECTOR_3_RIGHT_RADIUS=65;
+const SECTOR_3_RIGHT_LENGTH=Math.PI*.5*SECTOR_3_RIGHT_RADIUS;
+const SECTOR_3_SOUTH=288;
+const SECTOR_3_HAIRPIN_RADIUS=60;
+const SECTOR_3_HAIRPIN_LENGTH=Math.PI*.5*SECTOR_3_HAIRPIN_RADIUS;
+const SECTOR_4_WEST=318;
+const SECTOR_4_RETURN_RADIUS=58;
+const SECTOR_4_RETURN_LENGTH=Math.PI*.5*SECTOR_4_RETURN_RADIUS;
+const SECTOR_4_NORTH=62;
+const SECTOR_3_EAST_END=SECTOR_2_END+SECTOR_3_EAST;
+const SECTOR_3_RIGHT_END=SECTOR_3_EAST_END+SECTOR_3_RIGHT_LENGTH;
+const SECTOR_3_SOUTH_END=SECTOR_3_RIGHT_END+SECTOR_3_SOUTH;
+const SECTOR_3_END=SECTOR_3_SOUTH_END+SECTOR_3_HAIRPIN_LENGTH;
+const SECTOR_4_WEST_END=SECTOR_3_END+SECTOR_4_WEST;
+const SECTOR_4_RETURN_END=SECTOR_4_WEST_END+SECTOR_4_RETURN_LENGTH;
+const END=SECTOR_4_RETURN_END+SECTOR_4_NORTH;
+const LAPS=2;
 const SEGMENT_LAYOUT=[
   {kind:'straight',length:STRAIGHT},
   {kind:'turn',length:TURN,radius:R,sign:1},
@@ -36,7 +56,14 @@ const SEGMENT_LAYOUT=[
   {kind:'turn',length:SECTOR_2_LEFT_LENGTH,radius:SECTOR_2_LEFT_RADIUS,sign:-1},
   {kind:'straight',length:SECTOR_2_NORTH},
   {kind:'turn',length:SECTOR_2_RIGHT_LENGTH,radius:SECTOR_2_RIGHT_RADIUS,sign:1},
-  {kind:'straight',length:SECTOR_2_EXIT}
+  {kind:'straight',length:SECTOR_2_EXIT},
+  {kind:'straight',length:SECTOR_3_EAST},
+  {kind:'turn',length:SECTOR_3_RIGHT_LENGTH,radius:SECTOR_3_RIGHT_RADIUS,sign:1},
+  {kind:'straight',length:SECTOR_3_SOUTH},
+  {kind:'turn',length:SECTOR_3_HAIRPIN_LENGTH,radius:SECTOR_3_HAIRPIN_RADIUS,sign:1},
+  {kind:'straight',length:SECTOR_4_WEST},
+  {kind:'turn',length:SECTOR_4_RETURN_LENGTH,radius:SECTOR_4_RETURN_RADIUS,sign:1},
+  {kind:'straight',length:SECTOR_4_NORTH}
 ];
 function pathLayout(){
   let x=0,z=0,angle=0,s=0;
@@ -64,17 +91,25 @@ const MAX_SPEED=21.6*RACE_SPEED_MULTIPLIER,GRAVITY=19.5;
 const STARTLINE=19,FINAL_GATE=END-3;
 const ramps=[
   {start:58,end:72,height:2.15,name:'Backyard Launch'},
-  {start:SECTOR_2_LEFT_END+8,end:SECTOR_2_LEFT_END+22,height:2.6,name:'Garden Leap'}
+  {start:SECTOR_2_LEFT_END+8,end:SECTOR_2_LEFT_END+22,height:2.6,name:'Garden Leap'},
+  {start:SECTOR_3_RIGHT_END+76,end:SECTOR_3_RIGHT_END+92,height:3.0,name:'Canyon Launcher'},
+  {start:SECTOR_3_END+148,end:SECTOR_3_END+165,height:2.3,name:'Final Flyer'}
 ];
 const rollers=[
   {start:25,end:35,height:.44},{start:40,end:51,height:.55},
   {start:213,end:224,height:.42},{start:234,end:244,height:.58},
   {start:SECTOR_1_END+7,end:SECTOR_1_END+17,height:.42},
   {start:SECTOR_2_LEFT_END-23,end:SECTOR_2_LEFT_END-13,height:.47},
-  {start:SECTOR_2_RIGHT_END+10,end:SECTOR_2_RIGHT_END+22,height:.58}
+  {start:SECTOR_2_RIGHT_END+10,end:SECTOR_2_RIGHT_END+22,height:.58},
+  {start:SECTOR_3_RIGHT_END+35,end:SECTOR_3_RIGHT_END+46,height:.48},
+  {start:SECTOR_3_RIGHT_END+57,end:SECTOR_3_RIGHT_END+70,height:.64},
+  {start:SECTOR_3_SOUTH_END-30,end:SECTOR_3_SOUTH_END-16,height:.46},
+  {start:SECTOR_3_END+48,end:SECTOR_3_END+59,height:.50},
+  {start:SECTOR_4_WEST_END-54,end:SECTOR_4_WEST_END-41,height:.66},
+  {start:SECTOR_4_RETURN_END+10,end:SECTOR_4_RETURN_END+21,height:.44}
 ];
 const controls={left:false,right:false,accel:false,brake:false,boost:false,leanBack:false,leanForward:false};
-const game={mode:'intro',time:0,countdown:3.4,camera:'follow',toastUntil:0,shake:0,muted:false,split1:null};
+const game={mode:'intro',time:0,countdown:3.4,camera:'follow',toastUntil:0,shake:0,muted:false,split1:null,split2:null,split3:null,lap:1,lapSplits:[]};
 const player={
   mesh:null,x:0,y:0,z:0,s:7,d:-3.35,heading:0,speed:0,
   vy:0,grounded:true,airtime:0,pitch:0,roll:0,
@@ -142,7 +177,10 @@ function surfaceHeight(s,d=0){
   for(const curve of [
     {from:STRAIGHT,to:STRAIGHT+TURN,sign:1},
     {from:SECTOR_2_LEFT_START,to:SECTOR_2_LEFT_END,sign:-1},
-    {from:SECTOR_2_RIGHT_START,to:SECTOR_2_RIGHT_END,sign:1}
+    {from:SECTOR_2_RIGHT_START,to:SECTOR_2_RIGHT_END,sign:1},
+    {from:SECTOR_3_EAST_END,to:SECTOR_3_RIGHT_END,sign:1},
+    {from:SECTOR_3_SOUTH_END,to:SECTOR_3_END,sign:1},
+    {from:SECTOR_4_WEST_END,to:SECTOR_4_RETURN_END,sign:1}
   ]){
     if(s>=curve.from&&s<=curve.to){
       const t=(s-curve.from)/(curve.to-curve.from);
