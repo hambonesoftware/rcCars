@@ -1,247 +1,430 @@
 /**
- * Micro Mayhem - RC mini monster truck.
- * Procedural Three.js model based on the user's four-truck racing reference:
- * squat single-cab pickup, functional open bed, big knobby tires, raised chassis.
- * This is real geometry, not a billboard / sprite / generated image.
+ * Micro Mayhem — smooth short-bed RC monster-truck model (v2).
  *
- * +Z = forward; X = width; Y = up.
+ * The entire painted exterior, including the hood, cab, bed rails and
+ * rounded body sides, is one continuous indexed and smoothed mesh.
+ * Deliberately separate parts: glass, grille, lamps, chassis, wheels and
+ * minor detailing. No box-built hood, cab or cargo-bed side panels.
+ *
+ * Local axes: +Z front, X left/right, +Y up. Designed to be readable from
+ * the elevated isometric camera in vehicle-preview.html.
  */
 export function makeRCTrophyTruck(THREE, paint = '#ebcb40') {
-  const car = new THREE.Group();
-  car.name = 'Micro Mayhem / Short Bed Monster Truck';
+  const truck = new THREE.Group();
+  truck.name = 'Micro Mayhem — Smooth-Shell Mini Monster 4x4';
 
-  const c = {
-    paint: new THREE.MeshPhysicalMaterial({color:paint, metalness:.22, roughness:.36, clearcoat:1, clearcoatRoughness:.23}),
-    darker: new THREE.MeshStandardMaterial({color: new THREE.Color(paint).multiplyScalar(.76), metalness:.15, roughness:.58}),
-    highlight: new THREE.MeshStandardMaterial({color: new THREE.Color(paint).multiplyScalar(1.12), metalness:.25, roughness:.31}),
-    trim: new THREE.MeshStandardMaterial({color:'#22292b', roughness:.78}),
-    chassis: new THREE.MeshStandardMaterial({color:'#353737', metalness:.42, roughness:.62}),
-    glass: new THREE.MeshPhysicalMaterial({color:'#203a45',metalness:.08,roughness:.18,clearcoat:1,clearcoatRoughness:.08}),
-    glassShine: new THREE.MeshBasicMaterial({color:'#8aa8aa',transparent:true,opacity:.29,depthWrite:false}),
-    rubber: new THREE.MeshStandardMaterial({color:'#252321',roughness:1}),
-    tread: new THREE.MeshStandardMaterial({color:'#3c3831',roughness:1}),
-    mud: new THREE.MeshStandardMaterial({color:'#796c50',roughness:1}),
-    rim: new THREE.MeshStandardMaterial({color:'#8c9090',metalness:.74,roughness:.34}),
-    rimDark: new THREE.MeshStandardMaterial({color:'#363b3c',metalness:.54,roughness:.5}),
-    light: new THREE.MeshStandardMaterial({color:'#f5ead1',emissive:'#aea177',emissiveIntensity:.17,roughness:.22}),
-    orange: new THREE.MeshStandardMaterial({color:'#efae62',roughness:.35}),
-    red: new THREE.MeshStandardMaterial({color:'#c7443c',roughness:.35}),
-    silver: new THREE.MeshStandardMaterial({color:'#a3acaf',metalness:.74,roughness:.33}),
+  const palette = {
+    paint: new THREE.MeshPhysicalMaterial({
+      color: paint, metalness: .18, roughness: .29,
+      clearcoat: .95, clearcoatRoughness: .17, side: THREE.DoubleSide
+    }),
+    darker: new THREE.MeshStandardMaterial({
+      color: new THREE.Color(paint).multiplyScalar(.78), roughness: .45
+    }),
+    highlight: new THREE.MeshStandardMaterial({
+      color: new THREE.Color(paint).multiplyScalar(1.10), roughness: .35
+    }),
+    glass: new THREE.MeshPhysicalMaterial({
+      color: '#253c42', metalness: .06, roughness: .17,
+      clearcoat: 1, clearcoatRoughness: .06, side: THREE.DoubleSide
+    }),
+    reflection: new THREE.MeshBasicMaterial({
+      color: '#9ebbbe', opacity: .21, transparent: true,
+      depthWrite: false, side: THREE.DoubleSide
+    }),
+    tire: new THREE.MeshStandardMaterial({ color: '#252626', roughness: .94 }),
+    tread: new THREE.MeshStandardMaterial({ color: '#33332f', roughness: 1 }),
+    chassis: new THREE.MeshStandardMaterial({ color: '#252b2c', roughness: .8, metalness: .22 }),
+    rubber: new THREE.MeshStandardMaterial({ color: '#1c2425', roughness: .88 }),
+    charcoal: new THREE.MeshStandardMaterial({ color: '#333c3d', roughness: .55, metalness: .16 }),
+    metal: new THREE.MeshStandardMaterial({ color: '#919b9d', roughness: .32, metalness: .68 }),
+    grille: new THREE.MeshStandardMaterial({ color: '#1b272b', roughness: .58, metalness: .1 }),
+    light: new THREE.MeshPhysicalMaterial({
+      color: '#fcf2d7', roughness: .24, clearcoat: .8,
+      emissive: '#8b7950', emissiveIntensity: .12
+    }),
+    amber: new THREE.MeshStandardMaterial({color:'#e6ad5b', roughness:.35}),
+    brake: new THREE.MeshStandardMaterial({color:'#c84e43', roughness:.35})
   };
-  const boxGeo = new THREE.BoxGeometry(1,1,1);
-  function box(parent,material,x,y,z,w,h,d) {
-    const m = new THREE.Mesh(boxGeo, material);
-    m.position.set(x,y,z);
-    m.scale.set(w,h,d);
-    m.castShadow=true;
-    m.receiveShadow=true;
+
+  const geometryUnitBox = new THREE.BoxGeometry(1, 1, 1);
+  function box(parent, material, x, y, z, sx, sy, sz) {
+    const m = new THREE.Mesh(geometryUnitBox, material);
+    m.position.set(x, y, z);
+    m.scale.set(sx, sy, sz);
+    m.castShadow = true;
+    m.receiveShadow = true;
     parent.add(m);
     return m;
   }
-  function torus(parent,material,x,y,z,r,t,axis='z'){
-    const o=new THREE.Mesh(new THREE.TorusGeometry(r,t,7,30),material);
-    o.position.set(x,y,z);
-    if(axis==='x')o.rotation.y=Math.PI/2;
-    o.castShadow=true;
-    parent.add(o);
-    return o;
-  }
-  function cylinder(parent,material,x,y,z,r1,r2,h,segments=14,axis='y'){
-    const obj=new THREE.Mesh(new THREE.CylinderGeometry(r1,r2,h,segments),material);
-    obj.position.set(x,y,z);
-    if(axis==='x')obj.rotation.z=Math.PI/2;
-    if(axis==='z')obj.rotation.x=Math.PI/2;
-    obj.castShadow=true;
-    obj.receiveShadow=true;
-    parent.add(obj);
-    return obj;
-  }
-  function link(parent,a,b,r,material){
-    const start=new THREE.Vector3(...a),end=new THREE.Vector3(...b);
-    const vector=end.clone().sub(start);
-    const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,vector.length(),7),material);
-    m.position.copy(start.clone().add(end).multiplyScalar(.5));
-    m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),vector.normalize());
-    m.castShadow=true;
+  function cylinder(parent, material, x, y, z, top, bottom, length, sides = 18, axis = 'y') {
+    const m = new THREE.Mesh(new THREE.CylinderGeometry(top, bottom, length, sides), material);
+    m.position.set(x, y, z);
+    if (axis === 'x') m.rotation.z = Math.PI / 2;
+    if (axis === 'z') m.rotation.x = Math.PI / 2;
+    m.castShadow = true;
+    m.receiveShadow = true;
     parent.add(m);
     return m;
   }
-  // Painted side panels: layer geometry so bodywork reads as one pickup.
-  box(car,c.chassis,0,.94,0,1.33,.21,3.65);
-  box(car,c.chassis,0,.73,0,1.12,.22,2.74);
-  for (const side of [-1,1]){
-    box(car,c.chassis,side*.51,.69,0,.12,.27,3.45);
-    box(car,c.chassis,side*.62,.88,0,.14,.16,2.8);
+  function sphere(parent, material, x, y, z, sx, sy, sz) {
+    const m = new THREE.Mesh(new THREE.SphereGeometry(1, 12, 8), material);
+    m.position.set(x, y, z);
+    m.scale.set(sx, sy, sz);
+    m.castShadow = true;
+    parent.add(m);
+    return m;
   }
-  // Axles and dark under-truck mechanical shapes.
-  for(const z of [-1.05,1.08]){
-    cylinder(car,c.chassis,0,.67,z,.12,.12,2.0,10,'x');
-    cylinder(car,c.chassis,0,.73,z,.31,.31,.33,12,'x');
-    for(const side of [-1,1]){
-      link(car,[side*.33,.85,z-.22],[side*.88,.63,z],.065,c.silver);
-      link(car,[side*.33,.82,z+.22],[side*.88,.63,z],.065,c.silver);
-      link(car,[side*.62,.99,z-.11],[side*.89,.57,z+.09],.09,c.chassis);
-      const spring=cylinder(car,c.silver,side*.72,.85,z,.13,.13,.37,9);
-      spring.rotation.z=side*.47;
+  function rod(parent, a, b, radius, material, segments = 8) {
+    const first = new THREE.Vector3(...a);
+    const second = new THREE.Vector3(...b);
+    const delta = second.clone().sub(first);
+    const m = new THREE.Mesh(new THREE.CylinderGeometry(radius, radius, delta.length(), segments), material);
+    m.position.copy(first.add(second).multiplyScalar(.5));
+    m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), delta.normalize());
+    m.castShadow = true;
+    parent.add(m);
+    return m;
+  }
+  function tube(parent, points, radius, material, segments = 40) {
+    const curve = new THREE.CatmullRomCurve3(points.map(p => new THREE.Vector3(...p)));
+    const m = new THREE.Mesh(
+      new THREE.TubeGeometry(curve, segments, radius, 7, false), material
+    );
+    m.castShadow = true;
+    parent.add(m);
+    return m;
+  }
+  function clamp(value, lo, hi) { return Math.max(lo, Math.min(hi, value)); }
+  function smooth(a, b, x) {
+    const t = clamp((x - a) / (b - a), 0, 1);
+    return t * t * (3 - 2 * t);
+  }
+
+  // These are the body sculpting control stations, back to front.
+  // z, paint skin top height, half-width. More subdivisions are interpolated
+  // between them to create a unified production-like molded shell.
+  const stations = [
+    [-2.16, 1.40, .78],
+    [-2.10, 1.59, .88],
+    [-1.98, 1.71, .94],
+    [-1.10, 1.73, .95],
+    [-.92,  1.76, .92],
+    [-.76,  1.87, .88],
+    [-.50,  2.35, .83],
+    [-.38,  2.43, .83],
+    [ .26,  2.43, .83],
+    [ .42,  2.33, .85],
+    [ .82,  1.79, .93],
+    [1.00,  1.75, .96],
+    [1.61,  1.70, .96],
+    [1.94,  1.63, .91],
+    [2.10,  1.44, .85],
+    [2.17,  1.28, .75]
+  ];
+  function profile(z) {
+    const zz = clamp(z, stations[0][0], stations[stations.length-1][0]);
+    let i=0;
+    while(i<stations.length-2 && zz>stations[i+1][0]) i++;
+    const a=stations[i], b=stations[i+1];
+    // Monotonic ease avoids sharp box corners or rippled roof lines.
+    const t=smooth(a[0], b[0], zz);
+    return {
+      top: a[1]+(b[1]-a[1])*t,
+      half: a[2]+(b[2]-a[2])*t
+    };
+  }
+  function bedFactor(z) {
+    return smooth(-2.08,-1.96,z) * (1-smooth(-1.02,-.84,z));
+  }
+  function skinTop(z, x) {
+    const {top,half}=profile(z);
+    const u=clamp(Math.abs(x)/half,0,1);
+    // Shoulder rounds into side panels; gentler roll-over at the cab.
+    const shoulder=.11*smooth(.72,1.0,u);
+    const crown=.028*u*u;
+    const well=.36*bedFactor(z)*(1-smooth(.61,.83,u));
+    return top-shoulder-crown-well;
+  }
+  function archBottom(z) {
+    let bottom=1.065;
+    // A real rising wheel-arch cutout, instead of floating arch decorations.
+    for(const wheelZ of [-1.04,1.08]){
+      const dz=z-wheelZ;
+      const radius=.875;
+      if(Math.abs(dz)<radius){
+        const opening=.70+Math.sqrt(radius*radius-dz*dz);
+        bottom=Math.max(bottom,opening);
+      }
+    }
+    return bottom;
+  }
+  function makePaintedShell() {
+    const vertices=[], faces=[];
+    const nz=156, ntop=36, nside=9, nunder=12;
+    // A circumferential loop at each z, joined into one indexed manifold.
+    const rings=[];
+    for(let iz=0;iz<=nz;iz++){
+      const z=stations[0][0]+(stations[stations.length-1][0]-stations[0][0])*iz/nz;
+      const {half}=profile(z);
+      const ring=[];
+      for(let j=0;j<=ntop;j++){
+        const x=half*(-1+2*j/ntop);
+        ring.push([x,skinTop(z,x),z]);
+      }
+      const rimY=skinTop(z,half);
+      const bottom=archBottom(z);
+      for(let j=1;j<=nside;j++){
+        const t=j/nside;
+        ring.push([half-.045*smooth(0,1,t),rimY+(bottom-rimY)*t,z]);
+      }
+      const underHalf=half-.045;
+      for(let j=1;j<=nunder;j++){
+        const t=j/nunder;
+        ring.push([underHalf*(1-2*t),bottom-.12*Math.sin(Math.PI*t),z]);
+      }
+      const leftTop=skinTop(z,-half);
+      for(let j=1;j<nside;j++){
+        const t=j/nside;
+        ring.push([-half+.045*(1-t),bottom+(leftTop-bottom)*t,z]);
+      }
+      rings.push(ring);
+      for(const v of ring)vertices.push(...v);
+    }
+    const perRing=rings[0].length;
+    for(let z=0;z<nz;z++){
+      for(let j=0;j<perRing;j++){
+        const k=(j+1)%perRing;
+        const a=z*perRing+j, b=z*perRing+k;
+        const c=(z+1)*perRing+j,d=(z+1)*perRing+k;
+        faces.push(a,b,c,b,d,c);
+      }
+    }
+    // The shell also closes at the grille and tail: no loose panels.
+    for(const end of [0,nz]){
+      const ring=rings[end];
+      const p=vertices.length/3;
+      vertices.push(0,1.22,ring[0][2]);
+      for(let j=0;j<perRing;j++){
+        const a=end*perRing+j;
+        const b=end*perRing+(j+1)%perRing;
+        if(end===0)faces.push(p,b,a);
+        else faces.push(p,a,b);
+      }
+    }
+    const g=new THREE.BufferGeometry();
+    g.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));
+    g.setIndex(faces);
+    g.computeVertexNormals();
+    const shell=new THREE.Mesh(g,palette.paint);
+    shell.name='One-piece painted body shell';
+    shell.castShadow=true;
+    shell.receiveShadow=true;
+    truck.add(shell);
+    truck.userData.bodyShell=shell;
+  }
+  makePaintedShell();
+
+  // Flush glazing follows the curved body surface — no stacked window boxes.
+  function patch(material, vertices, indices, name) {
+    const g=new THREE.BufferGeometry();
+    g.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));
+    g.setIndex(indices);
+    g.computeVertexNormals();
+    const m=new THREE.Mesh(g,material);
+    m.name=name;
+    truck.add(m);
+    return m;
+  }
+  function roofGlass(z0,z1,halfWidth,material,name) {
+    const verts=[],indices=[];
+    const rows=18,columns=18;
+    for(let r=0;r<=rows;r++){
+      const f=r/rows;
+      const z=z0+(z1-z0)*f;
+      const width=halfWidth*(1-.055*Math.pow(Math.abs(2*f-1),6));
+      for(let j=0;j<=columns;j++){
+        const x=width*(2*j/columns-1);
+        verts.push(x,skinTop(z,x)+.014,z);
+      }
+    }
+    for(let r=0;r<rows;r++){
+      for(let j=0;j<columns;j++){
+        const a=r*(columns+1)+j,b=a+1,c=a+columns+1,d=c+1;
+        indices.push(a,b,c,b,d,c);
+      }
+    }
+    return patch(material,verts,indices,name);
+  }
+  roofGlass(.45,.815,.70,palette.glass,'Curved flush windshield');
+  roofGlass(-.715,-.515,.65,palette.glass,'Curved flush rear glass');
+  roofGlass(.52,.64,.13,palette.reflection,'Windshield light reflection');
+
+  function sideWindow(side, path, name) {
+    const verts=[],idx=[];
+    const divisions=6;
+    for(let i=0;i<path.length;i++){
+      const [z,y]=path[i];
+      const x=side*(profile(z).half+.012);
+      verts.push(x,y,z);
+    }
+    for(let i=1;i<path.length-1;i++)idx.push(0,i,i+1);
+    return patch(palette.glass,verts,idx,name);
+  }
+  for(const side of [-1,1]){
+    sideWindow(side,[
+      [.41,1.93],[.37,2.23],[.27,2.315],[-.20,2.315],
+      [-.18,1.92]
+    ],'Front side window');
+    sideWindow(side,[
+      [-.27,1.92],[-.28,2.315],[-.43,2.305],[-.66,1.94]
+    ],'Rear quarter window');
+    // Slender body-colour B pillar and simple integrated door hardware.
+    rod(truck,[side*.855,1.91,-.225],[side*.855,2.33,-.225],.026,palette.darker,6);
+    rod(truck,[side*.911,1.77,-.55],[side*.905,1.77,.43],.015,palette.darker,6);
+    sphere(truck,palette.charcoal,side*.966,1.82,.52,.14,.10,.15);
+    sphere(truck,palette.glass,side*1.046,1.83,.52,.145,.09,.11);
+    sphere(truck,palette.metal,side*.957,1.58,-.16,.035,.025,.125);
+    // The wheel-opening lips follow the actual arches in the body skin.
+    for(const axle of [-1.04,1.08]){
+      const points=[];
+      for(let j=0;j<=23;j++){
+        const z=axle-.875+1.75*j/23;
+        points.push([
+          side*(profile(z).half+.018),
+          archBottom(z)+.02,
+          z
+        ]);
+      }
+      tube(truck,points,.048,palette.rubber,40);
     }
   }
-  // Deliberately large exposed 4x4 tires. Diameter ~1.52 versus 3.9 length.
+  // A sculpted depression in the one-piece body creates an actual open-bed
+  // silhouette. This liner and the shallow strengthening ribs are detailing,
+  // not boxes used to fake the sides of the pickup.
+  function bedLiner(){
+    const verts=[],indices=[],rows=23,cols=16;
+    for(let r=0;r<=rows;r++){
+      const z=-1.91+r/rows*.88;
+      for(let i=0;i<=cols;i++){
+        const x=-.58+i/cols*1.16;
+        verts.push(x,skinTop(z,x)+.016,z);
+      }
+    }
+    for(let r=0;r<rows;r++){
+      for(let i=0;i<cols;i++){
+        const a=r*(cols+1)+i,b=a+1,c=a+cols+1,d=c+1;
+        indices.push(a,b,c,b,d,c);
+      }
+    }
+    patch(palette.charcoal,verts,indices,'Inset pickup-bed liner');
+    for(let i=-3;i<=3;i++){
+      const x=i*.158;
+      const points=[];
+      for(let j=0;j<=12;j++){
+        const z=-1.86+j*.064;
+        points.push([x,skinTop(z,x)+.028,z]);
+      }
+      tube(truck,points,.012,palette.rubber,17);
+    }
+  }
+  bedLiner();
+
+  // Grille and lights are inlaid into the body; these alone remain separate.
+  // The front shell has a tapered rounded nose, so lamps are scaled ovals.
+  sphere(truck,palette.grille,0,1.405,2.174,.62,.15,.034);
+  for(let i=-2;i<=2;i++){
+    rod(truck,[i*.17,1.325,2.207],[i*.17,1.48,2.207],.014,palette.metal,6);
+  }
+  for(const side of [-1,1]){
+    sphere(truck,palette.light,side*.62,1.49,2.135,.23,.125,.052);
+    sphere(truck,palette.amber,side*.834,1.46,2.08,.065,.095,.045);
+    sphere(truck,palette.brake,side*.72,1.45,-2.122,.17,.12,.047);
+  }
+  // A rounded bumper rather than the previous square-ended separate box.
+  const bumperFront=tube(truck,[
+    [-.96,1.10,2.22],[-.74,1.075,2.28],[0,1.06,2.34],
+    [.74,1.075,2.28],[.96,1.10,2.22]
+  ],.105,palette.charcoal,36);
+  bumperFront.name='Front impact bar';
+  tube(truck,[
+    [-.93,1.095,-2.20],[0,1.075,-2.26],[.93,1.095,-2.20]
+  ],.09,palette.charcoal,24);
+
+  // Lifted RC chassis. These are visible mechanical parts, not shell pieces.
+  box(truck,palette.chassis,0,.85,.02,1.34,.27,3.2);
+  box(truck,palette.chassis,0,.72,.02,1.04,.22,2.85);
+  for(const side of [-1,1]){
+    rod(truck,[side*.46,.73,-1.44],[side*.46,.73,1.45],.074,palette.metal);
+  }
+  for(const wheelZ of [-1.04,1.08]){
+    cylinder(truck,palette.chassis,0,.68,wheelZ,.11,.11,2.03,12,'x');
+    cylinder(truck,palette.charcoal,0,.67,wheelZ,.27,.27,.4,12,'x');
+    for(const side of [-1,1]){
+      rod(truck,[side*.32,.84,wheelZ-.18],[side*.84,.64,wheelZ],.06,palette.metal);
+      rod(truck,[side*.32,.84,wheelZ+.18],[side*.84,.64,wheelZ],.06,palette.metal);
+      rod(truck,[side*.65,.99,wheelZ-.13],[side*.89,.58,wheelZ+.08],.075,palette.charcoal);
+      const shock=cylinder(truck,palette.metal,side*.69,.82,wheelZ,.12,.12,.31,8);
+      shock.rotation.z=side*.35;
+    }
+  }
+
   const wheels=[];
-  function makeWheel(x,z,side){
-    const tireRoot=new THREE.Group();
-    tireRoot.position.set(x,.72,z);
-    car.add(tireRoot);
-    wheels.push(tireRoot);
-    const tire=cylinder(tireRoot,c.rubber,0,0,0,.73,.73,.56,28,'x');
-    tire.rotation.x=.06;
-    // Deep chunky lugs around the circumference, staggered to read in overhead view.
-    const treadGeometry=new THREE.BoxGeometry(.195,.16,.31);
-    const lugs=new THREE.InstancedMesh(treadGeometry,c.tread,24*3);
-    const treadMatrix=new THREE.Object3D();
-    let treadIndex=0;
-    for(let i=0;i<24;i++){
-      const angle=(i/24)*Math.PI*2;
+  function wheel(x,z,side) {
+    const g=new THREE.Group();
+    g.name='Deep knobby off-road wheel';
+    g.position.set(x,.71,z);
+    truck.add(g);
+    wheels.push(g);
+    cylinder(g,palette.tire,0,0,0,.75,.75,.58,36,'x');
+    // Tire tread lugs use instancing to stay fast on phones.
+    const treadGeo=new THREE.BoxGeometry(.195,.12,.27);
+    const lugs=new THREE.InstancedMesh(treadGeo,palette.tread,27*3);
+    const temp=new THREE.Object3D();
+    let index=0;
+    for(let i=0;i<27;i++){
+      const angle=i/27*Math.PI*2;
       for(let band=-1;band<=1;band++){
-        treadMatrix.position.set(band*.18,Math.sin(angle)*.735,Math.cos(angle)*.735);
-        treadMatrix.rotation.set(angle,band*.1,0);
-        treadMatrix.updateMatrix();
-        lugs.setMatrixAt(treadIndex++,treadMatrix.matrix);
+        temp.position.set(band*.186,Math.sin(angle)*.756,Math.cos(angle)*.756);
+        temp.rotation.set(angle,band*.13,0);
+        temp.updateMatrix();
+        lugs.setMatrixAt(index++,temp.matrix);
       }
     }
     lugs.instanceMatrix.needsUpdate=true;
     lugs.castShadow=true;
-    tireRoot.add(lugs);
-    // Tire sidewalls and thick metal rims on the visible outward side.
-    const outside=side*.305;
-    cylinder(tireRoot,c.rubber,outside,0,0,.66,.66,.075,28,'x');
-    torus(tireRoot,c.rimDark,side*.359,0,0,.41,.075,'x');
-    cylinder(tireRoot,c.rim,side*.372,0,0,.32,.32,.06,14,'x');
-    cylinder(tireRoot,c.rimDark,side*.414,0,0,.235,.235,.065,10,'x');
+    g.add(lugs);
+    // Dish-like wheels: thick black sidewalls, alloy center and visible lug nuts.
+    cylinder(g,palette.rubber,side*.302,0,0,.69,.69,.066,32,'x');
+    const rimRing=new THREE.Mesh(new THREE.TorusGeometry(.44,.073,8,32),palette.charcoal);
+    rimRing.position.x=side*.353;rimRing.rotation.y=Math.PI/2;g.add(rimRing);
+    cylinder(g,palette.metal,side*.376,0,0,.36,.36,.064,24,'x');
+    cylinder(g,palette.charcoal,side*.415,0,0,.245,.245,.07,12,'x');
     for(let n=0;n<6;n++){
       const a=n*Math.PI/3;
-      cylinder(tireRoot,c.rim,side*.455,Math.sin(a)*.19,Math.cos(a)*.19,
-        .055,.055,.017,7,'x');
+      cylinder(g,palette.metal,side*.462,Math.sin(a)*.19,Math.cos(a)*.19,
+        .043,.043,.025,7,'x');
     }
-    cylinder(tireRoot,c.silver,side*.476,0,0,.075,.075,.035,9,'x');
-    // Outboard sidewall ring makes the wheel substantial at camera height.
-    torus(tireRoot,c.rubber,side*.334,0,0,.575,.11,'x');
-    return tireRoot;
+    cylinder(g,palette.metal,side*.474,0,0,.085,.085,.055,10,'x');
+    return g;
   }
-  // Wheels below body, spaced wide like the reference.
-  for(const z of [-1.05,1.08]){
-    makeWheel(-1.01,z,-1);
-    makeWheel(1.01,z,1);
+  for(const z of [-1.04,1.08]){
+    wheel(-1.04,z,-1);
+    wheel(1.04,z,1);
   }
-  // Main body: short snub nose at +Z and squared pickup bed to the rear.
-  box(car,c.paint,0,1.44,.89,1.91,.37,1.76);
-  const bonnet=box(car,c.highlight,0,1.665,1.28,1.86,.06,.82);
-  bonnet.rotation.x=-.045;
-  box(car,c.paint,0,1.37,1.80,1.92,.39,.21);
-  // Raised grille, bumpers and front protective details.
-  box(car,c.trim,0,1.36,1.916,1.30,.32,.074);
-  for(let j=0;j<6;j++)box(car,c.silver,-.5+j*.2,1.34,1.962,.067,.2,.037);
-  for(const side of [-1,1]){
-    box(car,c.light,side*.76,1.50,1.924,.34,.20,.055);
-    box(car,c.orange,side*.93,1.44,1.93,.07,.15,.05);
-  }
-  box(car,c.chassis,0,1.05,1.99,2.14,.17,.24);
-  box(car,c.silver,0,.96,1.982,1.35,.12,.13);
 
-  // Cab: a solid, slanted single-cab profile, carefully shaped in actual 3D.
-  const contour=[
-    [-.80,1.62],[.94,1.62],[.49,2.48],[-.43,2.48]
-  ]; // [z,y]
-  const verts=[],faces=[];
-  for(const x of [-.82,.82]){
-    for(const [z,y] of contour)verts.push(x,y,z);
-  }
-  for(let i=1;i<3;i++)faces.push(0,i,i+1);
-  for(let i=1;i<3;i++)faces.push(4,4+i+1,4+i);
-  for(let i=0;i<4;i++){
-    const j=(i+1)%4;
-    faces.push(i,j,j+4,i,j+4,i+4);
-  }
-  const shape=new THREE.BufferGeometry();
-  shape.setAttribute('position',new THREE.Float32BufferAttribute(verts,3));
-  shape.setIndex(faces);shape.computeVertexNormals();
-  const cab=new THREE.Mesh(shape,c.paint);
-  cab.castShadow=true;cab.receiveShadow=true;car.add(cab);
-  box(car,c.highlight,0,2.51,.025,1.75,.105,1.07);
-  // Actual side window polygons with front and quarter windows.
-  function flatQuad(points, material) {
-    const g=new THREE.BufferGeometry();
-    const pointsFlat=[];
-    for(const p of points)pointsFlat.push(...p);
-    g.setAttribute('position',new THREE.Float32BufferAttribute(pointsFlat,3));
-    g.setIndex([0,1,2,0,2,3]);
-    g.computeVertexNormals();
-    const mm=material.clone();mm.side=THREE.DoubleSide;
-    const mesh=new THREE.Mesh(g,mm);car.add(mesh);return mesh;
-  }
-  for(const side of [-1,1]){
-    const x=side*.836;
-    // Cab side windows separated by an actual B-pillar.
-    flatQuad([[x,1.82,.50],[x,2.34,.35],[x,2.34,-.16],[x,1.84,-.14]],c.glass);
-    flatQuad([[x,1.83,-.21],[x,2.34,-.23],[x,2.34,-.34],[x,1.84,-.56]],c.glass);
-    // Thick window beltline, door crease, handle and side mirror.
-    box(car,c.darker,side*.845,1.75,-.08,.04,.055,1.17);
-    box(car,c.trim,side*.857,1.77,-.48,.05,.065,.22);
-    box(car,c.chassis,side*.90,2.02,.77,.25,.16,.22);
-    box(car,c.trim,side*1.02,2.02,.78,.29,.24,.18);
-    box(car,c.silver,side*.87,1.45,.05,.045,.064,.33);
-    // Front and rear rounded-over fenders, rendered as exposed black arch lips.
-    for(const z of [-1.05,1.08]){
-      const points=[];
-      for(let i=0;i<=18;i++){
-        const a=i*Math.PI/18;
-        points.push(new THREE.Vector3(side*.967,.72+.81*Math.sin(a),z+.81*Math.cos(a)));
-      }
-      const curve=new THREE.CatmullRomCurve3(points);
-      const arch=new THREE.Mesh(new THREE.TubeGeometry(curve,30,.075,5,false),c.trim);
-      arch.castShadow=true;car.add(arch);
-    }
-    // Door seam - discreet and not cartoonish.
-    box(car,c.darker,side*.856,1.36,.39,.024,.41,.025);
-  }
-  // Windshield as an angled solid plane with narrow central reflection.
-  flatQuad([[-.76,1.76,.894],[.76,1.76,.894],[.73,2.395,.551],[-.73,2.395,.551]],c.glass);
-  flatQuad([[-.60,2.36,.563],[-.25,2.36,.563],[-.31,1.88,.844],[-.66,1.88,.844]],c.glassShine);
-  // Rear glass slightly above open cargo bed.
-  flatQuad([[-.69,1.85,-.727],[.69,1.85,-.727],[.70,2.36,-.487],[-.70,2.36,-.487]],c.glass);
-  // Open pickup bed: black textured floor and painted sidewalls / tailgate.
-  box(car,c.trim,0,1.28,-1.3,1.60,.085,1.28);
-  for(let i=-3;i<=3;i++)box(car,c.chassis,i*.22,1.34,-1.29,.044,.035,1.12);
-  for(const side of [-1,1]){
-    box(car,c.paint,side*.83,1.50,-1.35,.24,.47,1.35);
-    box(car,c.highlight,side*.83,1.76,-1.36,.26,.07,1.35);
-    box(car,c.darker,side*.69,1.48,-1.39,.05,.28,1.2);
-  }
-  box(car,c.paint,0,1.52,-2.01,1.91,.42,.22);
-  box(car,c.highlight,0,1.76,-2.005,1.91,.07,.25);
-  for(const side of [-1,1]){
-    box(car,c.red,side*.82,1.53,-2.149,.25,.24,.045);
-    box(car,c.chassis,side*.78,1.27,-2.21,.44,.10,.16);
-  }
-  box(car,c.chassis,0,1.08,-2.23,2.12,.18,.21);
-  box(car,c.silver,0,.96,-2.26,1.1,.14,.16);
-  // Raised door shell and chunky bed corners.
-  for(const side of [-1,1]){
-    box(car,c.paint,side*.75,1.45,.17,.29,.40,.80);
-    box(car,c.highlight,side*.83,1.67,1.16,.13,.095,.83);
-    box(car,c.paint,side*.8,1.38,-.85,.27,.35,.54);
-  }
-  car.userData.wheels=wheels;
-  car.userData.paintMaterial=c.paint;
-  car.userData.paintMaterials=[c.paint,c.darker,c.highlight];
-  car.userData.palette=c;
-  car.userData.height=2.6;
-  car.userData.length=4.4;
-  car.userData.width=2.8;
-  car.userData.setPaint=(hex)=>{
-    const base=new THREE.Color(hex);
-    c.paint.color.copy(base);
-    c.darker.color.copy(base).multiplyScalar(.76);
-    c.highlight.color.copy(base).multiplyScalar(1.12);
+  truck.userData.wheels=wheels;
+  truck.userData.palette=palette;
+  truck.userData.paintMaterial=palette.paint;
+  truck.userData.paintMaterials=[palette.paint,palette.darker,palette.highlight];
+  truck.userData.height=2.55;
+  truck.userData.length=4.45;
+  truck.userData.width=2.85;
+  truck.userData.setPaint=(hex)=>{
+    const newColor=new THREE.Color(hex);
+    palette.paint.color.copy(newColor);
+    palette.darker.color.copy(newColor).multiplyScalar(.78);
+    palette.highlight.color.copy(newColor).multiplyScalar(1.10);
   };
-  return car;
+  return truck;
 }
