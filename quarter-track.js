@@ -141,10 +141,16 @@ const HALF=9.1,CRUISE_SPEED=15.4*RACE_SPEED_MULTIPLIER;
 const MAX_SPEED=21.6*RACE_SPEED_MULTIPLIER,GRAVITY=19.5;
 const STARTLINE=19,FINAL_GATE=END-3;
 const ramps=[
-  {start:58,end:72,height:2.15,name:'Backyard Launch'},
-  {start:SECTOR_2_LEFT_END+8,end:SECTOR_2_LEFT_END+22,height:2.6,name:'Garden Leap'},
-  {start:SECTOR_3_RIGHT_END+76,end:SECTOR_3_RIGHT_END+92,height:3.0,name:'Canyon Launcher'},
-  {start:SECTOR_3_END+148,end:SECTOR_3_END+165,height:2.3,name:'Final Flyer'}
+  {start:STRAIGHT*.68,end:STRAIGHT*.83,height:2.15*COURSE.rampScale,
+    name:COURSE.id==='backyard'?'Backyard Launch':COURSE.id==='creek'?'Creek Hop':COURSE.id==='garage'?'Toolbox Takeoff':'Quarry Kick'},
+  {start:SECTOR_2_LEFT_END+7,end:SECTOR_2_LEFT_END+20,height:2.6*COURSE.rampScale,
+    name:COURSE.id==='creek'?'Stream Leap':COURSE.id==='garage'?'Ramp Alley':'Garden Leap'},
+  {start:SECTOR_3_RIGHT_END+Math.min(76,SECTOR_3_SOUTH*.29),
+    end:SECTOR_3_RIGHT_END+Math.min(92,SECTOR_3_SOUTH*.37),
+    height:3.0*COURSE.rampScale,name:COURSE.id==='quarry'?'Mega Quarry Air':'Canyon Launcher'},
+  {start:SECTOR_3_END+SECTOR_4_WEST*.48,
+    end:SECTOR_3_END+SECTOR_4_WEST*.54,
+    height:2.3*COURSE.rampScale,name:'Final Flyer'}
 ];
 const rollers=[
   {start:25,end:35,height:.44},{start:40,end:51,height:.55},
@@ -216,7 +222,7 @@ function tube(points,radius,material){
 function surfaceHeight(s,d=0){
   let h=.30;
   for(const b of rollers){
-    if(s>=b.start&&s<=b.end)h+=Math.sin(Math.PI*(s-b.start)/(b.end-b.start))*b.height;
+    if(s>=b.start&&s<=b.end)h+=Math.sin(Math.PI*(s-b.start)/(b.end-b.start))*b.height*COURSE.roughness;
   }
   for(const jump of ramps){
     if(s>=jump.start&&s<jump.end){
@@ -320,7 +326,7 @@ function createAsphaltTextures(){
   const size=512;
   const c=document.createElement('canvas');c.width=c.height=size;
   const ctx=c.getContext('2d');
-  ctx.fillStyle='#72736c';
+  ctx.fillStyle=COURSE.road;
   ctx.fillRect(0,0,size,size);
   let seed=11775;
   const random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
@@ -391,7 +397,7 @@ function createAsphaltTextures(){
 function createGrassTexture(){
   const c=document.createElement('canvas');c.width=c.height=256;
   const ctx=c.getContext('2d');
-  ctx.fillStyle='#577f4b';ctx.fillRect(0,0,256,256);
+  ctx.fillStyle=COURSE.ground;ctx.fillRect(0,0,256,256);
   let seed=9157;
   const random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
   for(let i=0;i<95;i++){
@@ -418,7 +424,7 @@ function createGrassTexture(){
 function createGravelTexture(){
   const c=document.createElement('canvas');c.width=c.height=256;
   const ctx=c.getContext('2d');
-  ctx.fillStyle='#887f68';ctx.fillRect(0,0,256,256);
+  ctx.fillStyle=COURSE.shoulder;ctx.fillRect(0,0,256,256);
   let seed=443981;
   const random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
   for(let i=0;i<3400;i++){
@@ -809,12 +815,13 @@ function environment(){
   // Avoids per-plant draw calls and expensive transparent alpha textures.
   const shrubGeo=makeLeafyGeometry();
   const matrix=new THREE.Object3D();
+  const isQuarry=COURSE.id==='quarry',isGarage=COURSE.id==='garage';
   const bushMaterials=[
-    new THREE.MeshStandardMaterial({color:'#396a43',roughness:1}),
-    new THREE.MeshStandardMaterial({color:'#568a4d',roughness:1}),
-    new THREE.MeshStandardMaterial({color:'#729455',roughness:1})
+    new THREE.MeshStandardMaterial({color:isQuarry?'#896c48':isGarage?'#68716b':'#396a43',roughness:1}),
+    new THREE.MeshStandardMaterial({color:isQuarry?'#ab8958':isGarage?'#82887d':'#568a4d',roughness:1}),
+    new THREE.MeshStandardMaterial({color:isQuarry?'#96744d':isGarage?'#858c79':'#729455',roughness:1})
   ];
-  const bushCount=mobile?315:480;
+  const bushCount=isGarage?(mobile?110:160):isQuarry?(mobile?140:200):(mobile?315:480);
   const shrubs=bushMaterials.map(m=>new THREE.InstancedMesh(shrubGeo,m,Math.ceil(bushCount/3)+1));
   const bushIndex=[0,0,0];
   const tint=new THREE.Color();
@@ -830,7 +837,9 @@ function environment(){
     matrix.updateMatrix();
     const group=i%3,index=bushIndex[group]++;
     shrubs[group].setMatrixAt(index,matrix.matrix);
-    tint.setHSL(.30+rnd(i+91)*.045,.35+rnd(i+332)*.13,.67+rnd(i+498)*.16);
+    if(isQuarry)tint.setHSL(.075+rnd(i+91)*.04,.28,.65+rnd(i+498)*.12);
+    else if(isGarage)tint.setHSL(.28+rnd(i+91)*.025,.07,.59+rnd(i+498)*.12);
+    else tint.setHSL(.30+rnd(i+91)*.045,.35+rnd(i+332)*.13,.67+rnd(i+498)*.16);
     shrubs[group].setColorAt(index,tint);
   }
   for(let i=0;i<3;i++){
@@ -866,7 +875,7 @@ function environment(){
     new THREE.MeshStandardMaterial({color:'#90b36c',vertexColors:true,roughness:1,side:THREE.DoubleSide}),
     new THREE.MeshStandardMaterial({color:'#c5b980',vertexColors:true,roughness:1,side:THREE.DoubleSide})
   ];
-  const grassTotal=mobile?1500:2600;
+  const grassTotal=isGarage?(mobile?260:460):isQuarry?(mobile?380:670):(mobile?1500:2600);
   const grassMeshes=grassMaterials.map(m=>new THREE.InstancedMesh(grassGeo,m,Math.ceil(grassTotal/3)+1));
   const grassIndices=[0,0,0];
   for(let i=0;i<grassTotal;i++){
@@ -892,7 +901,7 @@ function environment(){
 
   // Trees have separate tapered trunks and overlapping irregular crowns.
   // Instance count is bounded so the phone shadow pass remains affordable.
-  const trees=mobile?28:45;
+  const trees=isGarage?0:isQuarry?(mobile?5:9):(mobile?28:45);
   const trunks=new THREE.InstancedMesh(
     new THREE.CylinderGeometry(.18,.35,3.6,7),
     mats.trunk,trees);
@@ -985,6 +994,7 @@ function environment(){
     inner.rotation.x=-Math.PI/2;inner.position.y=3.61;group.add(inner);
     scene.add(group);
   }
+  buildCourseLandmarks();
   makeGate(STARTLINE-12,'START');
   makeGate(SECTOR_1_END,'SECTOR 02');
   makeGate(SECTOR_2_END,'SECTOR 03');
@@ -1002,6 +1012,11 @@ function environment(){
   makeBillboard(SECTOR_3_END+88,-HALF-15,'HOME RUN','WIDE OPEN');
   makeBillboard(ramps[3].start-16,-HALF-14,'FINAL FLYER','BIG AIR AHEAD');
   makeBillboard(SECTOR_4_RETURN_END+29,HALF+13,'FINISH','LAST SPRINT');
+  if(COURSE.id!=='backyard'){
+    makeBillboard(SECTOR_2_END+15,-HALF-17,
+      COURSE.id==='creek'?'CREEKSIDE':COURSE.id==='garage'?'GARAGE':'QUARRY',
+      COURSE.id==='creek'?'KEEP IT CLEAN':COURSE.id==='garage'?'BRAKE HARD':'SEND IT');
+  }
 }
 function makeCone(s,d){
   const p=position(s,d);
@@ -1056,11 +1071,12 @@ function makeShadow(){
 }
 function setup(){
   try{
+    applyCourseUI();
     renderer=new THREE.WebGLRenderer({antialias:!mobile,powerPreference:'high-performance'});
     renderer.setPixelRatio(Math.min(devicePixelRatio||1,mobile?1.4:1.8));
     renderer.outputColorSpace=THREE.SRGBColorSpace;
     renderer.toneMapping=THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure=1.065;
+    renderer.toneMappingExposure=COURSE.exposure;
     // The reference uses substantial natural shadow contrast. Enable the
     // main shadow pass on phones too; desktop earns a finer shadow atlas.
     renderer.shadowMap.enabled=true;
@@ -1071,16 +1087,18 @@ function setup(){
     renderer.domElement.style.filter='contrast(1.055) saturate(.955)';
     ui.viewport.appendChild(renderer.domElement);
     scene=new THREE.Scene();
-    scene.background=new THREE.Color('#9bb9aa');
-    scene.fog=new THREE.Fog('#9bb9aa',165,385);
+    scene.background=new THREE.Color(COURSE.sky);
+    scene.fog=new THREE.Fog(COURSE.fog,165,385);
     // Environment reflections give the smooth single-shell clearcoat a
     // broad daylight highlight, instead of pure, uniformly coloured plastic.
     scene.environment=createSkyEnvironment();
     scene.environmentIntensity=mobile?.48:.62;
     camera=new THREE.OrthographicCamera(-70,70,45,-45,.2,700);
-    scene.add(new THREE.HemisphereLight('#cbdde5','#64735b',1.10));
+    scene.add(new THREE.HemisphereLight(
+      COURSE.id==='quarry'?'#ffe6c3':'#cbdde5',
+      COURSE.id==='quarry'?'#806748':'#64735b',COURSE.ambient));
     scene.add(new THREE.AmbientLight('#f0e8d7',.12));
-    sun=new THREE.DirectionalLight('#fff0d5',3.15);
+    sun=new THREE.DirectionalLight(COURSE.sun,COURSE.sunPower);
     sun.position.set(-52,65,-60);
     sun.castShadow=true;
     const atlasSize=mobile?1024:2048;
