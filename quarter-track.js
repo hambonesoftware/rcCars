@@ -1103,6 +1103,7 @@ function environment(){
   // Trees have separate tapered trunks and overlapping irregular crowns.
   // Instance count is bounded so the phone shadow pass remains affordable.
   const trees=isGarage?0:isQuarry?(mobile?5:9):(mobile?28:45);
+  if(trees>0){
   const trunks=new THREE.InstancedMesh(
     new THREE.CylinderGeometry(.18,.35,3.6,7),
     mats.trunk,trees);
@@ -1148,6 +1149,8 @@ function environment(){
   trunks.castShadow=true;leaves.castShadow=true;
   trunks.receiveShadow=true;leaves.receiveShadow=true;
   scene.add(trunks,leaves);
+
+  }
 
   // Gravel turnout, and sparse scale-setting maintenance props.
   const gravelColors=[
@@ -1502,8 +1505,12 @@ function setup(){
     ui.loading.classList.add('hidden');
     requestAnimationFrame(frame);
   }catch(e){
-    console.error('Quarter-track setup failed',e);
-    ui.loading.textContent='3D track could not start. Please use a modern WebGL-capable browser.';
+    console.error('Race-track setup failed on '+COURSE.id,e);
+    ui.loading.classList.remove('hidden');
+    ui.loading.textContent='TRACK FAILED: '+(e&&e.message?e.message:'WebGL setup error')+' — choose another course or reload.';
+    ui.loading.style.whiteSpace='normal';
+    ui.loading.style.padding='24px';
+    ui.loading.style.maxWidth='100vw';
   }
 }
 function reset(start){
