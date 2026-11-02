@@ -480,6 +480,14 @@ function createRoadWeathering(){
     addSurfaceStrip(SECTOR_2_RIGHT_START-10,SECTOR_2_RIGHT_START+23,d,1.16,rubber);
   }
   addSurfaceStrip(ramps[1].end+6,ramps[1].end+23,1.8,1.15,rubber);
+  // The canyon downhill and the long return straight carry heavy rubber.
+  for(const d of [-3.1,3.25]){
+    addSurfaceStrip(SECTOR_3_EAST_END-12,SECTOR_3_RIGHT_END+16,d,1.25,rubber);
+    addSurfaceStrip(SECTOR_3_SOUTH_END-34,SECTOR_3_END+19,d,1.24,rubber);
+    addSurfaceStrip(SECTOR_4_WEST_END-40,SECTOR_4_RETURN_END+11,d,1.27,rubber);
+  }
+  addSurfaceStrip(ramps[2].end+5,ramps[2].end+26,-2,1.5,rubber);
+  addSurfaceStrip(ramps[3].end+5,ramps[3].end+28,2.0,1.5,rubber);
 }
 
 function createRibbon(side,inside,material,step=1){
@@ -511,10 +519,10 @@ function createRibbon(side,inside,material,step=1){
 }
 function createRoad(){
   const ground=new THREE.Mesh(
-    new THREE.PlaneGeometry(800,800),
+    new THREE.PlaneGeometry(1100,1100),
     new THREE.MeshStandardMaterial({map:createGrassTexture(),roughness:1})
   );
-  ground.rotation.x=-Math.PI/2;ground.position.set(60,-.07,80);
+  ground.rotation.x=-Math.PI/2;ground.position.set(170,-.07,80);
   ground.receiveShadow=true;scene.add(ground);
 
   // Full-resolution banked road ribbon with actual elevation changes.
@@ -607,7 +615,7 @@ function createRoad(){
       line.rotation.y=q.angle;
     }
   }
-  // Two distinct ramp complexes, both visible from the rear-iso camera.
+  // All four distinct ramp complexes, visible from the rear-iso camera.
   for(const ramp of ramps){
     for(let s=ramp.start+2;s<ramp.end;s+=4){
       for(const side of [-1,1]){
@@ -622,7 +630,10 @@ function createRoad(){
   for(const bend of [
     {start:STRAIGHT+5,end:STRAIGHT+TURN-4,outer:-1},
     {start:SECTOR_2_LEFT_START+5,end:SECTOR_2_LEFT_END-4,outer:1},
-    {start:SECTOR_2_RIGHT_START+5,end:SECTOR_2_RIGHT_END-4,outer:-1}
+    {start:SECTOR_2_RIGHT_START+5,end:SECTOR_2_RIGHT_END-4,outer:-1},
+    {start:SECTOR_3_EAST_END+5,end:SECTOR_3_RIGHT_END-4,outer:-1},
+    {start:SECTOR_3_SOUTH_END+5,end:SECTOR_3_END-4,outer:-1},
+    {start:SECTOR_4_WEST_END+5,end:SECTOR_4_RETURN_END-4,outer:-1}
   ]){
     const lower=[],upper=[];
     for(let s=bend.start;s<bend.end;s+=2.5){
@@ -905,7 +916,11 @@ function environment(){
     [121,HALF+29],[174,-HALF-24],[241,HALF+24],
     [SECTOR_2_LEFT_START+17,HALF+28],
     [SECTOR_2_LEFT_END+32,-HALF-24],
-    [SECTOR_2_RIGHT_START+21,HALF+27]
+    [SECTOR_2_RIGHT_START+21,HALF+27],
+    [SECTOR_3_EAST_END+22,HALF+25],
+    [SECTOR_3_RIGHT_END+91,-HALF-24],
+    [SECTOR_3_SOUTH_END-30,HALF+20],
+    [SECTOR_4_WEST_END-55,-HALF-23]
   ]){
     const p=position(s,d);
     const group=new THREE.Group();group.position.set(p.x,0,p.z);
@@ -921,13 +936,21 @@ function environment(){
   }
   makeGate(STARTLINE-12,'START');
   makeGate(SECTOR_1_END,'SECTOR 02');
-  makeGate(FINAL_GATE,'SECTOR 03');
+  makeGate(SECTOR_2_END,'SECTOR 03');
+  makeGate(SECTOR_3_END,'SECTOR 04');
+  makeGate(FINAL_GATE,'FINISH');
   makeBillboard(54,-HALF-11,'JUMP','KEEP IT LEVEL');
   makeBillboard(121,-HALF-15,'BERM','HOLD YOUR LINE');
   makeBillboard(226,HALF+13,'EXIT','SEND IT');
   makeBillboard(SECTOR_2_LEFT_START+19,HALF+15,'SWEEPER','HOLD THE OUTSIDE');
   makeBillboard(ramps[1].start-6,-HALF-15,'AIRTIME','FLY INTO THE GARDEN');
   makeBillboard(SECTOR_2_RIGHT_START+14,-HALF-15,'S-BEND','BRAKE OR BOOST');
+  makeBillboard(SECTOR_3_EAST_END+25,HALF+15,'CANYON','HOLD THE BERM');
+  makeBillboard(ramps[2].start-16,-HALF-14,'MEGA AIR','STICK THE LANDING');
+  makeBillboard(SECTOR_3_SOUTH_END-50,HALF+16,'HAIRPIN','BRAKE THEN BOOST');
+  makeBillboard(SECTOR_3_END+88,-HALF-15,'HOME RUN','WIDE OPEN');
+  makeBillboard(ramps[3].start-16,-HALF-14,'FINAL FLYER','BIG AIR AHEAD');
+  makeBillboard(SECTOR_4_RETURN_END+29,HALF+13,'FINISH','LAST SPRINT');
 }
 function makeCone(s,d){
   const p=position(s,d);
@@ -945,7 +968,15 @@ function createHazards(){
     [SECTOR_1_END+23,-6.7],[SECTOR_2_LEFT_START+33,6.6],
     [SECTOR_2_LEFT_END+34,-6.6],
     [SECTOR_2_RIGHT_START+24,6.7],
-    [SECTOR_2_RIGHT_END+22,-6.9]
+    [SECTOR_2_RIGHT_END+22,-6.9],
+    [SECTOR_3_RIGHT_END+24,-6.3],
+    [SECTOR_3_RIGHT_END+62,6.5],
+    [SECTOR_3_RIGHT_END+129,-5.9],
+    [SECTOR_3_SOUTH_END-54,6.6],
+    [SECTOR_3_END+36,6.5],
+    [SECTOR_3_END+105,-6.4],
+    [SECTOR_4_WEST_END-72,6.7],
+    [SECTOR_4_RETURN_END+31,-6.8]
   ]){
     makeCone(s,d);
   }
