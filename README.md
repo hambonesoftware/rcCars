@@ -75,3 +75,13 @@ The Grand Prix has **two complete laps**, AI cars on the same closed route, timi
 Double-speed handling remains unchanged: 30.8 game units/s normal and 43.2 turbo (with overheating). Road shaders, smooth single-shell trucks, tire shadows and mobile-instanced environment remain intact.
 
 The GitHub Pages workflow requires JavaScript syntax checks plus `tests/track-geometry.test.cjs`. The geometry test verifies original Quarter 1 coordinates, smooth centerline joins, a physically closed loop, four ramps, two laps, and lane projection. Passing CI does not substitute for visual and phone playtesting.
+## Course selection — four playable circuits
+
+Open **[Choose a Course](./courses.html)** (now the main menu launch). Courses use the same Three.js engine, smooth-shell monster trucks, 2× regular/turbo speeds, four AI competitors total, two laps, checkpoints, race map, and rear-three-quarter isometric camera. Each is a different analytically closed circuit generated from the shared `course-presets.js` catalog, not just a recolor.
+
+- **Backyard Grand Prix** (`?course=backyard`) — the original layout, lighting and racing personality.
+- **Creekside Scramble** (`?course=creek`) — flowing, shorter forest track; creek pools, timber crossings, reeds and log hazards.
+- **Garage Gauntlet** (`?course=garage`) — shorter, technical turns; industrial lighting, oversized workshop furniture, caution strips and barrel hazards.
+- **Sunset Quarry** (`?course=quarry`) — longer, faster open layout; warm sunset colors, big quarry rock features and boulder hazards.
+
+The new `courses.html` selection gallery draws actual mathematical course previews using the same track dimensions. The game itself dynamically selects the geometry, terrain, jump spacing, vegetation density and lights via `quarter-track.html?course=<id>`. The Gallery can be reopened from the race HUD and the finish screen. `tests/track-geometry.test.cjs` validates all four circuits for closed endpoints, smooth joins, lane projection and jumps. Manual browser and device testing is still recommended.
