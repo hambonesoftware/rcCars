@@ -31,7 +31,7 @@ export const COURSE_PRESETS={
   },
   quarry:{
     id:'quarry',title:'Sunset Quarry',subtitle:'MINING VILLAGE · QUARRY BRANCH RAILWAY',
-    description:'Race through a miniature mining settlement with miners' cottages, Stone Works, a rugged quarry branch railroad and High Ridge village.',
+    description:'Race through a miniature mining settlement with miner cottages, Stone Works, a rugged quarry branch railroad and High Ridge village.',
     ground:'#ab7951',grass:'#92734e',road:'#937769',sky:'#e5b68e',fog:'#dbad87',
     sun:'#ffd1a1',sunPower:3.55,ambient:1.0,exposure:1.07,
     shoulder:'#b4936e',hazard:'rocks',feature:'quarry',
