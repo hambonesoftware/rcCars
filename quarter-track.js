@@ -809,6 +809,231 @@ function makeGrassBladeGeometry(){
   g.setIndex(indices);g.computeVertexNormals();
   return g;
 }
+// Distinct road-side landmarks make each track feel like a new location,
+// not the Backyard geometry with a recolored material.
+function buildCourseLandmarks(){
+  if(COURSE.id==='backyard')return;
+  const mobileFactor=mobile?.66:1;
+  const transforms=new THREE.Object3D();
+  const place=(s,d,y,rot=0)=>{
+    const p=position(clamp(s,1,END-1),d);
+    transforms.position.set(p.x,y,p.z);
+    transforms.rotation.set(0,p.angle+rot,0);
+    transforms.scale.set(1,1,1);
+    transforms.updateMatrix();
+    return p;
+  };
+  if(COURSE.id==='creek'){
+    const waterMaterial=new THREE.MeshPhysicalMaterial({
+      color:'#438c98',roughness:.26,metalness:.1,
+      transparent:true,opacity:.82,side:THREE.DoubleSide,
+      clearcoat:.8,clearcoatRoughness:.16
+    });
+    const bankMaterial=new THREE.MeshStandardMaterial({
+      color:'#657d5c',roughness:1,side:THREE.DoubleSide
+    });
+    const lilyMaterial=new THREE.MeshStandardMaterial({
+      color:'#638c4e',roughness:.95,side:THREE.DoubleSide
+    });
+    // The stream runs independently along the outside of several stretches.
+    // Long joined ribbons are cheap to render even on a phone.
+    for(const [a,b,side] of [
+      [32,STRAIGHT-6,1],
+      [SECTOR_2_LEFT_END+27,SECTOR_2_RIGHT_START-8,-1],
+      [SECTOR_3_RIGHT_END+26,SECTOR_3_RIGHT_END+SECTOR_3_SOUTH*.66,1],
+      [SECTOR_3_END+20,SECTOR_3_END+SECTOR_4_WEST*.74,-1]
+    ]){
+      if(b<=a)continue;
+      const verts=[],uv=[],index=[];
+      const segments=Math.max(4,Math.ceil((b-a)/3));
+      for(let i=0;i<=segments;i++){
+        const s=a+(b-a)*i/segments;
+        for(const offset of [HALF+7,HALF+18]){
+          const p=position(s,side*offset);
+          verts.push(p.x,-.037,p.z);
+          uv.push(i/segments,offset/18);
+        }
+      }
+      for(let i=0;i<segments;i++){
+        const k=i*2;
+        index.push(k,k+2,k+1,k+1,k+2,k+3);
+      }
+      const geometry=new THREE.BufferGeometry();
+      geometry.setAttribute('position',new THREE.Float32BufferAttribute(verts,3));
+      geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));
+      geometry.setIndex(index);geometry.computeVertexNormals();
+      const water=new THREE.Mesh(geometry,waterMaterial);
+      water.renderOrder=1;scene.add(water);
+      // Smooth dark creek banks on the boundary of the water.
+      const edges=[];
+      for(let i=0;i<=segments;i++){
+        const ss=a+(b-a)*i/segments;
+        const p=position(ss,side*(HALF+18.8));
+        edges.push([p.x,.07,p.z]);
+      }
+      if(edges.length>2)tube(edges,.32,bankMaterial);
+    }
+    const lilyGeometry=new THREE.CircleGeometry(1,10);
+    const lilies=new THREE.InstancedMesh(lilyGeometry,lilyMaterial,Math.round(90*mobileFactor));
+    for(let i=0;i<lilies.count;i++){
+      const seg=i%2===0?0:1;
+      const a=seg===0?34:SECTOR_3_RIGHT_END+30;
+      const span=seg===0?Math.max(1,STRAIGHT-45):Math.max(1,SECTOR_3_SOUTH*.52);
+      const ss=a+rnd(i+8001)*span;
+      const d=(seg===0?1:1)*(HALF+9+rnd(i+991)*7);
+      const p=position(ss,d);
+      const size=.25+rnd(i+201)*.9;
+      transforms.position.set(p.x,-.029,p.z);
+      transforms.rotation.set(-Math.PI/2,0,rnd(i+390)*6.283);
+      transforms.scale.set(size,size,1);
+      transforms.updateMatrix();lilies.setMatrixAt(i,transforms.matrix);
+    }
+    lilies.instanceMatrix.needsUpdate=true;scene.add(lilies);
+    // Wooden hiking footbridges: these are track-side and do not block racing.
+    const timber=new THREE.MeshStandardMaterial({
+      color:'#866b4b',roughness:.96
+    });
+    for(const ss of [STRAIGHT*.48,SECTOR_3_RIGHT_END+SECTOR_3_SOUTH*.44]){
+      const g=new THREE.Group();
+      const p=position(ss,HALF+13);
+      g.position.set(p.x,.20,p.z);g.rotation.y=p.angle;
+      for(let i=-4;i<=4;i++){
+        const plank=makeBox(g,timber,i*.83,0,0,.74,.15,11.7);
+        plank.castShadow=false;
+      }
+      for(const side of [-1,1]){
+        const rail=makeBox(g,timber,side*4.25,.76,0,.13,.16,11.7);
+        rail.castShadow=false;
+        for(const z of [-4.7,0,4.7])
+          makeBox(g,timber,side*4.25,.37,z,.17,.72,.16);
+      }
+      scene.add(g);
+    }
+  }else if(COURSE.id==='garage'){
+    const steelMat=new THREE.MeshStandardMaterial({
+      color:'#485a60',roughness:.52,metalness:.65
+    });
+    const orangeMat=new THREE.MeshStandardMaterial({
+      color:'#d99b3b',roughness:.71,metalness:.1
+    });
+    const containerGeo=new THREE.BoxGeometry(12,7,9);
+    const count=24;
+    const containers=new THREE.InstancedMesh(containerGeo,steelMat,count);
+    for(let i=0;i<count;i++){
+      const ss=18+(i+.45)*(END-45)/count;
+      const d=(i%2?1:-1)*(HALF+20+rnd(721+i)*12);
+      const p=position(ss,d);
+      transforms.position.set(p.x,3.45,p.z);
+      transforms.rotation.set(0,p.angle+(i%2?Math.PI*.5:0),0);
+      transforms.scale.set(.6+rnd(101+i)*.6,.8+rnd(202+i)*.8,1);
+      transforms.updateMatrix();containers.setMatrixAt(i,transforms.matrix);
+    }
+    containers.instanceMatrix.needsUpdate=true;
+    containers.castShadow=!mobile;scene.add(containers);
+    const hazardGeo=new THREE.BoxGeometry(1.4,1.7,1.4);
+    const crates=new THREE.InstancedMesh(hazardGeo,orangeMat,Math.round(85*mobileFactor));
+    for(let i=0;i<crates.count;i++){
+      const ss=15+rnd(i+912)*(END-35);
+      const d=(i%2?1:-1)*(HALF+6+rnd(i+741)*11);
+      const p=position(ss,d);
+      transforms.position.set(p.x,.82,p.z);
+      transforms.rotation.set(0,i*.38,0);
+      const scale=.8+rnd(i+811)*1.5;
+      transforms.scale.set(scale,scale,scale);
+      transforms.updateMatrix();crates.setMatrixAt(i,transforms.matrix);
+    }
+    crates.instanceMatrix.needsUpdate=true;scene.add(crates);
+    // Yellow-black safety hoops provide a recognizable industrial vista.
+    for(const ss of [SECTOR_1_END-25,SECTOR_2_END+55,SECTOR_3_END+80]){
+      const p=point(ss),g=new THREE.Group();
+      g.position.set(p.x,0,p.z);g.rotation.y=p.angle;
+      makeBox(g,orangeMat,-(HALF+5),3.8,0,.5,7.6,.7);
+      makeBox(g,orangeMat,HALF+5,3.8,0,.5,7.6,.7);
+      makeBox(g,steelMat,0,7.45,0,HALF*2+10,.55,.7);
+      scene.add(g);
+    }
+  }else if(COURSE.id==='quarry'){
+    const rockGeo=new THREE.DodecahedronGeometry(1,1);
+    const rockMats=[
+      new THREE.MeshStandardMaterial({color:'#b48860',roughness:1,flatShading:true}),
+      new THREE.MeshStandardMaterial({color:'#846a55',roughness:1,flatShading:true}),
+      new THREE.MeshStandardMaterial({color:'#d5ac78',roughness:1,flatShading:true})
+    ];
+    const total=Math.round(225*mobileFactor);
+    const groups=rockMats.map(m=>new THREE.InstancedMesh(rockGeo,m,Math.ceil(total/3)));
+    const counts=[0,0,0];
+    for(let i=0;i<total;i++){
+      const ss=rnd(701+i)*END;
+      const d=(i%2?1:-1)*(HALF+12+rnd(2411+i)*32);
+      const p=position(ss,d);
+      const r=1.3+rnd(i+731)*6.1;
+      transforms.position.set(p.x,r*.52-.10,p.z);
+      transforms.rotation.set(rnd(i+13)*.4,rnd(i+34)*6.283,rnd(i+71)*.3);
+      transforms.scale.set(r*(.9+rnd(i+255)*.6),r*(.57+rnd(i+811)*.75),r);
+      transforms.updateMatrix();
+      const k=i%3;
+      groups[k].setMatrixAt(counts[k]++,transforms.matrix);
+    }
+    for(let i=0;i<3;i++){
+      groups[i].count=counts[i];
+      groups[i].instanceMatrix.needsUpdate=true;
+      groups[i].castShadow=!mobile;
+      groups[i].receiveShadow=true;
+      scene.add(groups[i]);
+    }
+    // Giant quarry equipment: industrial-scale loading pipes and stone stacks.
+    const metal=new THREE.MeshStandardMaterial({
+      color:'#866c52',roughness:.68,metalness:.38
+    });
+    for(const ss of [SECTOR_2_END+75,SECTOR_3_END+SECTOR_4_WEST*.33]){
+      const p=position(ss,HALF+36);
+      const g=new THREE.Group();g.position.set(p.x,0,p.z);
+      const pipe=new THREE.Mesh(new THREE.CylinderGeometry(3,3.6,15,14),metal);
+      pipe.position.y=7.5;pipe.castShadow=!mobile;g.add(pipe);
+      const mouth=new THREE.Mesh(new THREE.CylinderGeometry(4.1,3,2.2,14),metal);
+      mouth.position.y=15.2;g.add(mouth);
+      const opening=new THREE.Mesh(
+        new THREE.CircleGeometry(3.5,16),
+        new THREE.MeshStandardMaterial({color:'#332c29',roughness:1})
+      );
+      opening.rotation.x=-Math.PI/2;opening.position.y=16.33;g.add(opening);
+      scene.add(g);
+    }
+  }
+}
+function applyCourseUI(){
+  document.title='Micro Mayhem — '+COURSE.title;
+  const description=document.querySelector('meta[name="description"]');
+  if(description)description.content=COURSE.description;
+  const brand=document.querySelector('#top .details span:last-child');
+  if(brand)brand.textContent=COURSE.title.toUpperCase();
+  const heading=document.querySelector('#intro h1');
+  if(heading){
+    const names={
+      backyard:'BACKYARD<br><em>GRAND PRIX.</em>',
+      creek:'CREEKSIDE<br><em>SCRAMBLE.</em>',
+      garage:'GARAGE<br><em>GAUNTLET.</em>',
+      quarry:'SUNSET<br><em>QUARRY.</em>'
+    };
+    heading.innerHTML=names[COURSE.id];
+  }
+  const introDescription=document.querySelector('#intro .course-description');
+  if(introDescription)introDescription.textContent=COURSE.description+
+    ' Four sectors, four jumps, two laps and full-speed RC racing.';
+  const pills=document.querySelector('#intro .pills');
+  if(pills)pills.innerHTML='<span>4 COURSES</span><span>4 BIG JUMPS</span>'+
+    '<span>2-LAP GRAND PRIX</span><span>2× BOOST</span>';
+  const startText=document.querySelector('#start span:first-child');
+  if(startText)startText.textContent='RACE '+COURSE.title.toUpperCase();
+  const resultHeading=document.querySelector('#results .kicker');
+  if(resultHeading)resultHeading.textContent=COURSE.title.toUpperCase()+' · FINISHED';
+  const active=document.querySelector('[data-course="'+COURSE.id+'"]');
+  if(active){
+    active.classList.add('selected');
+    active.setAttribute('aria-current','page');
+  }
+}
+
 function environment(){
   // Instanced naturalistic planting: lumpy, overlapping foliage in three
   // tones, legible grass blades, varied crown layers and ground patches.
