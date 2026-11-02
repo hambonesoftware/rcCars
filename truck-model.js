@@ -15,8 +15,9 @@ export function makeRCTrophyTruck(THREE, paint = '#ebcb40') {
 
   const palette = {
     paint: new THREE.MeshPhysicalMaterial({
-      color: paint, metalness: .18, roughness: .29,
-      clearcoat: .95, clearcoatRoughness: .17, side: THREE.DoubleSide
+      color: paint, metalness: .10, roughness: .32,
+      clearcoat: .95, clearcoatRoughness: .21, side: THREE.DoubleSide,
+      envMapIntensity: .65
     }),
     darker: new THREE.MeshStandardMaterial({
       color: new THREE.Color(paint).multiplyScalar(.78), roughness: .45
@@ -285,8 +286,22 @@ export function makeRCTrophyTruck(THREE, paint = '#ebcb40') {
     sphere(truck,palette.charcoal,side*.966,1.82,.52,.14,.10,.15);
     sphere(truck,palette.glass,side*1.046,1.83,.52,.145,.09,.11);
     sphere(truck,palette.metal,side*.957,1.58,-.16,.035,.025,.125);
-    // The wheel-opening lips follow the actual arches in the body skin.
+    // Deep dark inner fender behind the actual tire: this recess catches
+    // the bodywork/tyre occlusion visible in the photographic reference.
+    // It is sunk INSIDE the shell, not layered over the wheel.
     for(const axle of [-1.04,1.08]){
+      const cavity=new THREE.Mesh(
+        new THREE.CircleGeometry(.835,36),
+        new THREE.MeshStandardMaterial({
+          color:'#141b1b',roughness:1,
+          side:THREE.DoubleSide
+        })
+      );
+      cavity.rotation.y=Math.PI/2;
+      cavity.position.set(side*.877,.715,axle);
+      cavity.receiveShadow=true;
+      truck.add(cavity);
+
       const points=[];
       for(let j=0;j<=23;j++){
         const z=axle-.875+1.75*j/23;
