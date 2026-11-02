@@ -1,7 +1,7 @@
 export const COURSE_PRESETS={
   backyard:{
-    id:'backyard',title:'Backyard Grand Prix',subtitle:'THE ORIGINAL FOUR-SECTOR CIRCUIT',
-    description:'The classic opening circuit: ramps, big banked turns and fast RC racing.',
+    id:'backyard',title:'Backyard Grand Prix',subtitle:'HO SUBURBAN SHOWCASE · MAIN STREET · DEPOT',
+    description:'Race through Elm Street houses, a tiny Main Street, a landscaped park and Oak Junction station on a lovingly detailed model railroad table.',
     ground:'#577f4b',grass:'#3d7350',road:'#72736c',sky:'#9bb9aa',fog:'#9bb9aa',
     sun:'#fff0d5',sunPower:3.15,ambient:1.10,exposure:1.065,
     shoulder:'#887f68',hazard:'cones',feature:'backyard',
@@ -10,8 +10,8 @@ export const COURSE_PRESETS={
     rampScale:1,roughness:1,laps:2
   },
   creek:{
-    id:'creek',title:'Creekside Scramble',subtitle:'BRIDGES · PUDDLES · FOREST SWITCHBACKS',
-    description:'Race beside a glittering creek, past wooden footbridges and tall reeds. Keep momentum on the flowing curves.',
+    id:'creek',title:'Creekside Scramble',subtitle:'SCENIC TRAIN-TABLE VALLEY · CREEKSIDE DEPOT',
+    description:'Wind through Maple Falls cottages, scenic streams, the Creekside Depot, and a tiny riverside market beside a miniature rail line.',
     ground:'#4d835a',grass:'#3d7754',road:'#626b65',sky:'#9ecbd1',fog:'#a2c9bd',
     sun:'#f6f5df',sunPower:2.7,ambient:1.25,exposure:1.07,
     shoulder:'#777764',hazard:'logs',feature:'creek',
@@ -20,8 +20,8 @@ export const COURSE_PRESETS={
     rampScale:.83,roughness:1.12,laps:2
   },
   garage:{
-    id:'garage',title:'Garage Gauntlet',subtitle:'TOOLS · HAIRPINS · HARD CORNERS',
-    description:'A compact workshop circuit full of barrels, caution blocks and sharper corners. Quick steering is everything.',
+    id:'garage',title:'Garage Gauntlet',subtitle:'BRICK INDUSTRIAL TOWN · FREIGHT SIDINGS',
+    description:'Drift through Brickyard's brick storefronts, Repair Row, freight sidings and the Switching Yard model railway district.',
     ground:'#6d7470',grass:'#626b67',road:'#686c6a',sky:'#b0c7c4',fog:'#b0c4c2',
     sun:'#eef4f1',sunPower:2.65,ambient:1.16,exposure:1.02,
     shoulder:'#888579',hazard:'barrels',feature:'garage',
@@ -30,8 +30,8 @@ export const COURSE_PRESETS={
     rampScale:.75,roughness:.80,laps:2
   },
   quarry:{
-    id:'quarry',title:'Sunset Quarry',subtitle:'DUST · BIG AIR · HIGH-SPEED BANKS',
-    description:'An expansive golden quarry with towering rocks, fast straights and huge airborne moments. Send it.',
+    id:'quarry',title:'Sunset Quarry',subtitle:'MINING VILLAGE · QUARRY BRANCH RAILWAY',
+    description:'Race through a miniature mining settlement with miners' cottages, Stone Works, a rugged quarry branch railroad and High Ridge village.',
     ground:'#ab7951',grass:'#92734e',road:'#937769',sky:'#e5b68e',fog:'#dbad87',
     sun:'#ffd1a1',sunPower:3.55,ambient:1.0,exposure:1.07,
     shoulder:'#b4936e',hazard:'rocks',feature:'quarry',
