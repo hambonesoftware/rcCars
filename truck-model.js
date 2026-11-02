@@ -95,15 +95,22 @@ export function makeRCTrophyTruck(THREE, paint = '#ebcb40') {
     const tire=cylinder(tireRoot,c.rubber,0,0,0,.73,.73,.56,28,'x');
     tire.rotation.x=.06;
     // Deep chunky lugs around the circumference, staggered to read in overhead view.
+    const treadGeometry=new THREE.BoxGeometry(.195,.16,.31);
+    const lugs=new THREE.InstancedMesh(treadGeometry,c.tread,24*3);
+    const treadMatrix=new THREE.Object3D();
+    let treadIndex=0;
     for(let i=0;i<24;i++){
       const angle=(i/24)*Math.PI*2;
       for(let band=-1;band<=1;band++){
-        const t=box(tireRoot,i%5===0?c.mud:c.tread,band*.18,Math.sin(angle)*.735,
-          Math.cos(angle)*.735,.195,.16,.31);
-        t.rotation.x=angle;
-        t.rotation.y=band*.1;
+        treadMatrix.position.set(band*.18,Math.sin(angle)*.735,Math.cos(angle)*.735);
+        treadMatrix.rotation.set(angle,band*.1,0);
+        treadMatrix.updateMatrix();
+        lugs.setMatrixAt(treadIndex++,treadMatrix.matrix);
       }
     }
+    lugs.instanceMatrix.needsUpdate=true;
+    lugs.castShadow=true;
+    tireRoot.add(lugs);
     // Tire sidewalls and thick metal rims on the visible outward side.
     const outside=side*.305;
     cylinder(tireRoot,c.rubber,outside,0,0,.66,.66,.075,28,'x');
