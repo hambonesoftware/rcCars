@@ -1767,7 +1767,7 @@ function viewport(){
   const fullTable=game.camera==='overview'||game.mode==='intro';
   const height=fullTable?
     Math.max((mapHeight+210)*1.24,(mapWidth+210)*1.20/Math.max(.35,aspect)):
-    (aspect<.65?67:aspect<1?60:51);
+    (aspect<.65?110:aspect<1?76:51);
   camera.top=height*.5;camera.bottom=-height*.5;
   camera.left=-height*aspect*.5;camera.right=height*aspect*.5;
   camera.updateProjectionMatrix();
