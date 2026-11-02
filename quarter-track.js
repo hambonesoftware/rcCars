@@ -1,6 +1,7 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js';
 import {makeRCTrophyTruck} from './truck-model.js';
 import {COURSE_PRESETS,getCourse} from './course-presets.js';
+import {buildCourseLoop} from './track-layouts.js';
 
 const $=id=>document.getElementById(id);
 const ui={
@@ -20,10 +21,11 @@ const mobile=matchMedia('(pointer:coarse)').matches;
 const REQUESTED_COURSE=typeof window==='undefined'?null:
   new URLSearchParams(window.location.search).get('course');
 const COURSE=getCourse(REQUESTED_COURSE);
+const CUSTOM_TRACK=buildCourseLoop(COURSE.id);
 // Closure is analytic, not dependent on arbitrary corrective road segments.
 // The two long return straights are solved from the signed 90° arc offsets.
 const R=COURSE.r1,STRAIGHT=COURSE.start,TURN=R*Math.PI*.5,EXIT=COURSE.exit1;
-const SECTOR_1_END=STRAIGHT+TURN+EXIT;
+const SECTOR_1_END=CUSTOM_TRACK?CUSTOM_TRACK.length*.24:STRAIGHT+TURN+EXIT;
 const SECTOR_2_STRAIGHT=COURSE.s2Straight;
 const SECTOR_2_LEFT_RADIUS=COURSE.r2Left;
 const SECTOR_2_LEFT_LENGTH=SECTOR_2_LEFT_RADIUS*Math.PI*.5;
@@ -31,11 +33,11 @@ const SECTOR_2_NORTH=COURSE.s2North;
 const SECTOR_2_RIGHT_RADIUS=COURSE.r2Right;
 const SECTOR_2_RIGHT_LENGTH=SECTOR_2_RIGHT_RADIUS*Math.PI*.5;
 const SECTOR_2_EXIT=COURSE.s2Exit;
-const SECTOR_2_LEFT_START=SECTOR_1_END+SECTOR_2_STRAIGHT;
-const SECTOR_2_LEFT_END=SECTOR_2_LEFT_START+SECTOR_2_LEFT_LENGTH;
-const SECTOR_2_RIGHT_START=SECTOR_2_LEFT_END+SECTOR_2_NORTH;
-const SECTOR_2_RIGHT_END=SECTOR_2_RIGHT_START+SECTOR_2_RIGHT_LENGTH;
-const SECTOR_2_END=SECTOR_2_RIGHT_END+SECTOR_2_EXIT;
+const SECTOR_2_LEFT_START=CUSTOM_TRACK?CUSTOM_TRACK.length*.30:SECTOR_1_END+SECTOR_2_STRAIGHT;
+const SECTOR_2_LEFT_END=CUSTOM_TRACK?CUSTOM_TRACK.length*.39:SECTOR_2_LEFT_START+SECTOR_2_LEFT_LENGTH;
+const SECTOR_2_RIGHT_START=CUSTOM_TRACK?CUSTOM_TRACK.length*.41:SECTOR_2_LEFT_END+SECTOR_2_NORTH;
+const SECTOR_2_RIGHT_END=CUSTOM_TRACK?CUSTOM_TRACK.length*.46:SECTOR_2_RIGHT_START+SECTOR_2_RIGHT_LENGTH;
+const SECTOR_2_END=CUSTOM_TRACK?CUSTOM_TRACK.length*.49:SECTOR_2_RIGHT_END+SECTOR_2_EXIT;
 const SECTOR_3_EAST=COURSE.s3East;
 const SECTOR_3_RIGHT_RADIUS=COURSE.r3Right;
 const SECTOR_3_RIGHT_LENGTH=Math.PI*.5*SECTOR_3_RIGHT_RADIUS;
@@ -50,13 +52,13 @@ const SECTOR_3_SOUTH=STRAIGHT+R+SECTOR_2_LEFT_RADIUS+SECTOR_2_NORTH+
 const SECTOR_4_WEST=R+EXIT+SECTOR_2_STRAIGHT+SECTOR_2_LEFT_RADIUS+
   SECTOR_2_RIGHT_RADIUS+SECTOR_2_EXIT+SECTOR_3_EAST+
   SECTOR_3_RIGHT_RADIUS-SECTOR_3_HAIRPIN_RADIUS-SECTOR_4_RETURN_RADIUS;
-const SECTOR_3_EAST_END=SECTOR_2_END+SECTOR_3_EAST;
-const SECTOR_3_RIGHT_END=SECTOR_3_EAST_END+SECTOR_3_RIGHT_LENGTH;
-const SECTOR_3_SOUTH_END=SECTOR_3_RIGHT_END+SECTOR_3_SOUTH;
-const SECTOR_3_END=SECTOR_3_SOUTH_END+SECTOR_3_HAIRPIN_LENGTH;
-const SECTOR_4_WEST_END=SECTOR_3_END+SECTOR_4_WEST;
-const SECTOR_4_RETURN_END=SECTOR_4_WEST_END+SECTOR_4_RETURN_LENGTH;
-const END=SECTOR_4_RETURN_END+SECTOR_4_NORTH;
+const SECTOR_3_EAST_END=CUSTOM_TRACK?CUSTOM_TRACK.length*.54:SECTOR_2_END+SECTOR_3_EAST;
+const SECTOR_3_RIGHT_END=CUSTOM_TRACK?CUSTOM_TRACK.length*.59:SECTOR_3_EAST_END+SECTOR_3_RIGHT_LENGTH;
+const SECTOR_3_SOUTH_END=CUSTOM_TRACK?CUSTOM_TRACK.length*.69:SECTOR_3_RIGHT_END+SECTOR_3_SOUTH;
+const SECTOR_3_END=CUSTOM_TRACK?CUSTOM_TRACK.length*.75:SECTOR_3_SOUTH_END+SECTOR_3_HAIRPIN_LENGTH;
+const SECTOR_4_WEST_END=CUSTOM_TRACK?CUSTOM_TRACK.length*.89:SECTOR_3_END+SECTOR_4_WEST;
+const SECTOR_4_RETURN_END=CUSTOM_TRACK?CUSTOM_TRACK.length*.94:SECTOR_4_WEST_END+SECTOR_4_RETURN_LENGTH;
+const END=CUSTOM_TRACK?CUSTOM_TRACK.length:SECTOR_4_RETURN_END+SECTOR_4_NORTH;
 const LAPS=COURSE.laps;
 const SEGMENT_LAYOUT=[
   {kind:'straight',length:STRAIGHT},
@@ -92,7 +94,7 @@ function pathLayout(){
     s+=seg.length;
   }
 }
-pathLayout();
+if(!CUSTOM_TRACK)pathLayout();
 // Double the previous race speed consistently for player and rivals.
 // All values are world-units/second; the speedometer is arcade-scaled.
 const RACE_SPEED_MULTIPLIER=2;
@@ -190,8 +192,15 @@ function surfaceHeight(s,d=0){
       h+=jump.height*ease(jump.start,jump.end,s);
     }
   }
-  // Continuous banking under both sweeping curves; the rightward and
-  // leftward corners bank into opposite shoulders.
+  // Direction-aware banking for authored turns follows the actual curve
+  // tangent rather than assuming every course has the same six corners.
+  if(CUSTOM_TRACK){
+    const before=CUSTOM_TRACK.point(Math.max(0,s-3)).angle;
+    const after=CUSTOM_TRACK.point(Math.min(END,s+3)).angle;
+    const curvature=modAngle(after-before)/6;
+    return h-d*clamp(curvature*6,-.085,.085);
+  }
+  // Original banked racing arcs.
   for(const curve of [
     {from:STRAIGHT,to:STRAIGHT+TURN,sign:1},
     {from:SECTOR_2_LEFT_START,to:SECTOR_2_LEFT_END,sign:-1},
@@ -208,6 +217,7 @@ function surfaceHeight(s,d=0){
   return h;
 }
 function point(s){
+  if(CUSTOM_TRACK)return CUSTOM_TRACK.point(s);
   const distance=clamp(s,0,END);
   for(let i=0;i<SEGMENT_LAYOUT.length;i++){
     const segment=SEGMENT_LAYOUT[i];
