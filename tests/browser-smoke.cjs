@@ -164,12 +164,53 @@ async function smoke(){
         await page.close();
       }
     }
+    // Verify the actual touch layout and street-generation setup in
+    // a phone-shaped device context, not only desktop Chromium.
+    const phone=await browser.newContext({
+      viewport:{width:390,height:844},deviceScaleFactor:2,
+      isMobile:true,hasTouch:true
+    });
+    const mobilePage=await phone.newPage();
+    try{
+      await mobilePage.goto(origin+'/quarter-track.html?course=garage',
+        {waitUntil:'domcontentloaded',timeout:40000});
+      await mobilePage.waitForFunction(
+        ()=>document.getElementById('loading')?.classList.contains('hidden'),
+        null,{timeout:40000}
+      );
+      const stats=await mobilePage.evaluate(()=>({
+        crossroads:Number(document.body.dataset.streetJunctions||0),
+        branches:Number(document.body.dataset.streetBranches||0),
+        touchControls:window.getComputedStyle(
+          document.getElementById('controls')).display!=='none',
+        canvas:!!document.querySelector('#viewport canvas')
+      }));
+      if(!stats.canvas||!stats.touchControls||
+        stats.crossroads!==4||stats.branches!==8){
+        throw new Error('Phone-shaped Garage streets failed: '+
+          JSON.stringify(stats));
+      }
+      await mobilePage.locator('#start').tap();
+      const started=await mobilePage.locator('#intro').evaluate(
+        el=>el.classList.contains('hidden'));
+      if(!started)throw new Error('Mobile touch race start failed');
+      const screenshotDir=path.join(ROOT,'tests','screenshots');
+      fs.mkdirSync(screenshotDir,{recursive:true});
+      await mobilePage.screenshot({
+        path:path.join(screenshotDir,'garage-streets-mobile.png'),
+        animations:'disabled'
+      });
+      console.log('PASS mobile touch Garage industrial streets',JSON.stringify(stats));
+    }finally{
+      await mobilePage.close();
+      await phone.close();
+    }
   }finally{
     await browser.close();
     await new Promise(resolve=>server.close(resolve));
   }
 }
 smoke().then(
-  ()=>console.log('PASS: all four courses load and Garage race countdown responds'),
+  ()=>console.log('PASS: all four courses load, Garage street infrastructure and mobile touch startup work'),
   error=>{console.error(error.stack||error);process.exitCode=1;}
 );
