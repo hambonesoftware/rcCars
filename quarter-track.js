@@ -2057,7 +2057,7 @@ ui.restart.addEventListener('click',()=>reset(true));
 ui.pause.addEventListener('click',pause);
 ui.resume.addEventListener('click',resume);
 ui.camera.addEventListener('click',toggleView);
-ui.exit.addEventListener('click',()=>reset(false));
+ui.exit.addEventListener('click',()=>window.location.assign('./courses.html'));
 window.addEventListener('resize',viewport);
 window.addEventListener('contextmenu',e=>e.preventDefault());
 setup();
