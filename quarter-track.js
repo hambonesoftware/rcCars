@@ -1419,6 +1419,8 @@ function reset(start){
   game.lap=1;game.lapSplits=[];game.lapStartTime=0;
   game.nextCheckpoint=0;game.checkpoints=[];
   game.mode=start?'countdown':'intro';
+  cameraInitialized=false;
+  viewport();
   ui.marker.textContent=start?'3':'';
   ui.flash.classList.remove('show');
   updateHUD();
@@ -1678,6 +1680,7 @@ function positionModels(dt){
   }
 }
 const focus=new THREE.Vector3(),target=new THREE.Vector3();
+let cameraInitialized=false;
 // Camera tuned for a close, elevated rear-three-quarter RC arcade view.
 // Orthographic projection preserves the isometric model proportions while
 // a rotating track-relative follow offset reveals the truck's back and side.
@@ -1700,7 +1703,8 @@ function viewport(){
   // on portrait phones. Keep the explicit overview as a separate option.
   const mapWidth=mapBounds.maxX-mapBounds.minX;
   const mapHeight=mapBounds.maxZ-mapBounds.minZ;
-  const height=game.camera==='overview'?
+  const fullTable=game.camera==='overview'||game.mode==='intro';
+  const height=fullTable?
     Math.max((mapHeight+210)*1.24,(mapWidth+210)*1.20/Math.max(.35,aspect)):
     (aspect<.65?67:aspect<1?60:51);
   camera.top=height*.5;camera.bottom=-height*.5;
@@ -1708,8 +1712,8 @@ function viewport(){
   camera.updateProjectionMatrix();
   // Full-course overview needs a longer draw distance than close follow.
   if(scene?.fog){
-    scene.fog.near=game.camera==='overview'?490:165;
-    scene.fog.far=game.camera==='overview'?1600:385;
+    scene.fog.near=fullTable?490:165;
+    scene.fog.far=fullTable?1600:385;
   }
   renderer.setSize(innerWidth,innerHeight);
 }
@@ -1747,8 +1751,17 @@ function updateCamera(dt){
   }
   const t=Math.max(dt,.001);
   const f=1-Math.exp(-(game.mode==='intro'?2.2:cameraConfig.followDamping)*t);
-  camera.position.lerp(desire,f);
-  target.lerp(look,1-Math.exp(-cameraConfig.focusDamping*t));
+  if(!cameraInitialized){
+    // A freshly loaded WebGL camera starts at the origin. Snap straight
+    // to the diorama overview (or start grid) instead of spending many
+    // software-rendered frames staring into the grass texture.
+    camera.position.copy(desire);
+    target.copy(look);
+    cameraInitialized=true;
+  }else{
+    camera.position.lerp(desire,f);
+    target.lerp(look,1-Math.exp(-cameraConfig.focusDamping*t));
+  }
   if(game.shake>0){
     camera.position.x+=(Math.random()-.5)*game.shake*.13;
     game.shake=Math.max(0,game.shake-dt*2.1);
