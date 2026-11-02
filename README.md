@@ -34,3 +34,11 @@ Files: `index.html` UI, `style.css` responsive presentation, `game.js` Three.js 
 ## Interactive 3D truck preview
 
 Open **[Vehicle Showroom](./vehicle-preview.html)** to inspect a reusable, real Three.js short-bed monster-truck model. Four paint variants match the red, green, blue and yellow pickup racing reference. Drag to orbit, zoom, tap a vehicle color to inspect it, or change between lineup, detail and overhead camera. Geometry lives in `truck-model.js` and is ready for later integration into gameplay after review.
+
+## First quarter-track prototype (Sector 01 / 04)
+
+The current development focus is **[Drive Sector 01](./quarter-track.html)**. This playable three-dimensional opening quarter uses the refined smooth-shell pickup trucks from `truck-model.js`. It provides a real four-car grid, an asphalt opening straight, two rhythm bumps, one jump ramp with airborne landing simulation, a banked 90-degree turn with yellow-black curbs and safety railings, a winding exit and a Sector 02 checkpoint. The prototype does not yet implement the other three quarters or a lap loop.
+
+**Controls:** desktop W/Up accelerate, A/D or Left/Right steer, S/Down brake, Shift/Space boost, Q/E pitch in air, C overview/follow, Escape pause. On touch devices throttle is automatic and touch steering/brake/boost buttons are provided. The prototype uses arcade steering, motor heat, off-track penalties, opponent cars, and finish time. Aerial follow and full-sector overview cameras let us evaluate track geometry independently from handling.
+
+When Sector 01 feels right, the road-generation functions can be extended into the remaining course and the moving cars can be upgraded to a richer tire-contact/suspension simulation. The old long straightaway test build remains accessible on the root page.
