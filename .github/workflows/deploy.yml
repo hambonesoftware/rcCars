@@ -66,3 +66,11 @@ jobs:
         run: npm install --no-save --ignore-scripts --no-audit --no-fund playwright-core@1.56.1
       - name: Smoke-test all courses in Chromium
         run: timeout 120s node tests/browser-smoke.cjs
+      - name: Save HO course previews for visual QA
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: miniature-course-overviews
+          path: tests/screenshots/*.png
+          if-no-files-found: ignore
+          retention-days: 7
