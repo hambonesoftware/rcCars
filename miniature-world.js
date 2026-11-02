@@ -251,7 +251,7 @@ export function createMiniatureWorld({
       new THREE.PlaneGeometry(8.7,2.15),
       new THREE.MeshBasicMaterial({map:texture,side:THREE.DoubleSide})
     );
-    const p=offset(f,0,5,0);
+    const p=offset(f,side>0?-.24:.24,5,0);
     panel.position.set(p.x,p.y,p.z);
     // Face into the racing corridor rather than parallel to the road.
     panel.rotation.y=f.angle+(side>0?-Math.PI*.5:Math.PI*.5);
@@ -440,7 +440,8 @@ export function createMiniatureWorld({
       ['wallIvory','wallBrick','wallOchre','roofSlate','roofTerracotta',
         'woodRim'].includes(matName);
     mesh.receiveShadow=true;
-    mesh.frustumCulled=false;
+    mesh.computeBoundingSphere();
+    mesh.frustumCulled=true;
     scene.add(mesh);
   }
   stats.drawBatches=batches.size;
