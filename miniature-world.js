@@ -80,6 +80,7 @@ export function createMiniatureWorld({
   const box=new THREE.BoxGeometry(1,1,1);
   const cylinder=new THREE.CylinderGeometry(.5,.5,1,9);
   const sphere=new THREE.SphereGeometry(.5,9,7);
+  const cone=new THREE.ConeGeometry(.5,1,9);
   const mats={};
   for(const [name,color] of Object.entries(STANDARD_PALETTE)){
     mats[name]=new THREE.MeshStandardMaterial({
@@ -127,7 +128,7 @@ export function createMiniatureWorld({
     matrix.compose(translate,tempQuat,scale);
     batches.get(key).push(matrix.clone());
   };
-  const stats={course,buildings:0,people:0,railTies:0,trees:0,
+  const stats={course,buildings:0,people:0,railTies:0,trees:0,landmarks:0,
     districts:plan.districts.map(d=>d.title),signs:0,railSections:plan.railway.length};
   // Plot-style margin instead of letting buildings clip into a second
   // part of the winding circuit. Projection uses actual road points.
@@ -231,6 +232,14 @@ export function createMiniatureWorld({
       add('wallIvory',f,[0,height+1.35,0],
         [.27,1.6,.27]);
     }
+    if(style==='residential'){
+      for(let i=-3;i<=3;i++){
+        add('fence',f,[face*(width*.5+2.4),.76,i*1.35],
+          [.14,1.45,.14]);
+      }
+      add('fence',f,[face*(width*.5+2.4),1.43,0],
+        [.15,.15,8.5]);
+    }
     stats.buildings++;
     return {width,depth,height};
   }
@@ -333,8 +342,93 @@ export function createMiniatureWorld({
         parkedCar(d,i+district);
       }
     }
+    // Back-street shops and bungalows give each town a real two-deep
+    // street plan instead of a single thin ribbon of facade boxes.
+    const behindRail=plan.railway.some(rail=>rail.side===side&&
+      Math.abs((rail.start+rail.end)*.5-area.at)<.12);
+    if(!behindRail){
+      const rearCount=mobile?3:5;
+      for(let row=0;row<rearCount;row++){
+        const s=Math.max(28,Math.min(length-30,
+          center+(row-(rearCount-1)*.5)*step*1.3));
+        const farFrame=clearFrame(s,side,halfWidth+43,halfWidth+16);
+        const style=area.type==='industrial'?'industrial':
+          area.type==='mainstreet'?'mainstreet':'residential';
+        building(farFrame,side,style,250+row+district*10,
+          plan.palette[(row+district+2)%plan.palette.length]);
+      }
+      for(let i=-7;i<=7;i++){
+        const ss=Math.max(24,Math.min(length-25,center+i*step*.43));
+        const lane=clearFrame(ss,side,halfWidth+32,halfWidth+15);
+        add('sidewalk',lane,[0,.035,0],[5.5,.09,step*.46+.15]);
+        if(i%3===0){
+          add('roadPaint',lane,[0,.093,0],[.13,.025,1.65]);
+        }
+      }
+    }
     sign(clearFrame(center+step*.55,side,halfWidth+15,halfWidth+3),
       area.title,side);
+  }
+
+  // Bespoke signature features keep each HO display memorable, as on
+  // elaborate real model railway layouts rather than generic asset scatter.
+  if(course==='backyard'){
+    const a=plan.districts[3];
+    const f=clearFrame(length*(a.at+.02),a.side,halfWidth+46,halfWidth+24);
+    add('railPlatform',f,[0,.20,0],[10.7,.38,10.7]);
+    for(let i=0;i<8;i++){
+      const angle=i*Math.PI/4;
+      add('trimCream',f,[Math.cos(angle)*4.3,2.9,Math.sin(angle)*4.3],
+        [.28,5.2,.28]);
+    }
+    add('roofTerracotta',f,[0,6.1,0],[12,3.8,12],{shape:'cone'});
+    add('roofCopper',f,[0,8.12,0],[2,.65,2],{shape:'cone'});
+    for(const xx of [-7.4,7.4]){
+      add('fence',f,[xx,.50,0],[.18,1,8.5]);
+      add('porch',f,[xx,.85,0],[1.35,.17,4.5]);
+    }
+    stats.landmarks++;
+  }else if(course==='creek'){
+    const a=plan.districts[2];
+    const f=clearFrame(length*(a.at+.045),a.side,halfWidth+44,halfWidth+21);
+    // Weathered waterwheel beside Willow Landing's tiny mill.
+    add('wallOchre',f,[4,3.25,1],[8,6.5,6]);
+    add('roofSlate',f,[4,7.0,1],[9,.36,7]);
+    add('woodRim',f,[-2.5,4.1,0],[.55,7,7.3],
+      {shape:'cylinder',roll:Math.PI*.5});
+    for(let i=0;i<12;i++){
+      const angle=i*Math.PI/6;
+      add('porch',f,[-2.5+Math.cos(angle)*3.8,
+          4.1+Math.sin(angle)*3.8,0],[.43,.30,1.3],{roll:angle});
+    }
+    add('rail',f,[-2.5,4.1,0],[.38,.38,5.8],{shape:'cylinder'});
+    stats.landmarks++;
+  }else if(course==='garage'){
+    const a=plan.districts[3];
+    const f=clearFrame(length*(a.at+.03),a.side,halfWidth+64,halfWidth+34);
+    for(const x of [-3.4,3.4])for(const z of [-3.4,3.4]){
+      add('streetlight',f,[x,6.0,z],[.40,12,.40]);
+    }
+    add('waterTower',f,[0,13.2,0],[10.5,5.5,10.5],{shape:'cylinder'});
+    add('roofSlate',f,[0,16.15,0],[11.3,2.0,11.3],{shape:'cone'});
+    add('trainRed',f,[0,11.6,5.1],[1.2,1.0,.17]);
+    add('streetlight',f,[4.3,7.2,-.2],[.17,14.4,.17]);
+    stats.landmarks++;
+  }else if(course==='quarry'){
+    const a=plan.districts[1];
+    const f=clearFrame(length*(a.at+.06),a.side,halfWidth+67,halfWidth+35);
+    // Inclined ore tipple and two model grain/ore storage silos.
+    add('wallBrick',f,[0,5,0],[10,10,9]);
+    add('roofBlack',f,[0,10.5,0],[11,1.4,10]);
+    add('trainCream',f,[-6,6.0,3],[3.8,12,3.8],{shape:'cylinder'});
+    add('trainCream',f,[-12,6.0,3],[3.8,12,3.8],{shape:'cylinder'});
+    add('roofTerracotta',f,[-6,12.7,3],[4.7,2,4.7],{shape:'cone'});
+    add('roofTerracotta',f,[-12,12.7,3],[4.7,2,4.7],{shape:'cone'});
+    add('woodRim',f,[6,6.2,0],[1.1,.85,23],{pitch:-.36});
+    for(let i=0;i<6;i++){
+      add('woodRim',f,[6+(i-2)*.65,3.4,i*3-8],[.3,6.8,.3]);
+    }
+    stats.landmarks++;
   }
 
   // Rails are actual modeled steel running on closely spaced HO-style ties
@@ -497,7 +591,8 @@ export function createMiniatureWorld({
   for(const [key,poses] of batches){
     if(!poses.length)continue;
     const [matName,kind]=key.split('|');
-    const geometry=kind==='cylinder'?cylinder:kind==='sphere'?sphere:box;
+    const geometry=kind==='cylinder'?cylinder:
+      kind==='sphere'?sphere:kind==='cone'?cone:box;
     const mesh=new THREE.InstancedMesh(geometry,mats[matName],poses.length);
     mesh.name='HO scenery '+key;
     for(let i=0;i<poses.length;i++)mesh.setMatrixAt(i,poses[i]);
