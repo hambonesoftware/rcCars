@@ -38,6 +38,9 @@ jobs:
           node --check town-streets.js
           node --input-type=module --check < town-streets.js
           node --input-type=module --check < miniature-world.js
+          node --check scenery-placement.js
+          node --input-type=module --check < scenery-placement.js
+          node tests/scenery-placement.test.cjs
           test -s courses.html
           node tests/track-geometry.test.cjs
           test -s quarter-track.html
