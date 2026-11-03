@@ -184,7 +184,12 @@ export function createMiniatureWorld({
       rand(index+18)*1.65;
     // Facade awnings, porches, roof extensions, sill and fence details
     // are included in this conservative bounding circle.
-    const footprintRadius=Math.hypot(width*.5+3.6,depth*.5+2.1);
+    // Depot platforms and station canopies project farther toward the
+    // tracks than ordinary house porches or storefront awnings.
+    const xOverhang=isDepot?5.8:3.6;
+    const zOverhang=isDepot?2.35:2.1;
+    const footprintRadius=Math.hypot(
+      width*.5+xOverhang,depth*.5+zOverhang);
     return {width,depth,height,footprintRadius};
   }
   function building(f,side,style,index,wallKey){
