@@ -68,7 +68,14 @@ const STANDARD_PALETTE={
   trainRed:'#b55e4d',trainCream:'#e5cc8b',trainGreen:'#53776c',
   wheels:'#343637',streetlight:'#667478',wallLamp:'#dccb94',
   townSign:'#284b55',woodRim:'#855a3a',tableEdge:'#b98a5a',
-  waterTower:'#a2aeb2',doorBlue:'#557388'
+  waterTower:'#a2aeb2',doorBlue:'#557388',
+  doorRed:'#974a43',roofHighlight:'#8e8e89',trimWood:'#d6c7a7',
+  windowFrame:'#ece5cc',glassWarm:'#a9ccd1',brass:'#cfb06b',
+  awningBlue:'#5d8fa0',awningRed:'#b96e61',awningCream:'#e7d7b6',
+  awningFrame:'#6a6b64',signBlack:'#33494e',mortar:'#c18f82',
+  garageDoor:'#8a9da0',shutterRib:'#63757b',
+  safetyYellow:'#e3bd68',ventMetal:'#71888d',pole:'#64696a',
+  clockFace:'#e5d5b7'
 };
 
 export function createMiniatureWorld({
@@ -205,81 +212,253 @@ export function createMiniatureWorld({
     stats.buildingStyles[style]++;
     const roof=['roofTerracotta','roofSlate','roofOlive','roofCopper'][index%4];
     const face=side>0?-1:1;
-    add('foundation',f,[0,.20,0],[width+1,.40,depth+.8]);
-    add(wallKey,f,[0,height*.5+.4,0],[width,height,depth]);
-    add('trimCream',f,[0,height+.4,0],[width+.3,.24,depth+.3]);
-    if(isShop||isWorkshop){
-      add(roof,f,[0,height+.76,0],[width+1,.44,depth+1]);
-      if(isShop){
-        add('porch',f,[face*(width*.5+.52),3.0,0],[1.25,.16,depth+.2]);
-        add('roofTerracotta',f,[face*(width*.5+.65),3.28,0],[1.0,.12,depth+.4]);
+    const xFace=face*width*.5;
+    const xRear=-xFace;
+    const cornice=height+.38;
+    const accent=index%3===0?'wallIvory':index%3===1?'wallOchre':'trimCream';
+    const variant=index%4;
+
+    // A real model-kit base: continuous footings, plinth trim, corner
+    // pilasters, wall panels and a roofline silhouette.
+    add('foundation',f,[0,.22,0],[width+.64,.44,depth+.72]);
+    add(wallKey,f,[0,height*.5+.44,0],[width,height,depth]);
+    add('trimWood',f,[0,.56,0],[width+.17,.16,depth+.16]);
+    add('trimCream',f,[0,cornice,0],[width+.34,.19,depth+.34]);
+    for(const xx of [-width*.5,width*.5]){
+      for(const zz of [-depth*.5,depth*.5]){
+        add(accent,f,[xx,height*.50+.43,zz],[.15,height,.15]);
       }
-      if(isWorkshop){
-        for(let i=0;i<2;i++){
-          add('trimDark',f,[face*(width*.5+.07),2.6,(i-.5)*depth*.54],
-            [.16,3.1,2.8]);
+    }
+    const setWindow=(wallX,y,zz,h=1.38,w=1.30,front=true)=>{
+      const outward=front?face:-face;
+      const x=wallX+outward*.10;
+      const frameColor=isWorkshop?'trimDark':'windowFrame';
+      add(frameColor,f,[x,y,zz],[.20,h+.30,w+.29]);
+      add('glassWarm',f,[x+outward*.11,y,zz],[.09,h+.07,w+.04]);
+      add('trimCream',f,[x+outward*.20,y,zz],[.10,.11,w+.23]);
+      add('trimCream',f,[x+outward*.20,y,zz],[.10,h+.20,.09]);
+      if(w>1){
+        add(frameColor,f,[x+outward*.24,y,zz],[.09,.075,w+.25]);
+      }
+      add('trimWood',f,[x+outward*.12,y-h*.5-.16,zz],
+        [.31,.12,w+.50]);
+    };
+    const door=(xx,yy,zz,h=2.65,w=1.45,color='doorBlue')=>{
+      add('windowFrame',f,[xx,yy,zz],[.22,h+.20,w+.19]);
+      add(color,f,[xx+face*.12,yy,zz],[.17,h,w]);
+      add('brass',f,[xx+face*.24,yy-.15,zz+w*.28],
+        [.06,.09,.09]);
+      add('trimCream',f,[xx+face*.15,yy+h*.5+.06,zz],
+        [.26,.14,w+.4]);
+    };
+    const shingleGable=(roofColor=roof,rise=2.1)=>{
+      const pitch=Math.atan2(rise,width*.5);
+      const sloped=(width*.5+.51)/Math.cos(pitch);
+      // Distinct pitched planes, fascia, raised ridge and painted gables.
+      for(const roofSide of [-1,1]){
+        add(roofColor,f,[roofSide*width*.25,
+          height+.56+rise*.52,0],[sloped,.22,depth+1.15],
+          {roll:-roofSide*pitch});
+        for(let shingle=1;shingle<=4;shingle++){
+          const part=shingle/5;
+          const xx=roofSide*(width*.5*(1-part));
+          const yy=height+.63+rise*part;
+          add('roofHighlight',f,[xx,yy,0],[.10,.046,depth+.95],
+            {roll:-roofSide*pitch});
+        }
+        add('trimCream',f,
+          [roofSide*(width*.5+.12),height+.53,0],
+          [.14,.21,depth+1.30]);
+      }
+      add('roofBlack',f,[0,height+.65+rise,0],
+        [.28,.18,depth+1.36]);
+      // Exposed gable ends give the building a model-kit silhouette.
+      for(const zz of [-depth*.5-.07,depth*.5+.07]){
+        add(wallKey,f,[0,height+.72,zz],
+          [width*.50,1.10,.17]);
+        add('trimWood',f,[0,height+1.28,zz],[width*.31,.13,.20]);
+      }
+      return rise;
+    };
+
+    if(isShop){
+      // HO Main Street brick commercial block with a stepped parapet,
+      // proper shop glazing, framed signage and striped canopy.
+      add('roofBlack',f,[0,height+.64,0],
+        [width+.72,.34,depth+.73]);
+      for(const xx of [-width*.5,width*.5]){
+        add('trimCream',f,[xx,height+1.05,0],
+          [.45,1.25,depth+.60]);
+      }
+      add('wallBrick',f,[xFace,height+.98,0],
+        [.44,1.12,depth+.73]);
+      add('trimCream',f,[xFace+face*.13,height+1.57,0],
+        [.28,.24,depth+.9]);
+      for(let zIndex=-2;zIndex<=2;zIndex++){
+        const zz=zIndex*depth*.16;
+        add('trimWood',f,[xFace+face*.21,height+1.11,zz],
+          [.14,.72,.10]);
+      }
+      // Five-foot model storefront front windows and a recess for door.
+      for(const zz of [-depth*.28,depth*.28]){
+        setWindow(xFace,2.56,zz,2.8,depth*.31);
+        setWindow(xFace,6.42,zz,1.73,depth*.23);
+        setWindow(xRear,4.2,zz,1.5,depth*.19,false);
+      }
+      door(xFace+face*.25,1.82,0,2.85,1.48,
+        variant===0?'doorRed':'doorBlue');
+      const awning=variant%2?'awningBlue':'awningRed';
+      add('awningFrame',f,[xFace+face*.85,4.19,0],
+        [1.70,.15,depth*.86],{roll:-face*.14});
+      for(let p=-4;p<=4;p++){
+        add((p+8)%2?awning:'awningCream',f,
+          [xFace+face*.9,4.10,p*depth*.093],
+          [1.65,.10,depth*.094],{roll:-face*.14});
+      }
+      add('signBlack',f,[xFace+face*.27,5.05,0],
+        [.26,.88,depth*.71]);
+      add('brass',f,[xFace+face*.43,5.04,0],
+        [.08,.11,depth*.53]);
+      for(let h=0;h<5;h++){
+        add('mortar',f,[xFace+face*.035,6.45+h*.42,0],
+          [.07,.042,depth+.08]);
+      }
+      if(variant===2){
+        // Rear fire escape and metal railing on one of the larger shops.
+        add('pole',f,[xRear-face*.5,4.33,0],
+          [1.55,.13,depth*.68]);
+        for(const zz of [-depth*.27,0,depth*.27]){
+          add('pole',f,[xRear-face*1.15,5.08,zz],
+            [.10,1.55,.10]);
+        }
+        add('pole',f,[xRear-face*1.15,5.78,0],
+          [.10,.10,depth*.73]);
+      }
+    }else if(isWorkshop){
+      // Model factory / service garage: metal roof, ventilators, rolling
+      // shutters, safety stripes, loading docks and brick pilasters.
+      const lowSlope=variant%2===0;
+      add('roofSlate',f,[0,height+.72,0],
+        [width+1.12,.34,depth+1.22],
+        {roll:lowSlope?.08:-.08});
+      add('roofBlack',f,[0,height+1.0,0],
+        [width+1.23,.13,depth+1.31]);
+      for(const sideWall of [-1,1]){
+        add('wallBrick',f,[sideWall*width*.51,4.3,0],
+          [.20,7.6,.12]);
+      }
+      // Two oversized rolled-steel garage doors and horizontal ribs.
+      for(const zz of [-depth*.255,depth*.255]){
+        add('garageDoor',f,[xFace+face*.16,2.75,zz],
+          [.18,4.00,depth*.40]);
+        add('trimDark',f,[xFace+face*.25,4.84,zz],
+          [.25,.23,depth*.45]);
+        for(let h=0;h<9;h++){
+          add('shutterRib',f,[xFace+face*.28,1.02+h*.40,zz],
+            [.10,.075,depth*.39]);
+        }
+        add('safetyYellow',f,[xFace+face*.28,.67,zz],
+          [.10,.26,depth*.41]);
+      }
+      for(const zz of [-depth*.33,0,depth*.33]){
+        setWindow(xFace,6.42,zz,1.0,depth*.19);
+        setWindow(xRear,4.7,zz,1.28,depth*.22,false);
+      }
+      for(const roofZ of [-depth*.30,depth*.30]){
+        add('roofBlack',f,[-width*.19,height+1.27,roofZ],
+          [1.08,.83,1.35]);
+        add('ventMetal',f,[-width*.19,height+1.78,roofZ],
+          [1.34,.20,1.50]);
+      }
+      add('trimWood',f,[xFace+face*1.30,.34,0],
+        [2.3,.30,depth*.92]);
+      add('safetyYellow',f,[xFace+face*2.45,.18,0],
+        [.13,.20,depth*.90]);
+      // Utility pipe and exterior downspout.
+      add('ventMetal',f,[xFace+face*.24,4.9,depth*.46],
+        [.19,8.45,.19]);
+    }else{
+      const rise=shingleGable(roof,isDepot?2.15:1.95);
+      const roofPeak=height+.65+rise;
+      // Cottages have crisp paired shutters, porch decks, lintels,
+      // dormers, gutters and variety in roof/chimney placement.
+      for(const zz of [-depth*.27,depth*.27]){
+        setWindow(xFace,4.12,zz,1.38,1.30);
+        setWindow(xRear,4.13,zz,1.32,1.25,false);
+        for(const shutterSide of [-1,1]){
+          add(variant%2?'doorBlue':'roofOlive',f,
+            [xFace+face*.27,4.12,
+              zz+shutterSide*.87],[.10,1.62,.28]);
         }
       }
-    }else{
-      const rise=1.75,overhang=.36;
-      const pitch=Math.atan2(rise,width/2);
-      const panelWidth=(width/2+overhang)/Math.cos(pitch);
-      for(const sideRoof of [-1,1]){
-        add(roof,f,[sideRoof*width*.25,height+.5+rise*.5,0],
-          [panelWidth,.18,depth+.8],
-          {roll:-sideRoof*pitch});
+      door(xFace+face*.21,1.60,0,2.62,1.35,
+        variant%2?'doorBlue':'doorRed');
+      // Roof dormer and small paned window above the entrance.
+      if(!isPark){
+        add('wallIvory',f,
+          [xFace-face*width*.27,height+.88,0],
+          [1.48,1.65,2.05]);
+        add('roofSlate',f,
+          [xFace-face*width*.27,height+1.86,0],
+          [1.77,.27,2.48]);
+        add('glassWarm',f,
+          [xFace-face*width*.27+face*.82,height+.81,0],
+          [.12,.85,.94]);
       }
-      add('trimDark',f,[0,height+.53+rise,0],[.12,.16,depth+.9]);
-      if(index%3===0){
-        add('wallBrick',f,[width*.20,height+1.2,depth*.13],
-          [.75,2,.75]);
+      if(variant%3===0){
+        add('wallBrick',f,[-face*width*.17,
+          roofPeak+.03,depth*.25],[.82,1.7,.80]);
+        add('roofBlack',f,[-face*width*.17,
+          roofPeak+.99,depth*.25],[1.01,.12,1.02]);
+      }
+      // Porch deck, roof, railings and two posts are the main suburban
+      // miniature-scale cues; all were allowed for by safety radius.
+      add('porch',f,[xFace+face*.93,.44,0],
+        [1.85,.35,depth*.69]);
+      for(const zz of [-depth*.30,depth*.30]){
+        add('trimCream',f,[xFace+face*1.57,2.27,zz],
+          [.19,3.45,.19]);
+      }
+      add('roofTerracotta',f,[xFace+face*1.04,4.05,0],
+        [2.07,.22,depth*.75],{roll:face*.12});
+      add('porch',f,[xFace+face*1.85,.18,0],
+        [.62,.27,2.5]);
+      if(isDepot){
+        add('railPlatform',f,[xFace+face*3.4,.26,0],
+          [3.65,.32,depth+2.1]);
+        add('roofCopper',f,[xFace+face*3.12,4.66,0],
+          [4.9,.20,depth+2.35]);
+        for(const zz of [-depth*.4,depth*.4]){
+          add('trimCream',f,[xFace+face*4.24,2.45,zz],
+            [.20,4.6,.18]);
+        }
+        add('clockFace',f,[xFace+face*.38,
+          roofPeak-.1,0],[.12,1.12,1.12]);
+        add('windowFrame',f,[xFace+face*.49,
+          roofPeak-.1,0],[.13,.08,.82]);
+        add('windowFrame',f,[xFace+face*.49,
+          roofPeak-.1,0],[.13,.75,.07]);
+      }
+      if(style==='residential'){
+        // Simple front garden with picket details set farther back
+        // than the carriageway; no fence or chimney intersects road.
+        for(let i=-3;i<=3;i++){
+          add('fence',f,[xFace+face*2.48,.75,i*1.28],
+            [.11,1.45,.11]);
+        }
+        add('fence',f,[xFace+face*2.48,1.30,0],
+          [.12,.11,8.1]);
+      }
+      if(isPark){
+        add('flag',f,[xRear,roofPeak+1.6,0],
+          [.16,3,.16]);
       }
     }
-    // Model-scale lintels, inset window glass and tiny sills on the
-    // street-facing facade. The street is on the centerline side.
-    const count=isWorkshop?2:3;
-    for(let row=0;row<(isShop?2:1);row++){
-      const y=isWorkshop?4.9:row===0?4.1:7;
-      for(let i=0;i<count;i++){
-        const zz=(i-(count-1)/2)*depth/(count+.5);
-        if(row===0&&i===Math.floor(count/2))continue;
-        add('trimCream',f,[face*(width*.5+.07),y,zz],
-          [.18,1.54,1.45]);
-        add('glass',f,[face*(width*.5+.17),y,zz],
-          [.20,1.19,1.13]);
-        add('trimDark',f,[face*(width*.5+.29),y,zz],
-          [.08,.08,1.22]);
-      }
-    }
-    add(index%3===0?'doorBlue':'door',f,
-      [face*(width*.5+.09),1.52,0],[.19,2.24,1.24]);
-    add('windowGlow',f,
-      [face*(width*.5+.22),2.35,-.31],[.04,.24,.24]);
-    add('trimCream',f,
-      [face*(width*.5+.17),2.67,0],[.24,.13,1.52]);
-    // Back walls carry subtle brick/stucco framing, not blank boxes.
-    for(const zz of [-depth*.38,depth*.38]){
-      add('trimCream',f,[-face*(width*.5+.04),height*.43,zz],
-        [.10,1.22,1.22]);
-      add('glass',f,[-face*(width*.5+.12),height*.43,zz],
-        [.11,.98,.95]);
-    }
-    if(isDepot){
-      add('railPlatform',f,[face*(width*.5+2),.36,0],[3.8,.3,depth+2]);
-      add('fence',f,[face*(width*.5+1.5),1.2,-depth*.53],
-        [.15,1.7,.15]);
-    }
-    if(isPark){
-      add('wallIvory',f,[0,height+1.35,0],
-        [.27,1.6,.27]);
-    }
-    if(style==='residential'){
-      for(let i=-3;i<=3;i++){
-        add('fence',f,[face*(width*.5+2.4),.76,i*1.35],
-          [.14,1.45,.14]);
-      }
-      add('fence',f,[face*(width*.5+2.4),1.43,0],
-        [.15,.15,8.5]);
+    // Corner detailing and side return windows make the architecture
+    // work in 3D from the high three-quarter tilt-shift camera.
+    for(const zz of [-depth*.5,depth*.5]){
+      add('trimWood',f,[0,height*.46+.42,zz],
+        [width+.08,.10,.13]);
     }
     stats.buildings++;
     return {width,depth,height};
