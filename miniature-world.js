@@ -8,6 +8,7 @@
  * No network textures, GLTF downloads or postprocess render passes.
  */
 import {getTownJunctions} from './town-streets.js';
+import {buildSceneryClearance} from './scenery-placement.js';
 
 export const MODEL_TOWN_PLANS=Object.freeze({
   backyard:{
@@ -102,7 +103,7 @@ export function createMiniatureWorld({
   };
   const frame=(s,d)=>{
     const p=position(Math.max(1,Math.min(length-1,s)),d);
-    return {x:p.x,z:p.z,angle:p.angle};
+    return {x:p.x,z:p.z,angle:p.angle,s,d};
   };
   const offset=(f,x,y,z)=>({
     x:f.x+Math.cos(f.angle)*x+Math.sin(f.angle)*z,
@@ -133,40 +134,75 @@ export function createMiniatureWorld({
     matrix.compose(translate,tempQuat,scale);
     batches.get(key).push(matrix.clone());
   };
-  const stats={course,buildings:0,people:0,railTies:0,trees:0,landmarks:0,
-    districts:plan.districts.map(d=>d.title),signs:0,railSections:plan.railway.length};
-  // Plot-style margin instead of letting buildings clip into a second
-  // part of the winding circuit. Projection uses actual road points.
-  const roadSamples=[];
-  for(let s=0;s<length;s+=5){
-    const p=position(s,0);roadSamples.push([p.x,p.z]);
-  }
-  const clearance=(x,z)=>{
-    let best=Infinity;
-    for(let i=0;i<roadSamples.length;i++){
-      const dx=x-roadSamples[i][0],dz=z-roadSamples[i][1];
-      const v=dx*dx+dz*dz;
-      if(v<best)best=v;
-    }
-    return Math.sqrt(best);
+  const stats={
+    course,buildings:0,people:0,railTies:0,trees:0,landmarks:0,
+    districts:plan.districts.map(d=>d.title),signs:0,
+    railSections:plan.railway.length,
+    skippedBuildings:0,minimumBuildingRoadMargin:null,
+    buildingStyles:{residential:0,mainstreet:0,industrial:0,station:0,park:0},
+    buildingPlots:[]
   };
+  // A real distance-to-road test uses the FULL race road, the garage's
+  // intersecting side streets, and both model-railway sidings. It protects
+  // the footprint of even a pitched roof overhang, not just a building's
+  // origin point. Sample spacing is finer than the earlier 5-unit guess.
+  const placement=buildSceneryClearance({
+    position,length,halfWidth,junctions:streetJunctions,
+    branchLength:29,branchHalfWidth:6.7,railway:plan.railway,
+    railDistance:halfWidth+(course==='garage'?38:43),
+    minX:bounds.minX-103,maxX:bounds.maxX+103,
+    minZ:bounds.minZ-103,maxZ:bounds.maxZ+103,
+    step:2.0
+  });
   function clearFrame(s,side,d,minimum=17){
-    let last=frame(s,side*d);
-    for(let attempt=0;attempt<5;attempt++){
-      const p=frame(s,side*(d+attempt*7));
-      last=p;
-      if(clearance(p.x,p.z)>minimum)return p;
+    let fallback=null;
+    for(let advance=0;advance<9;advance++){
+      const p=frame(s,side*(d+advance*5.5));
+      const margin=placement.clearance(p.x,p.z).margin;
+      if(!fallback||margin>fallback.margin)fallback={...p,margin};
+      if(margin>Math.max(.9,minimum-halfWidth))return p;
     }
-    return last;
+    // Auxiliary furniture may be omitted if no suitable space is found.
+    // Building footprints are handled separately and never forced in.
+    return fallback;
+  }
+  function dimensionsForBuilding(style,index){
+    const isWorkshop=style==='industrial';
+    const isShop=style==='mainstreet';
+    const isDepot=style==='station';
+    const width=(isShop?7.8:isWorkshop?9.3:isDepot?8.8:6.8)+rand(index)*2.1;
+    const depth=(isWorkshop?10.2:isShop?9.4:isDepot?9.5:8.1)+
+      rand(index+21)*2.25;
+    const height=(isShop?9.5:isWorkshop?7.8:isDepot?7.6:6.1)+
+      rand(index+18)*1.65;
+    // Facade awnings, porches, roof extensions, sill and fence details
+    // are included in this conservative bounding circle.
+    const footprintRadius=Math.hypot(width*.5+3.6,depth*.5+2.1);
+    return {width,depth,height,footprintRadius};
   }
   function building(f,side,style,index,wallKey){
     const isWorkshop=style==='industrial';
     const isShop=style==='mainstreet';
     const isDepot=style==='station';
     const isPark=style==='park';
-    const width=(isShop?7.6:isWorkshop?9.0:6.3)+rand(index)*2.1;
-    const depth=(isWorkshop?10.0:7.7)+rand(index+21)*2.5;
-    const height=(isShop?8.5:isWorkshop?7.5:isDepot?6.6:5.8)+rand(index+18)*2.0;
+    const {width,depth,height,footprintRadius}=dimensionsForBuilding(style,index);
+    const safe=placement.findBuildingPlot({
+      s:f.s,d:f.d,side,radius:footprintRadius,
+      minMargin:1.65,maxShift:51
+    });
+    if(!safe){
+      stats.skippedBuildings++;
+      return null;
+    }
+    f=safe;
+    const minimum=placement.clearance(f.x,f.z,footprintRadius).margin;
+    stats.minimumBuildingRoadMargin=stats.minimumBuildingRoadMargin===null
+      ?minimum:Math.min(stats.minimumBuildingRoadMargin,minimum);
+    stats.buildingPlots.push({
+      s:f.s,d:f.d,x:f.x,z:f.z,style,width,depth,
+      footprintRadius,roadMargin:minimum
+    });
+    stats.buildingStyles[style]++;
     const roof=['roofTerracotta','roofSlate','roofOlive','roofCopper'][index%4];
     const face=side>0?-1:1;
     add('foundation',f,[0,.20,0],[width+1,.40,depth+.8]);
