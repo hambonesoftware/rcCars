@@ -122,3 +122,11 @@ The new `town-streets.js` module constructs continuous sidewalks, gutters and cu
 The street meshes use batching and instancing for mobile performance. Browser regression checks validate all four Garage junctions, eight branches, raised pavements and eight signals, plus a phone-sized touch start. Other circuits keep their prior road geometry.
 
 **Next:** design and integrate real drivable side routes; convert the other three course roads to appropriate city streets; build railway crossings and elevated bridges; tune town-sized obstacles and the camera against actual player-drive screenshots.
+
+## HO architecture fidelity + road safety pass
+
+The HO towns now use more detailed, reusable procedural architecture rather than basic unadorned building boxes. Residential cottages have pitched roofs with shingle strips, dormers, chimneys, framed windows and shutters, porches, posts, stairs and garden railings. Main Street shops have corniced brick fronts, inset display windows, doors, color-striped awnings, shop sign bands and some rear fire escapes. Factory and maintenance buildings have modeled sectional garage doors, safety-marked loading docks, roof vents and utility pipes. Railroad depots have station canopies, platforms and clock details.
+
+The entire building footprint is now checked, including awnings, porch roofs, rail platforms, gutters and roof overhangs. The reusable, Three.js-independent `scenery-placement.js` computes conservative clearance against **every racing-road segment, Garage cross street, active railway siding and the tabletop border**. Buildings whose footprint cannot fit are moved to a safe nearby lot or skipped, never forced into the asphalt. The same margin is exposed to Chromium scene QA; `tests/scenery-placement.test.cjs` verifies curved roads, side streets, rail sidings and tabletop boundaries.
+
+These are still lightweight geometry-built HO model kits, not imported photorealistic GLB assets. Future passes could integrate properly optimized licensed building models, but their physical placement must continue to pass the footprint clearance contract.
