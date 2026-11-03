@@ -1434,6 +1434,12 @@ function setup(){
     document.body.dataset.miniatureRailTies=String(diorama.railTies);
     document.body.dataset.miniatureTrainCars=String(diorama.animatedTrainCars);
     document.body.dataset.miniatureLandmarks=String(diorama.landmarks);
+    document.body.dataset.miniatureMinBuildingClearance=String(
+      diorama.minimumBuildingRoadMargin??-1);
+    document.body.dataset.miniatureSkippedBuildings=String(
+      diorama.skippedBuildings);
+    document.body.dataset.miniatureBuildingTypes=JSON.stringify(
+      diorama.buildingStyles);
     document.body.dataset.miniatureDistricts=diorama.districts.join(' / ');
     createHazards();
     player.mesh=makeRCTrophyTruck(THREE,'#f2c33e');
