@@ -94,10 +94,79 @@ export function createMiniatureWorld({
   const cylinder=new THREE.CylinderGeometry(.5,.5,1,9);
   const sphere=new THREE.SphereGeometry(.5,9,7);
   const cone=new THREE.ConeGeometry(.5,1,9);
+  // Small, deterministic HO-kit texture maps: courses should look like
+  // painted brick, clapboard and shingled roofing, not plain inflated cubes.
+  // Each style shares one 128px map across every instanced building.
+  function makeModelMaterialMap(name){
+    const brick=name==='wallBrick';
+    const siding=['wallIvory','wallSage','wallRose','wallBlue',
+      'wallOchre'].includes(name);
+    const roof=name.startsWith('roof')&&name!=='roofHighlight';
+    const shutter=name==='garageDoor';
+    if(!brick&&!siding&&!roof&&!shutter)return null;
+    const canvas=document.createElement('canvas');
+    canvas.width=128;canvas.height=128;
+    const ctx=canvas.getContext('2d');
+    ctx.fillStyle='#fffdf9';
+    ctx.fillRect(0,0,128,128);
+    const rnd=(i)=>{const v=Math.sin(i*91.235+name.length*29.64)*
+      17472.31;return v-Math.floor(v);};
+    if(brick){
+      // Miniature brick courses, staggered running bond and soft mortar.
+      for(let y=0,row=0;y<128;y+=11,row++){
+        ctx.fillStyle='rgba(31,30,28,.18)';
+        ctx.fillRect(0,y,128,1.5);
+        for(let x=(row%2?0:9)-18;x<147;x+=23){
+          ctx.fillRect(x,y+1,1.4,9);
+          ctx.fillStyle='rgba(255,255,255,.09)';
+          ctx.fillRect(x+2,y+3,19,1);
+          ctx.fillStyle='rgba(31,30,28,.18)';
+        }
+      }
+    }else if(siding){
+      // Painted HO wood/clapboard strips with a hairline contact shadow.
+      for(let y=8;y<128;y+=10){
+        ctx.fillStyle='rgba(23,26,28,.15)';
+        ctx.fillRect(0,y,128,1.45);
+        ctx.fillStyle='rgba(255,255,255,.24)';
+        ctx.fillRect(0,y+2,128,1.3);
+      }
+      for(let i=0;i<20;i++){
+        const x=rnd(i+4)*128,y=rnd(i+45)*128;
+        ctx.fillStyle='rgba(69,63,55,.13)';
+        ctx.fillRect(x,y,1.1,1.5);
+      }
+    }else if(roof){
+      // Overlapping asphalt shingles rather than a single flat slab.
+      for(let y=0,row=0;y<128;y+=13,row++){
+        ctx.fillStyle='rgba(27,28,32,.17)';
+        ctx.fillRect(0,y,128,2);
+        for(let x=(row%2?2:11)-15;x<137;x+=25){
+          ctx.fillStyle='rgba(30,27,29,.12)';
+          ctx.fillRect(x,y+2,1,9);
+          ctx.fillStyle='rgba(255,255,255,.13)';
+          ctx.fillRect(x+2,y+4,16,1);
+        }
+      }
+    }else if(shutter){
+      for(let y=5;y<128;y+=11){
+        ctx.fillStyle='rgba(30,37,44,.21)';
+        ctx.fillRect(0,y,128,2);
+        ctx.fillStyle='rgba(255,255,255,.22)';
+        ctx.fillRect(0,y+2,128,1);
+      }
+    }
+    const tex=new THREE.CanvasTexture(canvas);
+    tex.colorSpace=THREE.SRGBColorSpace;
+    tex.wrapS=tex.wrapT=THREE.RepeatWrapping;
+    tex.anisotropy=2;
+    return tex;
+  }
   const mats={};
   for(const [name,color] of Object.entries(STANDARD_PALETTE)){
     mats[name]=new THREE.MeshStandardMaterial({
-      color,roughness:name==='glass'?.35:name==='rail'?.38:.87,
+      color,map:makeModelMaterialMap(name),
+      roughness:name==='glass'?.35:name==='rail'?.38:.87,
       metalness:name==='rail'?.6:0
     });
   }
