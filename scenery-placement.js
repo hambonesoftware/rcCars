@@ -63,7 +63,10 @@ export function buildSceneryClearance({
     );
     let source='table-edge';
     for(const line of segments){
-      if(x<line.minX-radius-best&&best>=0)continue;
+      if(best>=0&&(
+        x<line.minX-radius-best||x>line.maxX+radius+best||
+        z<line.minZ-radius-best||z>line.maxZ+radius+best
+      ))continue;
       // Conservative exact capsule clearance, including segment ends.
       const dist=distancePointSegment(x,z,line)-line.width-radius;
       if(dist<best){best=dist;source=line.type;}
