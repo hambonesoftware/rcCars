@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<meta name="theme-color" content="#192f30"/>
+<meta name="description" content="Interactive real-code Three.js procedural HO-scale model railroad suburban home and yard prototype for Micro Mayhem."/>
+<title>Elm Street House No. 01 — Micro Mayhem Model Workshop</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800;900&family=DM+Sans:wght@400;500;600;700;800&display=swap');
+:root{font-family:'DM Sans',system-ui,sans-serif;color:#f4f1df;background:#b6c2b6;--ink:#142c30;--mint:#d6ebd0;--lime:#d7eb8b;--panel:#162f31;--hair:rgba(239,240,220,.19);font-synthesis:none}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;overscroll-behavior:none}
+body{background:linear-gradient(145deg,#b5c8c0,#c9c9b9)}
+button,a{font:inherit;-webkit-tap-highlight-color:transparent}
+button{cursor:pointer}
+button:focus-visible,a:focus-visible{outline:3px solid #d7eb8b;outline-offset:3px}
+#viewport{position:fixed;inset:0;touch-action:none;cursor:grab}
+#viewport.dragging{cursor:grabbing}
+#viewport canvas{display:block;width:100%;height:100%;touch-action:none}
+#loading{position:fixed;inset:0;z-index:11;display:grid;place-items:center;color:#f4f1df;background:#172d31;font-size:14px;font-weight:700;text-align:center;padding:20px}
+#loading.hidden{display:none}
+#brand{position:fixed;top:28px;left:30px;z-index:4;display:flex;gap:11px;align-items:center;text-decoration:none;color:#163538;font-weight:800;letter-spacing:.1em;font-size:11px}
+.logo{height:27px;width:27px;border:2px solid #163538;border-radius:8px;display:grid;place-items:center;font-family:'Barlow Condensed',sans-serif;font-size:17px;line-height:1}
+.brand-sep{opacity:.35}
+#hero-tag{position:fixed;z-index:4;top:30px;right:34px;color:#274145;font-size:10px;letter-spacing:.2em;text-transform:uppercase;font-weight:800;display:flex;align-items:center;gap:9px}
+.live-dot{width:7px;height:7px;border-radius:50%;background:#4b9079;box-shadow:0 0 0 4px #4b90792b}
+#panel{position:fixed;z-index:6;left:26px;top:80px;width:322px;max-height:calc(100dvh - 110px);overflow:auto;background:rgba(17,39,41,.965);border:1px solid rgba(252,249,226,.20);border-radius:17px;box-shadow:0 23px 60px #20332942;padding:23px 22px 21px}
+.kicker{color:var(--lime);font-size:10px;letter-spacing:.21em;font-weight:800;text-transform:uppercase}
+h1,h2,p{margin:0}
+h1{font-family:'Barlow Condensed',Impact,sans-serif;font-size:49px;line-height:.92;letter-spacing:-.012em;margin-top:13px;font-weight:900}
+h1 em{font-style:normal;color:#d5e9a6}
+.intro{font-size:12px;line-height:1.58;color:#d1dbd0;margin-top:16px}
+.model-chip{margin-top:15px;display:flex;align-items:center;gap:8px;font-size:9px;font-weight:800;letter-spacing:.13em;color:#d1e4db;text-transform:uppercase}
+.model-chip .rule{height:1px;background:var(--hair);flex:1}
+hr{border:0;border-top:1px solid var(--hair);margin:20px 0 16px}
+.small-heading{font-size:10px;font-weight:800;letter-spacing:.12em;color:#ecf1e3;text-transform:uppercase;margin-bottom:9px}
+.sub{font-size:10.5px;line-height:1.5;color:#aabfb8}
+.options{display:flex;gap:6px;flex-wrap:wrap}
+.option{border:1px solid rgba(236,235,221,.18);border-radius:8px;color:#dee8df;background:#214043;padding:8px 10px;font-size:10px;font-weight:800;white-space:nowrap;min-height:35px}
+.option:hover{background:#2c5053}
+.option.selected{background:#d9e9ae;color:#1c3937;border-color:#d9e9ae}
+.color-option{display:flex;align-items:center;gap:8px}
+.swatch{height:12px;width:12px;border-radius:3px;border:1px solid #172e3280}
+.swatch.sage{background:#b0bdab}
+.swatch.cream{background:#e7d8b8}
+.swatch.blue{background:#a6bdc8}
+.control-group{margin-top:17px}
+.secondary-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px}
+.wide-button{width:100%;background:#26484b;border:1px solid var(--hair);color:#e7ece4;border-radius:9px;min-height:40px;font-size:10px;font-weight:800;letter-spacing:.05em}
+.wide-button:hover{background:#345b5b}
+#regen{background:#b9d8ab;color:#17382c;border-color:#b9d8ab}
+.stats{margin-top:17px;border-top:1px solid var(--hair);padding-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:13px}
+.stats dt{font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:#90aaa2;font-weight:700}
+.stats dd{margin:3px 0 0;font-family:'Barlow Condensed',sans-serif;font-size:24px;line-height:1;font-weight:800}
+#model-summary{margin-top:8px;font-size:10px;color:#aec5ba}
+#hint{position:fixed;bottom:25px;right:27px;z-index:5;color:#2a4545;background:#e1e9dcdd;padding:11px 14px;border-radius:10px;font-size:10px;font-weight:700;box-shadow:0 8px 22px #1f37211f}
+#hint span{display:inline-block;margin-right:11px;opacity:.78}
+#scene-label{position:fixed;right:31px;top:86px;z-index:4;color:#29504f;text-align:right}
+#scene-label strong{display:block;font-family:'Barlow Condensed',sans-serif;letter-spacing:.045em;font-size:28px;line-height:1}
+#scene-label small{font-size:10px;letter-spacing:.1em;text-transform:uppercase;font-weight:700}
+#foot{position:fixed;left:32px;bottom:25px;color:#375553;font-size:10px;z-index:4;font-weight:700}
+@media(max-width:850px){
+ #brand{top:18px;left:17px;font-size:10px}
+ #hero-tag{top:21px;right:17px;font-size:9px}
+ #scene-label{right:17px;top:59px}
+ #scene-label strong{font-size:21px}
+ #panel{left:10px;right:10px;top:auto;bottom:10px;width:auto;max-height:36dvh;padding:13px 14px;border-radius:14px;display:block;overflow:auto}
+ h1{font-size:31px;line-height:1}
+ .intro,.model-chip,#panel hr,#model-summary,#panel .stats{display:none}
+ .control-group{margin-top:8px}
+ .small-heading{margin-bottom:5px}
+ #panel .options{gap:5px}
+ .option{font-size:9px;padding:5px 8px;min-height:30px}
+ .secondary-row{margin-top:8px}
+ .wide-button{min-height:34px}
+ #hint{bottom:calc(36dvh + 23px);right:12px;padding:8px 9px;font-size:9px}
+ #hint span{margin-right:5px}
+ #foot{display:none}
+}
+@media(max-width:360px){#hero-tag{display:none}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div id="viewport"></div>
+<div id="loading" role="status">Building the HO-scale house and yard…</div>
+<a id="brand" href="./courses.html"><span class="logo">M</span> MICRO MAYHEM <span class="brand-sep">/</span> MODEL WORKSHOP</a>
+<div id="hero-tag"><span class="live-dot"></span> BUILT WITH REAL PROCEDURAL CODE</div>
+<div id="scene-label"><strong>HOUSE No. 01</strong><small>ELM STREET · HO MODEL SERIES</small></div>
+
+<aside id="panel" aria-label="Interactive house prototype controls">
+ <div class="kicker">Model workshop / Prototype 01</div>
+ <h1>THE LITTLE<br/><em>BIG HOUSE.</em></h1>
+ <p class="intro">One carefully crafted electric-train-set house, modeled entirely in code, with its own landscaped lot. Rotate it. Repaint it. Regenerate the garden.</p>
+ <div class="model-chip"><span>1 : 87 INSPIRED</span><span class="rule"></span><span>NO IMPORTED ASSETS</span></div>
+ <hr/>
+ <div class="small-heading">Paint scheme</div>
+ <div class="options" role="group" aria-label="House paint schemes">
+   <button type="button" class="option color-option selected" data-palette="sage" aria-pressed="true"><span class="swatch sage"></span> Sage</button>
+   <button type="button" class="option color-option" data-palette="cream" aria-pressed="false"><span class="swatch cream"></span> Cream</button>
+   <button type="button" class="option color-option" data-palette="blue" aria-pressed="false"><span class="swatch blue"></span> Blue</button>
+ </div>
+ <div class="control-group">
+  <div class="small-heading">Camera</div>
+  <div class="options" role="group" aria-label="Model camera angles">
+   <button type="button" class="option selected" data-view="three-quarter" aria-pressed="true">Three-quarter</button>
+   <button type="button" class="option" data-view="street" aria-pressed="false">Street</button>
+   <button type="button" class="option" data-view="overhead" aria-pressed="false">Overhead</button>
+  </div>
+ </div>
+ <div class="secondary-row">
+   <button id="regen" class="wide-button" type="button">↻ Regenerate yard</button>
+   <button id="light-switch" class="wide-button" type="button" aria-pressed="false">Evening</button>
+ </div>
+ <dl class="stats">
+  <div><dt>Vegetation tufts</dt><dd id="object-count">—</dd></div>
+  <div><dt>Garden seed</dt><dd id="seed-readout">1407</dd></div>
+ </dl>
+ <p id="model-summary">Painted clapboard · gabled roof · attached garage</p>
+</aside>
+<div id="hint"><span>↔ Drag to rotate</span><span>◎ Scroll to zoom</span><span>↗ Explore every side</span></div>
+<div id="foot">100% PROCEDURAL GEOMETRY · MODEL-RAILROAD DIORAMA · ONE HOUSE FIRST</div>
+<script type="module" src="./house-showcase.js"></script>
+</body>
+</html>
