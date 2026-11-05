@@ -64,10 +64,31 @@ async function main(){
     });
     await page.goto(origin+'/house-showcase.html',
       {waitUntil:'domcontentloaded',timeout:45000});
-    await page.waitForFunction(
-      ()=>document.body.dataset.modelReady==='true'&&
-        Number(document.body.dataset.renderedFrame||0)>=2,
-      null,{timeout:45000});
+    try{
+      await page.waitForFunction(
+        ()=>document.body.dataset.modelReady==='true'&&
+          Number(document.body.dataset.renderedFrame||0)>=2,
+        null,{timeout:24000});
+    }catch(error){
+      const diagnostics=await page.evaluate(()=>({
+        ready:document.body.dataset.modelReady,
+        frames:document.body.dataset.renderedFrame,
+        loading:document.getElementById('loading')?.textContent,
+        title:document.title,
+        canvas:!!document.querySelector('#viewport canvas'),
+        readyState:document.readyState,
+        scripts:Array.from(document.scripts).map(x=>x.src)
+      })).catch(e=>({evaluationError:String(e)}));
+      await page.screenshot({
+        path:path.join(screenshotDir,'house-hero-debug.png'),
+        animations:'disabled',
+        timeout:10000
+      }).catch(e=>console.error('Could not capture diagnostic screenshot',e.message));
+      console.error('HOUSE BOOT DIAGNOSTICS',JSON.stringify({
+        ...diagnostics,jsErrors:errors,error:error.message
+      }));
+      throw error;
+    }
     if(errors.length)throw Error('Source load errors: '+errors.join('; '));
     if(await page.locator('#viewport canvas').count()!==1)
       throw Error('Missing live WebGL house canvas');
