@@ -38,6 +38,11 @@ jobs:
           node --check town-streets.js
           node --input-type=module --check < town-streets.js
           node --input-type=module --check < miniature-world.js
+          node --check house-showcase.js
+          node --input-type=module --check < house-showcase.js
+          node --check ho-hero-house.js
+          node --input-type=module --check < ho-hero-house.js
+          test -s house-showcase.html
           node --check scenery-placement.js
           node --input-type=module --check < scenery-placement.js
           node tests/scenery-placement.test.cjs
@@ -63,7 +68,7 @@ jobs:
   browser-smoke:
     name: Browser startup regression
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 5
     steps:
       - name: Check out source
         uses: actions/checkout@v4
@@ -71,6 +76,8 @@ jobs:
         run: npm install --no-save --ignore-scripts --no-audit --no-fund playwright-core@1.56.1
       - name: Smoke-test all courses in Chromium
         run: timeout 120s node tests/browser-smoke.cjs
+      - name: Verify procedural hero house in desktop and phone Chromium
+        run: timeout 100s node tests/ho-hero-house.test.cjs
       - name: Save HO course previews for visual QA
         if: always()
         uses: actions/upload-artifact@v4
