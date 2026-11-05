@@ -57,11 +57,13 @@ const camera=new THREE.OrthographicCamera(-42,42,28,-28,.1,350);
 const modelGroup=new THREE.Group();
 scene.add(modelGroup);
 const params=new URLSearchParams(location.search);
+const seedParameter=params.get('seed');
+const validSeed=seedParameter!==null&&
+  seedParameter.trim()!==''&&Number.isFinite(Number(seedParameter));
 const state={
   palette:['sage','cream','blue'].includes(params.get('color'))?
     params.get('color'):'sage',
-  seed:Number.isFinite(Number(params.get('seed')))?
-    Math.max(1,Math.trunc(Number(params.get('seed')))):1407,
+  seed:validSeed?Math.max(1,Math.trunc(Number(seedParameter))):1407,
   yaw:-.57,
   elevation:.54,
   zoom:1,
