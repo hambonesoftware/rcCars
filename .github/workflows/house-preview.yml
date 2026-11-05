@@ -1,0 +1,39 @@
+name: Verify Procedural HO Hero House
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'ho-hero-house.js'
+      - 'house-showcase.js'
+      - 'house-showcase.html'
+      - 'tests/ho-hero-house.test.cjs'
+      - '.github/workflows/house-preview.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test-house:
+    name: Actual Three.js model + mobile preview screenshots
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify native ES modules
+        run: |
+          node --input-type=module --check < ho-hero-house.js
+          node --input-type=module --check < house-showcase.js
+      - name: Install headless browser
+        run: npm install --no-save --ignore-scripts --no-audit --no-fund playwright-core@1.56.1
+      - name: Render and exercise the actual procedural model
+        run: timeout 120s node tests/ho-hero-house.test.cjs
+      - name: Save real model previews
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ho-hero-house-desktop-and-phone
+          path: tests/screenshots/house-hero-*.png
+          if-no-files-found: ignore
+          retention-days: 14
