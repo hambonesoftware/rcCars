@@ -117,7 +117,8 @@ function rebuild(){
     detail:true
   });
   modelGroup.add(built.root);
-  $('house-name').textContent='Elm Street Gable House';
+  const houseName=$('house-name');
+  if(houseName)houseName.textContent='Elm Street Gable House';
   $('model-summary').textContent=
     'Painted clapboard · gabled roof · attached garage';
   $('object-count').textContent=String(built.stats.grassTufts);
