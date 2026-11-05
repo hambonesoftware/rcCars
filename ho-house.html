@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#edeae2">
+  <meta name="description" content="Explore Micro Mayhem's original, fully procedural HO-scale suburban house and detailed model railroad yard.">
+  <title>Micro Mayhem — HO House Workshop</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{color-scheme:light;font-family:'DM Sans',system-ui,sans-serif;
+      --ink:#25342f;--muted:#637169;--sage:#597665;--line:#d9d9d0;
+      --cream:#f7f5ee;--panel:#fefdf9;--orange:#bb7651}
+    *{box-sizing:border-box}
+    html,body{margin:0;min-height:100%;width:100%;background:#efeee6;color:var(--ink)}
+    button,a{font:inherit;-webkit-tap-highlight-color:transparent}
+    button{cursor:pointer}
+    button:focus-visible,a:focus-visible{outline:3px solid #7b967b;outline-offset:2px}
+    body{min-height:100svh;display:flex;flex-direction:column}
+    .header{padding:16px clamp(16px,3vw,46px);display:flex;justify-content:space-between;align-items:center;gap:16px;border-bottom:1px solid var(--line);background:var(--panel)}
+    .brand{display:flex;align-items:center;gap:12px;text-decoration:none;color:var(--ink);font-weight:800;font-size:13px;letter-spacing:.12em}
+    .brand-icon{display:grid;place-items:center;width:34px;height:34px;background:#273f37;border-radius:9px;color:#eae5c8;font-weight:900;font-size:20px}
+    .header-right{display:flex;align-items:center;gap:8px}
+    .header-link{text-decoration:none;color:var(--ink);padding:10px 13px;border:1px solid var(--line);border-radius:999px;font-size:12px;font-weight:700;background:#fff}
+    .eyebrow{font-size:11px;font-weight:800;letter-spacing:.17em;color:#718276}
+    .main{flex:1;display:grid;grid-template-columns:minmax(0,1fr) minmax(285px,332px);min-height:0}
+    .stage-wrap{display:flex;flex-direction:column;position:relative;min-height:520px;overflow:hidden;background:linear-gradient(180deg,#d5e0d7 0%,#d9d9cd 100%)}
+    #viewport{position:absolute;inset:0;touch-action:none;cursor:grab}
+    #viewport:active{cursor:grabbing}
+    #viewport canvas{width:100%;height:100%;display:block}
+    .stage-overlay{position:absolute;z-index:2;left:clamp(16px,3vw,42px);top:clamp(20px,3.6vw,48px);pointer-events:none;max-width:470px}
+    h1{font-family:'Barlow Condensed','Arial Narrow',sans-serif;font-size:clamp(39px,5.7vw,76px);line-height:.88;letter-spacing:-.015em;margin:12px 0;color:#274037;font-weight:900}
+    .stage-desc{max-width:350px;font-size:13px;line-height:1.5;color:#4d665b;margin-top:17px;font-weight:500}
+    .tech-label{position:absolute;bottom:21px;left:clamp(16px,3vw,42px);z-index:2;font-size:10px;letter-spacing:.12em;font-weight:800;color:#527365;pointer-events:none;background:#e8efe7db;padding:8px 11px;border:1px solid #d7e4d7;border-radius:7px}
+    .focus-overlay{position:absolute;inset:0;pointer-events:none;z-index:1;opacity:.7}
+    .focus-overlay[data-off="true"]{display:none}
+    .focus-overlay .far,.focus-overlay .near{position:absolute;left:0;right:0;backdrop-filter:blur(2.5px);-webkit-backdrop-filter:blur(2.5px)}
+    .focus-overlay .far{top:0;height:22%;mask-image:linear-gradient(#0000,transparent 2%,#000 0%,transparent);-webkit-mask-image:linear-gradient(#000,transparent)}
+    .focus-overlay .near{bottom:0;height:17%;mask-image:linear-gradient(transparent,#000);-webkit-mask-image:linear-gradient(transparent,#000)}
+    .controls{padding:28px 24px 22px;background:var(--panel);border-left:1px solid var(--line);display:flex;flex-direction:column;gap:25px;z-index:3}
+    .side-heading{font-family:'Barlow Condensed',sans-serif;font-size:29px;line-height:.95;font-weight:900;letter-spacing:.015em;margin:7px 0}
+    .side-p{font-size:13px;line-height:1.57;color:var(--muted);margin:10px 0 0}
+    .rule{height:1px;background:var(--line)}
+    .control-label{font-size:10px;letter-spacing:.11em;font-weight:900;color:#64746a;text-transform:uppercase;margin-bottom:10px}
+    .segmented{display:flex;border-radius:12px;background:#eeeeea;padding:4px;gap:4px}
+    .option{min-width:0;flex:1;border:0;border-radius:8px;padding:10px 7px;background:none;font-size:11px;font-weight:800;color:#728077}
+    .option[aria-pressed="true"]{background:#fff;color:#253c33;box-shadow:0 1px 5px #28352720}
+    .swatches{display:flex;gap:12px}
+    .swatch{width:44px;height:44px;border:3px solid white;box-shadow:0 0 0 1px #b2bdb2;border-radius:50%;display:grid;place-items:center;font-size:19px}
+    .swatch[aria-pressed="true"]{box-shadow:0 0 0 2px #375a46}
+    .color-sage{background:#a8b8a3}.color-cream{background:#e6d2ab}.color-blue{background:#9dbdc9}
+    .toggle{display:flex;align-items:center;justify-content:space-between;gap:9px;width:100%;border:1px solid var(--line);background:#f5f5ef;border-radius:11px;padding:12px;text-align:left;font-weight:700;font-size:12px;color:var(--ink)}
+    .toggle-dot{width:31px;height:19px;border-radius:15px;background:#b5b9b0;position:relative}
+    .toggle-dot:before{content:"";width:13px;height:13px;position:absolute;left:3px;top:3px;border-radius:50%;background:#fff;transition:transform .17s}
+    .toggle[aria-pressed="true"] .toggle-dot{background:#557b63}
+    .toggle[aria-pressed="true"] .toggle-dot:before{transform:translateX(12px)}
+    .button-primary{border:0;border-radius:10px;background:#25483b;color:#fff;display:flex;justify-content:space-between;align-items:center;padding:13px 15px;font-size:12px;font-weight:800;text-decoration:none}
+    .stat{font-size:11px;color:#718075;line-height:1.75}
+    .stat strong{color:#3d5549}
+    .bottom-note{font-size:11px;color:#748077;line-height:1.5}
+    .spin-indicator{position:absolute;right:19px;bottom:19px;z-index:2;background:#f6f7f0ee;padding:9px 12px;border-radius:10px;font-size:10px;font-weight:800;color:#52695e}
+    #loading{position:absolute;z-index:10;inset:0;display:flex;align-items:center;justify-content:center;background:#d6ded5;flex-direction:column;gap:12px;text-align:center;padding:22px}
+    #loading[hidden]{display:none}
+    .loading-strong{font-size:20px;font-weight:800;color:#315848}
+    #loading-message{font-size:12px;color:#6f8576;max-width:400px}
+    @media(max-width:840px){
+      .main{grid-template-columns:1fr}
+      .stage-wrap{height:65svh;min-height:480px;flex:none}
+      .controls{border-left:0;border-top:1px solid var(--line);padding:23px 19px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+      .controls .intro,.controls .rule,.controls .action,.controls .footer{grid-column:1/-1}
+      .stage-overlay{max-width:260px;top:19px}
+      .stage-desc{font-size:11px;max-width:245px}
+      h1{font-size:46px}
+      .header{padding:12px 16px}
+    }
+    @media(max-width:470px){
+      .stage-wrap{height:59svh;min-height:380px}
+      h1{font-size:39px}
+      .stage-desc{max-width:215px;font-size:10px;margin-top:10px}
+      .stage-overlay{top:14px;left:17px}
+      .tech-label{bottom:11px;left:11px;font-size:8px}
+      .spin-indicator{bottom:11px;right:11px;font-size:9px}
+      .header-link{font-size:11px;padding:9px 10px}
+      .brand{font-size:10px;letter-spacing:.06em}
+      .controls{gap:17px 12px}
+      .option{font-size:10px;padding:9px 4px}
+    }
+    @media(prefers-reduced-transparency:reduce){.focus-overlay{display:none}}
+  </style>
+  <script type="importmap">
+    {
+      "imports":{
+        "three":"https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js",
+        "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.164.1/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <header class="header">
+    <a class="brand" href="./courses.html"><span class="brand-icon">M</span><span>MICRO MAYHEM / MODEL WORKSHOP</span></a>
+    <nav class="header-right"><a class="header-link" href="./courses.html">← All courses</a><a class="header-link" href="https://github.com/hambonesoftware/rcCars">Source ↗</a></nav>
+  </header>
+  <main class="main">
+    <section class="stage-wrap" id="stage" aria-label="Interactive 3D preview of the procedural model railroad house and landscaped yard">
+      <div id="viewport"></div>
+      <div id="tilt" class="focus-overlay" aria-hidden="true" data-off="false">
+        <div class="far"></div><div class="near"></div>
+      </div>
+      <div class="stage-overlay">
+        <span class="eyebrow">MODEL KIT 001 / HO-SCALE DESIGN STUDY</span>
+        <h1>THE ELM<br>STREET HOUSE.</h1>
+        <p class="stage-desc">One original procedural house. Every shingle, window, path, tree and garden detail built from Three.js geometry.</p>
+      </div>
+      <div class="tech-label">ACTUAL THREE.JS GEOMETRY · NO AI IMAGE</div>
+      <div class="spin-indicator">DRAG TO ROTATE · PINCH TO ZOOM</div>
+      <div id="loading" role="status" aria-live="polite">
+        <span class="loading-strong">Assembling the miniature...</span>
+        <span id="loading-message">Building the clapboard house, garage and landscaped railway lot.</span>
+      </div>
+    </section>
+    <aside class="controls" aria-label="House model viewer controls">
+      <div class="intro">
+        <span class="eyebrow">HO DIORAMA COLLECTION</span>
+        <h2 class="side-heading">A LITTLE HOUSE.<br>A LOT OF DETAIL.</h2>
+        <p class="side-p">A dedicated model-study page, separate from the game. Rotate and inspect the roof, porch, garage, flowerbeds and display-table edges.</p>
+      </div>
+      <div class="rule"></div>
+      <div>
+        <div class="control-label">Choose the view</div>
+        <div class="segmented" id="view-options">
+          <button type="button" class="option" data-view="hero" aria-pressed="true">3/4 angle</button>
+          <button type="button" class="option" data-view="front" aria-pressed="false">Front</button>
+          <button type="button" class="option" data-view="top" aria-pressed="false">Overhead</button>
+        </div>
+      </div>
+      <div>
+        <div class="control-label">Painted clapboard</div>
+        <div class="swatches" id="color-options">
+          <button type="button" class="swatch color-sage" data-palette="sage" aria-label="Sage green siding" aria-pressed="true">✓</button>
+          <button type="button" class="swatch color-cream" data-palette="cream" aria-label="Cream siding" aria-pressed="false"></button>
+          <button type="button" class="swatch color-blue" data-palette="blue" aria-label="Slate blue siding" aria-pressed="false"></button>
+        </div>
+      </div>
+      <div>
+        <div class="control-label">Exhibition lights</div>
+        <div class="segmented" id="light-options">
+          <button type="button" class="option" data-light="day" aria-pressed="true">Daylight</button>
+          <button type="button" class="option" data-light="golden" aria-pressed="false">Golden hour</button>
+          <button type="button" class="option" data-light="evening" aria-pressed="false">Evening</button>
+        </div>
+      </div>
+      <div>
+        <div class="control-label">Miniature camera lens</div>
+        <button type="button" class="toggle" id="tilt-toggle" aria-pressed="true">
+          <span>Soft tilt-shift focus</span><span class="toggle-dot" aria-hidden="true"></span>
+        </button>
+      </div>
+      <div class="action">
+        <a class="button-primary" href="./quarter-track.html?course=backyard"><span>RETURN TO THE RACETRACK</span><span>↗</span></a>
+      </div>
+      <div class="footer">
+        <div id="model-stats" class="stat">Original procedural model • HO-inspired proportions • Model railway landscaping</div>
+        <p class="bottom-note">This is a work-in-progress art-direction prototype. Architecture and yard are generated in code, not a photograph or an imported 3D model.</p>
+      </div>
+    </aside>
+  </main>
+  <script type="module" src="./ho-house-viewer.js"></script>
+  <script>
+    setTimeout(()=>{
+      const loading=document.getElementById('loading');
+      if(loading&&!loading.hidden){
+        document.getElementById('loading-message').textContent=
+          'The 3D viewer could not start. Check network connectivity, then reload this page.';
+      }
+    },16000);
+    addEventListener('error',event=>{
+      const loading=document.getElementById('loading');
+      if(loading&&!loading.hidden)
+        document.getElementById('loading-message').textContent=
+          'Viewer error: '+(event.message||'A required script failed to load.');
+    });
+  </script>
+</body>
+</html>
