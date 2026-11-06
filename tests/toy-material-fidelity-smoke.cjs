@@ -96,9 +96,9 @@ async function main(){
        stats.roofConnection!=='gable-and-eaves-aligned'||
        stats.garageRoof!=='pitched-molded-roof'||
        stats.lighting!=='satin-neutral-v2'||
-       stats.specular!=='65'||
+       stats.specular!=='50'||
        stats.specularLight!=='dielectric-specular-f0-v3'||
-       Math.abs(stats.specularIntensity-.558)>.001||
+       Math.abs(stats.specularIntensity-.433)>.001||
        Math.abs(stats.diffuseLightIntensity-.82)>.001||
        !(stats.specularGloss>.65)){
       throw Error('Incomplete physical plastic fidelity preview '+JSON.stringify(stats));
@@ -184,7 +184,7 @@ async function main(){
        mobileUI.roof!=='gable-and-eaves-aligned'||
        mobileUI.garage!=='pitched-molded-roof'||
        mobileUI.controlsHeight>167||
-       mobileUI.specular!=='65'||
+       mobileUI.specular!=='50'||
        mobileUI.sceneHeight<390||
        mobileUI.scrolling)
       throw Error('Mobile miniature layout regression: '+JSON.stringify(mobileUI));
