@@ -287,6 +287,7 @@ function bindButton(selector,key){
   if(!button)return;
   button.addEventListener('pointerdown',event=>{
     event.preventDefault();controls[key]=true;
+    document.body.dataset.mapleLastTouch=key;
     button.setPointerCapture(event.pointerId);
     button.classList.add('held');
   });
