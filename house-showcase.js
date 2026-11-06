@@ -22,20 +22,17 @@ scene.background=new THREE.Color('#c0cdc5');
 scene.fog=new THREE.Fog('#c0cdc5',105,175);
 
 /**
- * Studio-shaped reflections are essential for scale die-cast lacquer and
- * molded polystyrene. A small runtime PMREM capture supplies rectangular
- * softbox highlights to MeshPhysicalMaterial clearcoat/chrome, without
- * downloading an HDR environment map. The background stays the hobby
- * display studio color and the probes never appear in the visible scene.
+ * A cheap plastic train-table toy has soft ceiling-light reflection, not
+ * multiple glossy high-end product photography softboxes. Build only
+ * two broad, subdued white cards for the die-cast paint and window plastic,
+ * preserving the appearance of a room-lit hobby exhibition layout.
  */
 function makePlasticStudioReflections(){
   const studio=new THREE.Scene();
-  studio.background=new THREE.Color(0x76858b);
+  studio.background=new THREE.Color(0x747a73);
   const panels=[
-    {p:[-7,6,3],size:[4.6,7.5],color:0xffffff},
-    {p:[6,4,4],size:[3.3,6.3],color:0xe8f2f5},
-    {p:[0,8,-4],size:[10,2.6],color:0xfff5df},
-    {p:[0,2,8],size:[7.5,1.7],color:0x777f83}
+    {p:[-4,8,3],size:[10.5,4.2],color:0xf1f0e5},
+    {p:[6,4,-2],size:[4.0,5.1],color:0xa6b1af}
   ];
   for(const part of panels){
     const shape=new THREE.Mesh(
@@ -50,9 +47,9 @@ function makePlasticStudioReflections(){
   try{
     const generator=new THREE.PMREMGenerator(renderer);
     try{
-      probe=generator.fromScene(studio,.035,.1,25);
+      probe=generator.fromScene(studio,.085,.1,25);
       scene.environment=probe.texture;
-      scene.environmentIntensity=.82;
+      scene.environmentIntensity=.43;
     }finally{
       generator.dispose();
     }
@@ -68,11 +65,11 @@ function makePlasticStudioReflections(){
   return probe;
 }
 const studioReflectionProbe=makePlasticStudioReflections();
-const hemi=new THREE.HemisphereLight(0xf6faf5,0x8a8572,2.05);
+const hemi=new THREE.HemisphereLight(0xf6faf5,0x968e7f,1.70);
 scene.add(hemi);
 const ambient=new THREE.AmbientLight(0xf7e8d1,.28);
 scene.add(ambient);
-const sun=new THREE.DirectionalLight(0xffe6bd,3.55);
+const sun=new THREE.DirectionalLight(0xffeee0,2.65);
 sun.position.set(-33,62,31);
 sun.castShadow=true;
 sun.shadow.mapSize.set(1024,1024);
@@ -87,7 +84,7 @@ sun.shadow.bias=-.00006;
 sun.shadow.radius=2.5;
 scene.add(sun,sun.target);
 sun.target.position.set(0,0,0);
-const fill=new THREE.DirectionalLight(0xa5c7dc,.92);
+const fill=new THREE.DirectionalLight(0xb8c6c5,.64);
 fill.position.set(34,28,-28);
 scene.add(fill);
 
@@ -168,7 +165,7 @@ function rebuild(){
   const houseName=$('house-name');
   if(houseName)houseName.textContent='Elm Street Gable House';
   $('model-summary').textContent=
-    'Molded painted styrene · static-grass fibers · gloss die-cast car';
+    'Snap-fit Plasticville-style house kit · glued fake grass mat · die-cast toy car';
   $('object-count').textContent=String(built.stats.grassTufts);
   document.body.dataset.modelReady='true';
   document.body.dataset.modelPalette=built.stats.palette;
@@ -178,6 +175,18 @@ function rebuild(){
   document.body.dataset.modelCar='diecast';
   document.body.dataset.modelFlocking=String(built.stats.flockingFibers);
   document.body.dataset.modelRealism=built.stats.realismPass;
+  document.body.dataset.modelMoldSeams=String(
+    built.stats.manufacturing.visibleShellJoints);
+  document.body.dataset.modelSnapParts=String(
+    built.stats.manufacturing.snapFitParts);
+  document.body.dataset.modelMoldShrubs=String(
+    built.stats.manufacturing.moldedShrubs);
+  document.body.dataset.modelRoofClearcoat=String(
+    built.stats.roofShellClearcoat);
+  document.body.dataset.modelWallClearcoat=String(
+    built.stats.houseWallClearcoat);
+  document.body.dataset.modelCarClearcoat=String(
+    built.stats.carPaintClearcoat);
   syncUI();
 }
 
