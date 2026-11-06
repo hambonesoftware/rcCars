@@ -340,12 +340,12 @@ async function boot(){
       // On a portrait screen show one meaningful portion at a time,
       // never a huge roof cropped by the left and right edges.
       const selectedX=state.region==='garage'?3.80:-3.65;
-      state.target.set(specimenRoot+selectedX,3.45,-2.35);
+      state.target.set(specimenRoot+selectedX,1.25,-2.35);
       state.zoom=46.5;
       state.pitch=.27;state.turn=.035;
     }else{
       // Make both equally lit specimens fill the comparison board.
-      state.target.set(0,3.55,-1.40);
+      state.target.set(0,1.95,-1.40);
       state.zoom=45.5;state.pitch=.27;state.turn=.045;
     }
     renderCamera();
