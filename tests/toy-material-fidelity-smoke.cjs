@@ -104,6 +104,14 @@ async function main(){
       path:path.join(output,'molded-plastic-mobile-before.png'),
       animations:'disabled'
     });
+    await mobile.locator('[data-specimen="improved"]').tap();
+    await mobile.locator('[data-region="garage"]').tap();
+    if(await mobile.locator('body').getAttribute('data-fidelity-region')!=='garage')
+      throw Error('Mobile garage detail camera not selectable');
+    await mobile.screenshot({
+      path:path.join(output,'molded-plastic-mobile-garage.png'),
+      animations:'disabled'
+    });
     await mobile.close();
     if(errorList.length)throw Error('JavaScript error(s): '+errorList.join('; '));
     console.log('PASS: real PlayCanvas physical bevel meshes and tangent normal maps',stats);
