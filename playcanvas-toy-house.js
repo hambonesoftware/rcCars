@@ -647,28 +647,32 @@ async function start(){
       state.target.set(-5.1,4.3,.5);
       state.yaw=.27;state.pitch=.24;state.radius=phone?24:20;
     }else if(state.view==='diorama'){
-      // Lower street-corner camera: a human looking across an HO layout,
-      // not a drone surveying a CAD architectural model.
-      // Aim below the center of the house to avoid wasting half of
-      // a phone portrait on empty studio background. Leave garage in view.
-      state.target.set(phone?1.4:1.3,phone?-.65:1.0,1.8);
-      state.yaw=phone?.36:.45;
-      state.pitch=phone?.37:.30;
-      state.radius=phone?76:49;
+      // A slightly higher, tighter tabletop camera, like an HO-scale
+      // railway photographed with a macro/tilt-shift-style lens.
+      // Keep the driveway, house and roadside in the central focal band.
+      state.target.set(phone?1.2:1.1,phone?.4:.9,2.0);
+      state.yaw=phone?.42:.48;
+      state.pitch=phone?.52:.44;
+      state.radius=phone?72:46;
     }else{
       state.yaw=phone?.35:.42;
       state.pitch=phone?.43:.33;
       state.radius=phone?69:49;
     }
     if(photoFrame){
-      const photo=state.view==='diorama'||state.view==='detail';
+      const detail=state.view==='detail';
+      const diorama=state.view==='diorama';
+      const photo=detail||diorama;
       photoFrame.dof.enabled=photo;
-      photoFrame.dof.focusDistance=state.radius;
-      photoFrame.dof.focusRange=state.view==='detail'?5:16;
-      photoFrame.dof.blurRadius=state.view==='detail'?3.5:2.6;
-      photoFrame.vignette.intensity=photo?.11:.035;
+      photoFrame.dof.focusDistance=diorama?state.radius-2:state.radius;
+      photoFrame.dof.focusRange=detail?4.5:diorama?8.5:16;
+      photoFrame.dof.blurRadius=detail?3.6:diorama?3.2:2.6;
+      photoFrame.vignette.intensity=diorama?.14:detail?.11:.035;
       photoFrame.update();
       document.body.dataset.pcPhotographicFocus=photo?'on':'off';
+      document.body.dataset.pcFocusRange=String(photoFrame.dof.focusRange);
+      document.body.dataset.pcBlurRadius=String(photoFrame.dof.blurRadius);
+      document.body.dataset.pcTiltShiftStrength=diorama?'subtle-plus-v6':'off';
     }
     document.body.dataset.pcView=state.view;
     for(const el of document.querySelectorAll('button[data-view]')){
