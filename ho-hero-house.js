@@ -219,6 +219,14 @@ export function createHOHouse(THREE,options={}){
     moldedRoofJoint:mat(0x4f5960,{roughness:.64}),
     cutMatEdge:mat(0x819968,{roughness:1})
   };
+  // Stable semantic material labels for the render lab. All experiment
+  // presets share these exact meshes and only vary surface-property maps.
+  for(const name of ['siding','sidingLight','trim','windowFrame',
+    'garage','door','shutter']){
+    m[name].userData.surfaceFamily='styrene';
+  }
+  m.roof.userData.surfaceFamily='molded-roof';
+  m.wagon.userData.surfaceFamily='diecast';
   const sphereGeo=new THREE.SphereGeometry(1,12,9);
   const cubeGeo=new THREE.BoxGeometry(1,1,1);
   const cylinderGeo=new THREE.CylinderGeometry(1,1,1,12);
