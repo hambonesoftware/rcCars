@@ -442,12 +442,20 @@ async function main(){
   installInput();
   resize();
   window.addEventListener('resize',resize);
+  let renderedFrames=0;
   app.on('update',dt=>{
-    const step=Math.min(dt||1/60,.045);
-    world.updateTrain(step);
-    updatePhysics(step);
-    updateCamera(step);
-    if(Math.floor(state.time*10)%2===0)drawMinimap();
+    try{
+      renderedFrames++;
+      document.body.dataset.mapleFrameCount=String(renderedFrames);
+      const step=Math.min(dt||1/60,.045);
+      world.updateTrain(step);
+      updatePhysics(step);
+      updateCamera(step);
+      if(Math.floor(state.time*10)%2===0)drawMinimap();
+    }catch(error){
+      document.body.dataset.mapleFrameError=String(error.stack||error).slice(0,1000);
+      throw error;
+    }
   });
   app.start();
   ui.status.hidden=true;
