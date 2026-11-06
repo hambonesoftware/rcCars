@@ -102,7 +102,9 @@ studio.receiveShadow=true;
 scene.add(studio);
 
 const orthographicCamera=new THREE.OrthographicCamera(-42,42,28,-28,.1,350);
-const perspectiveCamera=new THREE.PerspectiveCamera(36,1,.1,350);
+// Keep the photographic near plane outside the camera body's immediate
+// vicinity: 1 unit versus 0.1 improves usable depth precision tenfold.
+const perspectiveCamera=new THREE.PerspectiveCamera(36,1,1,230);
 let camera=orthographicCamera;
 const modelGroup=new THREE.Group();
 scene.add(modelGroup);
