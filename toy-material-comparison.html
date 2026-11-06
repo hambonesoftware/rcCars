@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#dedbd2">
+<meta name="theme-color" content="#d5d1c7">
 <meta name="description" content="A true side-by-side injection-molded miniature house fidelity benchmark in PlayCanvas, sharing identical studio lights.">
-<title>Garage Gauntlet / Molded Plastic Fidelity Benchmark</title>
+<title>Garage Gauntlet · Plastic Model Kit Studio</title>
 <script type="importmap">
 {"imports":{"playcanvas":"https://cdn.jsdelivr.net/npm/playcanvas@2.23.3/+esm"}}
 </script>
@@ -36,37 +36,51 @@ label{display:flex;flex-direction:column;gap:7px;font-size:12px;font-weight:700}
 .compare button{border:1px solid #a6b3a9;background:#fff;border-radius:9px;padding:11px 13px;color:#2d503e;font-weight:750;cursor:pointer}
 .compare button[aria-pressed=true]{background:#325744;color:white;border-color:#325744}
 .mobile-label{display:none}
+.scene-indicator{position:absolute;top:14px;left:14px;z-index:3;
+  border-radius:999px;background:rgba(246,243,228,.94);padding:7px 12px;
+  font-size:11px;letter-spacing:.02em;color:#203e33;font-weight:850;
+  box-shadow:0 5px 22px #20241926;pointer-events:none;display:none}
 footer{font-size:10px;color:#778578;background:#f5f3ed;padding:0 22px 12px}
 @media(max-width:780px){
- header{height:48px;padding:0 12px}
- .brand{font-size:12px}
- header a.back{font-size:11px}
- .subheads{padding:8px;display:none}
- .status{left:9px;bottom:9px;padding:6px 8px;font-size:9px;max-width:90%}
- .controls{padding:9px 11px;gap:9px 12px;
-   display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);
-   min-height:160px}
- .intro{grid-column:1/-1;max-width:none;min-width:0}
- h1{font-size:13px;margin-bottom:4px}
- p{font-size:10px;line-height:1.35}
- label{font-size:10px;min-width:0}
- input{width:100%}
- .compare{min-width:0}
- .compare button{flex:1;padding:9px 5px;font-size:11px}
- .mobile-label{display:flex}
- .mobile-region{grid-column:1/-1}
- footer{padding:0 12px 8px;font-size:9px}
+  html,body{height:100%;height:100dvh;max-height:100dvh;overflow:hidden}
+  header{height:43px;min-height:43px;padding:0 11px;gap:6px}
+  .brand{font-size:11px;letter-spacing:-.025em;white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis;max-width:65%;line-height:1.1}
+  header a.back{font-size:11px;white-space:nowrap}
+  main{min-height:0;flex:1}
+  .scene{flex:1;min-height:0}
+  #fidelity-canvas{touch-action:none}
+  .subheads,.status{display:none}
+  .scene-indicator{display:block}
+  .controls{display:flex;flex-direction:column;align-items:stretch;
+    gap:6px;padding:9px 10px calc(8px + env(safe-area-inset-bottom));
+    min-height:0;flex:none;border-top:1px solid #bdc2b2}
+  .intro{display:none}
+  .compare{width:100%;min-width:0;gap:7px}
+  .compare button{flex:1;min-height:39px;padding:8px 5px;font-size:12px;
+    border-radius:10px}
+  .mobile-label{display:flex}
+  .light-control{width:100%;display:flex;flex-direction:row;
+    align-items:center;gap:14px;font-size:10px;font-weight:650;
+    white-space:nowrap;margin-top:2px}
+  .light-control input{flex:1;width:auto;min-width:0;height:16px}
+  .mobile-region{order:2}
+  .compare:not(.mobile-region){order:1}
+  .light-control{order:3}
+  footer{display:none}
 }
+
 </style>
 </head>
 <body>
 <header>
-  <a class="brand" href="./playcanvas-house.html">GARAGE GAUNTLET / MINIATURE FIDELITY LAB</a>
-  <a class="back" href="./playcanvas-house.html">Return to Diorama</a>
+  <a class="brand" href="./playcanvas-house.html">GARAGE GAUNTLET · MODEL KIT LAB</a>
+  <a class="back" href="./playcanvas-house.html">← Diorama</a>
 </header>
 <main>
   <section class="scene" aria-label="Live side-by-side PlayCanvas comparison of a flat CG house and sculpted molded plastic model">
     <canvas id="fidelity-canvas"></canvas>
+    <div id="scene-indicator" class="scene-indicator" aria-live="polite">MOLDED · HOUSE</div>
     <div class="subheads" aria-hidden="true">
       <div class="spec"><span class="dot"></span><span>CURRENT: FLAT CG <small>sharp primitives</small></span></div>
       <div class="spec"><span class="dot improved"></span><span>TEST: MOLDED PLASTIC <small>bevels / detailed normals / recesses</small></span></div>
@@ -75,10 +89,10 @@ footer{font-size:10px;color:#778578;background:#f5f3ed;padding:0 22px 12px}
   </section>
   <section class="controls">
     <div class="intro">
-      <h1>Does sculpted plastic read more like a physical toy?</h1>
-      <p>Both versions have the same dimensions and real-time studio lighting. The right adds continuous bevel normals, injection-molded overlaps, inset acrylic, and subtle surface texture.</p>
+      <h1>One manufactured miniature. Same lighting, real geometry.</h1>
+      <p>The roof and garage now connect to the walls. Compare molded siding, physically rounded parts, real gable ends, inset acrylic, landscaping, and controlled satin plastic.</p>
     </div>
-    <label>Rotate studio key light
+    <label class="light-control">Light direction
       <input id="rotate-light" type="range" min="-95" max="50" step="5" value="-41" aria-label="Rotate studio light to inspect molded plastic highlights">
     </label>
     <div class="compare mobile-label" role="group" aria-label="Choose one comparison specimen on mobile">
