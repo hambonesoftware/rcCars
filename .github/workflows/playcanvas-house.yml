@@ -12,6 +12,13 @@ on:
       - 'tests/playcanvas-house-smoke.cjs'
       - 'tests/toy-material-fidelity-smoke.cjs'
       - '.github/workflows/playcanvas-house.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'toy-material-comparison.html'
+      - 'toy-material-comparison.js'
+      - 'tests/toy-material-fidelity-smoke.cjs'
+      - '.github/workflows/playcanvas-house.yml'
   workflow_dispatch:
 
 permissions:
@@ -36,7 +43,7 @@ jobs:
           node --check tests/playcanvas-house-smoke.cjs
           node --check tests/toy-material-fidelity-smoke.cjs
       - name: Install test driver
-        run: npm install --no-save --ignore-scripts --no-audit --no-fund playwright-core@1.56.1
+        run: npm install --no-save --ignore-scripts --no-audit --no-fund playwright-core@1.56.1 pngjs@7.0.0
       - name: Render and test native PlayCanvas scene
         run: timeout 260s node tests/playcanvas-house-smoke.cjs
       - name: Verify molded-plastic meshes and capture comparison screenshots
