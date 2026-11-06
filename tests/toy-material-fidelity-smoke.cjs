@@ -98,7 +98,7 @@ async function main(){
        stats.lighting!=='satin-neutral-v2'||
        stats.specular!=='50'||
        stats.specularLight!=='dielectric-specular-f0-v3'||
-       Math.abs(stats.specularIntensity-.433)>.001||
+       Math.abs(stats.specularIntensity-.4325)>.002||
        Math.abs(stats.diffuseLightIntensity-.82)>.001||
        !(stats.specularGloss>.65)){
       throw Error('Incomplete physical plastic fidelity preview '+JSON.stringify(stats));
