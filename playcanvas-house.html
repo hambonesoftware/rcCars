@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ece9de">
+<meta name="description" content="Micro Mayhem's independent PlayCanvas engine test: a model-railroad plastic house, flocked yard, and glTF toy car.">
+<title>Micro Mayhem / PlayCanvas Miniature Lab</title>
+<script type="importmap">
+{"imports":{"playcanvas":"https://cdn.jsdelivr.net/npm/playcanvas@2.23.3/+esm"}}
+</script>
+<style>
+:root{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#283b33;background:#e5e8df}
+*{box-sizing:border-box}
+html,body{width:100%;height:100%;margin:0;overflow:hidden;overscroll-behavior:none}
+body{display:flex;flex-direction:column}
+a,button{font:inherit;-webkit-tap-highlight-color:transparent}
+button{cursor:pointer}
+button:focus-visible,a:focus-visible{outline:3px solid #a4bc8b;outline-offset:2px}
+header{height:65px;padding:0 28px;display:flex;align-items:center;justify-content:space-between;gap:18px;background:#fcfaf2;border-bottom:1px solid #d5dbcf;z-index:5}
+.brand{display:flex;align-items:center;gap:11px;font-weight:850;font-size:13px;letter-spacing:.10em;text-transform:uppercase;text-decoration:none;color:#243f35}
+.brand-symbol{width:32px;height:32px;background:#29463b;color:#fcfaf2;border-radius:8px;display:grid;place-items:center;font-size:21px;letter-spacing:0}
+nav{display:flex;gap:10px}
+nav a{color:#4e6659;font-size:12px;font-weight:750;text-decoration:none;padding:9px 12px;border:1px solid #d6ded5;border-radius:8px;white-space:nowrap}
+main{display:grid;grid-template-columns:minmax(0,1fr) 322px;height:calc(100% - 65px);min-height:0}
+.viewer{position:relative;min-height:0;background:linear-gradient(#cfd7cf,#e7e4d9);overflow:hidden}
+#playcanvas{width:100%;height:100%;display:block;touch-action:none;cursor:grab}
+#playcanvas:active{cursor:grabbing}
+.overlay{position:absolute;left:30px;top:28px;pointer-events:none;max-width:360px;color:#294438;text-shadow:0 1px #fafbf299}
+.eyebrow{font-size:10px;font-weight:850;letter-spacing:.16em;color:#637b65}
+h1{font-size:clamp(35px,4vw,65px);line-height:.98;letter-spacing:-.05em;margin:11px 0;font-weight:900}
+.overlay p{font-size:12px;line-height:1.55;max-width:330px;margin:12px 0;color:#496054}
+.pill{position:absolute;left:25px;bottom:18px;border:1px solid #c2d5c4;padding:9px 12px;background:#f5f8f0dc;color:#4e685a;border-radius:100px;font-size:10px;font-weight:800;pointer-events:none}
+.frame-label{position:absolute;right:18px;bottom:19px;background:#e9efe9ee;border:1px solid #b7cbbd;border-radius:9px;padding:9px 11px;color:#4d6657;font-size:10px;font-weight:800;pointer-events:none}
+.panel{padding:25px 22px;overflow:auto;border-left:1px solid #d6dbd1;background:#fbfaf5;display:flex;flex-direction:column;gap:23px}
+.panel h2{margin:5px 0 0;font-size:25px;letter-spacing:-.035em}
+.panel p{margin:8px 0 0;color:#66756b;font-size:12px;line-height:1.58}
+.divide{height:1px;background:#d9ded6;flex:none}
+.label{color:#64756b;letter-spacing:.11em;font-size:10px;font-weight:850;text-transform:uppercase;margin-bottom:9px}
+.segment{display:flex;gap:4px;background:#ebeee7;padding:4px;border-radius:10px}
+.segment button{flex:1;min-width:0;border:0;background:none;border-radius:7px;padding:9px 5px;font-weight:750;font-size:11px;color:#6f8173}
+.segment button[aria-pressed="true"]{background:white;color:#2e5141;box-shadow:0 1px 5px #30392c22}
+.asset-status{padding:12px;background:#eff1e9;border-radius:10px;font-size:11px;line-height:1.6;color:#627368}
+.asset-status strong{color:#31503f}
+.cta{display:flex;align-items:center;justify-content:space-between;background:#2f5142;color:white;text-decoration:none;font-weight:850;font-size:12px;border-radius:10px;padding:13px 16px}
+.explain{font-size:11px;color:#778579;line-height:1.6}
+#loading{position:absolute;inset:0;display:grid;place-items:center;background:#dce4d9;z-index:3;font-size:15px;font-weight:750;color:#466452;text-align:center;padding:30px}
+#loading[hidden]{display:none}
+@media(max-width:850px){
+ header{height:56px;padding:0 15px}
+ .brand{font-size:10px;letter-spacing:.045em}
+ nav a{font-size:10px;padding:9px}
+ nav a:first-child{display:none}
+ main{height:calc(100% - 56px);grid-template-columns:1fr;display:flex;flex-direction:column}
+ .viewer{height:62%;min-height:0;flex:1}
+ .overlay{left:15px;top:15px;max-width:220px}
+ .overlay h1{font-size:35px}
+ .overlay p{font-size:10px;max-width:185px}
+ .pill{left:11px;bottom:10px;font-size:9px}
+ .frame-label{right:11px;bottom:10px;font-size:9px}
+ .panel{height:auto;max-height:38%;padding:14px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;overflow-y:auto;flex:none}
+ .panel .intro,.panel .divide,.panel .asset-status,.panel .cta,.panel .explain{grid-column:1/-1}
+ .panel .intro p{display:none}
+ .panel .divide{display:none}
+ .panel h2{font-size:19px}
+ .panel .segment button{font-size:10px}
+}
+</style>
+</head>
+<body>
+<header>
+ <a class="brand" href="./courses.html"><span class="brand-symbol">M</span><span>Micro Mayhem / Miniature Engine Lab</span></a>
+ <nav><a href="./house-showcase.html">View Three.js version</a><a href="./courses.html">Back to racing</a></nav>
+</header>
+<main>
+ <section class="viewer" aria-label="Live 3D PlayCanvas model railway scene">
+  <canvas id="playcanvas"></canvas>
+  <div class="overlay">
+   <div class="eyebrow">ENGINE TRIAL 001 / PLAYCANVAS 2.23.3</div>
+   <h1>PHYSICAL<br>TOY WORLD.</h1>
+   <p>A separate engine experiment with PBR plastic, molded structures, and a licensed glTF toy car.</p>
+  </div>
+  <div id="loading" role="status">Starting PlayCanvas miniature viewer…</div>
+  <div class="pill">Drag to orbit · Pinch or scroll to zoom</div>
+  <div class="frame-label">WEBGL2 / MOBILE FIRST / NOT THREE.JS</div>
+ </section>
+ <aside class="panel" aria-label="PlayCanvas scene controls">
+  <div class="intro">
+   <div class="eyebrow">MODEL RAILROAD ART TEST</div>
+   <h2>Change the engine.<br>Judge the result.</h2>
+   <p>Same target style: inexpensive molded-plastic model house, glued-on synthetic grass, and a true modeled miniature car. The existing racing game remains untouched.</p>
+  </div>
+  <div class="divide"></div>
+  <div>
+   <div class="label">Exhibition lighting</div>
+   <div class="segment" role="group" aria-label="Lighting mode">
+    <button type="button" data-light="table" aria-pressed="true">Tabletop</button>
+    <button type="button" data-light="studio" aria-pressed="false">Studio</button>
+   </div>
+  </div>
+  <div>
+   <div class="label">Camera view</div>
+   <div class="segment" role="group" aria-label="View">
+    <button type="button" data-view="front" aria-pressed="false">Front</button>
+    <button type="button" data-view="three-quarter" aria-pressed="true">3/4 view</button>
+    <button type="button" data-view="top" aria-pressed="false">Above</button>
+   </div>
+  </div>
+  <div class="asset-status">
+    <strong>Model loading:</strong> <span id="asset-status">Preparing the scene…</span>
+  </div>
+  <a class="cta" href="./house-showcase.html"><span>Compare against Three.js</span><span>↗</span></a>
+  <div class="explain">The miniature toy car is a CC0 Khronos glTF sample asset. A simple locally generated fallback is used if that external file is unavailable. This is a renderer prototype, not a completed racing-engine conversion.</div>
+ </aside>
+</main>
+<script type="module" src="./playcanvas-toy-house.js"></script>
+</body>
+</html>
