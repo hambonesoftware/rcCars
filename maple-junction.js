@@ -14,7 +14,7 @@ const ui={
   sector:document.querySelector('#sector'),
   msg:document.querySelector('#message'),
   progress:document.querySelector('#progress-fill'),
-  camera:document.querySelector('#camera-toggle'),
+  camera:document.querySelector('#overview'),
   brake:document.querySelector('#brake-status'),
   map:document.querySelector('#course-minimap'),
   finishing:document.querySelector('#finish-time'),
@@ -327,7 +327,6 @@ function installInput(){
   ui.again.addEventListener('click',start);
   ui.restart.addEventListener('click',start);
   ui.camera.addEventListener('click',toggleCamera);
-  ui.photo.addEventListener('click',toggleCamera);
   document.querySelector('#pause').addEventListener('click',togglePause);
   document.querySelector('#resume').addEventListener('click',()=>togglePause());
   ui.spec.addEventListener('input',event=>{
