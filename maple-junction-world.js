@@ -245,7 +245,7 @@ export function buildMapleWorld(app,device,{specular=50}={}){
     }
     for(let i=0;i<(loop?n:n-1);i++){
       const a=2*i,b=2*((i+1)%n);
-      ix.push(a,b,a+1,a+1,b,b+1);
+      ix.push(a,a+1,b,a+1,b+1,b);
     }
     return meshEntity(name,meshFrom(pos,norm,uv,ix),mat);
   }
