@@ -446,21 +446,33 @@ async function boot(){
     const phone=window.innerWidth<780;
     if(phone){
       state.mode=state.mode==='both'?'improved':state.mode;
+      // A phone displays ONE physical specimen, never part of the other
+      // house clipping the screen edge. Compose the selected building by
+      // its actual width and the canvas horizontal field of view.
+      old.enabled=state.mode==='before';
+      improved.enabled=state.mode==='improved';
       const specimenRoot=state.mode==='before'?-10.55:10.55;
-      // On a portrait screen show one meaningful portion at a time,
-      // never a huge roof cropped by the left and right edges.
       const selectedX=state.region==='garage'?3.80:-3.65;
-      state.target.set(specimenRoot+selectedX,1.25,-2.35);
-      state.zoom=46.5;
-      state.pitch=.27;state.turn=.035;
+      const canvasAspect=Math.max(.54,canvas.clientWidth/Math.max(canvas.clientHeight,1));
+      const horizontalHalfTan=Math.tan(cam.camera.fov*Math.PI/360)*canvasAspect;
+      const regionWidth=state.region==='garage'?8.9:11.8;
+      const fitDistance=regionWidth/(2*horizontalHalfTan);
+      state.target.set(specimenRoot+selectedX,
+        state.region==='garage'?3.15:3.85,-2.2);
+      state.zoom=Math.min(43,Math.max(18,fitDistance*1.16));
+      state.pitch=.245;state.turn=.13;
     }else{
-      // Make both equally lit specimens fill the comparison board.
-      state.target.set(0,1.95,-1.40);
-      state.zoom=45.5;state.pitch=.27;state.turn=.045;
+      // Both specimens, exactly matching camera and shared light.
+      old.enabled=true;
+      improved.enabled=true;
+      state.target.set(0,3.25,-1.50);
+      state.zoom=37.8;state.pitch=.26;state.turn=.035;
     }
     renderCamera();
     document.body.dataset.fidelityMobileMode=state.mode;
     document.body.dataset.fidelityRegion=state.region;
+    document.body.dataset.fidelityCameraDistance=state.zoom.toFixed(2);
+    document.body.dataset.fidelityIsolation=phone?'single-specimen':'paired';
   }
   function renderCamera(){
     const rad=state.zoom,c=Math.cos(state.pitch);
