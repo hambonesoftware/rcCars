@@ -26,6 +26,12 @@ export function createHOHouse(THREE,options={}){
     blue:{wall:0xa6bdc8,trim:0xffefe0,door:0x7e4b43,roof:0x555f6e,shutter:0x4d6277}
   };
   const colors=hues[palette]||hues.sage;
+  const manufacturing={
+    visibleShellJoints:0,
+    snapFitParts:0,
+    moldedShrubs:0,
+    sprueMarks:0
+  };
 
   function paintedTexture(kind){
     const canvas=document.createElement('canvas');
@@ -34,7 +40,9 @@ export function createHOHouse(THREE,options={}){
     ctx.fillStyle='#ffffff';ctx.fillRect(0,0,256,256);
     const r=(a,b)=>a+random()*(b-a);
     if(kind==='siding'){
-      for(let y=7;y<256;y+=12){
+      // Colored styrene: broad, shallow molded clapboard grooves.
+      // Less weathering and fewer ultra-fine, digital-looking lines.
+      for(let y=9;y<256;y+=16){
         ctx.fillStyle='rgba(40,50,48,.18)';ctx.fillRect(0,y,256,1.8);
         ctx.fillStyle='rgba(255,255,255,.25)';ctx.fillRect(0,y+2,256,1.5);
         for(let x=14;x<256;x+=59){
@@ -43,7 +51,9 @@ export function createHOHouse(THREE,options={}){
         }
       }
     }else if(kind==='shingle'){
-      for(let y=0,row=0;y<256;y+=20,row++){
+      // One-piece injection-molded roof pattern rather than gritty
+      // asphalt photorealism: regular rows and crisp shallow impressions.
+      for(let y=0,row=0;y<256;y+=26,row++){
         ctx.fillStyle='rgba(23,31,34,.24)';ctx.fillRect(0,y,256,2);
         for(let x=(row%2?0:17)-22;x<278;x+=35){
           ctx.fillStyle='rgba(29,38,41,.19)';
@@ -70,18 +80,19 @@ export function createHOHouse(THREE,options={}){
         ctx.fillRect(x,y,r(.5,3),r(.5,3));
       }
     }else if(kind==='grass'){
-      // The ground mat is fine foam flocking and fibers glued to a
-      // substrate. A dense mottled tile replaces flat videogame grass.
-      for(let i=0;i<26000;i++){
+      // Flat commercial grass mat: an almost uniform flocked sheet, with
+      // a few subtle color variations and tiny glue-fleck speckles.
+      ctx.fillStyle='#acb58d';ctx.fillRect(0,0,256,256);
+      for(let i=0;i<45000;i++){
         const x=r(0,256),y=r(0,256);
         const variant=random();
-        ctx.fillStyle=variant<.24?'rgba(39,81,37,.26)':
-          variant<.61?'rgba(70,120,49,.19)':
-          variant<.87?'rgba(195,202,130,.25)':
-          'rgba(151,124,74,.18)';
-        ctx.fillRect(x,y,r(.6,2.2),r(.5,2.5));
+        ctx.fillStyle=variant<.24?'rgba(49,87,36,.18)':
+          variant<.61?'rgba(94,122,58,.17)':
+          variant<.87?'rgba(203,202,143,.15)':
+          'rgba(151,136,93,.13)';
+        ctx.fillRect(x,y,r(.3,.9),r(.3,1.1));
       }
-      for(let i=0;i<1700;i++){
+      for(let i=0;i<550;i++){
         const x=r(0,256),y=r(0,256);
         ctx.strokeStyle=random()<.6?
           'rgba(48,89,43,.23)':'rgba(220,204,141,.18)';
@@ -144,13 +155,13 @@ export function createHOHouse(THREE,options={}){
     return new THREE.MeshStandardMaterial(common);
   };
   const m={
-    siding:mat(colors.wall,{map:sidingTex,roughness:.37,clearcoat:.34,clearcoatRoughness:.31,bumpMap:sidingTex,bumpScale:.014}),
-    sidingLight:mat(0xe9e5d5,{map:sidingTex,roughness:.38,clearcoat:.25}),
-    trim:mat(colors.trim,{roughness:.27,clearcoat:.51,clearcoatRoughness:.21}),
+    siding:mat(colors.wall,{map:sidingTex,roughness:.43,clearcoat:.12,clearcoatRoughness:.31,bumpMap:sidingTex,bumpScale:.009}),
+    sidingLight:mat(0xe9e5d5,{map:sidingTex,roughness:.46,clearcoat:.11}),
+    trim:mat(colors.trim,{roughness:.34,clearcoat:.21,clearcoatRoughness:.29}),
     trimShadow:mat(0xb5b7a8,{roughness:.37,clearcoat:.24}),
-    darkTrim:mat(0x425255,{roughness:.34,clearcoat:.45}),
-    roof:mat(colors.roof,{map:shinglesTex,roughness:.75,bumpMap:shinglesTex,bumpScale:.020}),
-    roofEdge:mat(0x343c45,{roughness:.45,clearcoat:.20}),
+    darkTrim:mat(0x425255,{roughness:.38,clearcoat:.17}),
+    roof:mat(colors.roof,{map:shinglesTex,roughness:.51,clearcoat:.08,clearcoatRoughness:.30,bumpMap:shinglesTex,bumpScale:.009}),
+    roofEdge:mat(0x343c45,{roughness:.53,clearcoat:.08}),
     brick:mat(0xa56756,{map:brickTex,roughness:.79,bumpMap:brickTex,bumpScale:.025}),
     mortar:mat(0xd2b7a1),
     foundation:mat(0x8d8c83,{map:concreteTex}),
@@ -158,23 +169,23 @@ export function createHOHouse(THREE,options={}){
     concrete:mat(0xcac5b7,{map:concreteTex}),
     walkway:mat(0xd0cabe,{map:concreteTex}),
     wood:mat(0xa47c5e,{map:woodTex,roughness:.57,clearcoat:.09}),
-    door:mat(colors.door,{roughness:.25,clearcoat:.72,clearcoatRoughness:.18}),
-    garage:mat(0xddd9ca,{roughness:.35,clearcoat:.43}),
+    door:mat(colors.door,{roughness:.32,clearcoat:.32,clearcoatRoughness:.19}),
+    garage:mat(0xddd9ca,{roughness:.39,clearcoat:.24}),
     garageShadow:mat(0xa8aaa1),
     porchRoof:mat(0x777c7b,{roughness:.50,clearcoat:.17}),
-    shutter:mat(colors.shutter,{roughness:.39,clearcoat:.24}),
-    windowFrame:mat(0xf4eedc,{roughness:.25,clearcoat:.50}),
-    glass:mat(0x80a1a4,{roughness:.075,metalness:.03,
-      clearcoat:1,clearcoatRoughness:.045,transparent:true,
-      opacity:.84,depthWrite:false}),
+    shutter:mat(colors.shutter,{roughness:.45,clearcoat:.14}),
+    windowFrame:mat(0xf4eedc,{roughness:.32,clearcoat:.22}),
+    glass:mat(0x424f52,{roughness:.19,metalness:0,
+      clearcoat:.40,clearcoatRoughness:.14,transparent:true,
+      opacity:.92,depthWrite:false}),
     interior:mat(0x9b9e8c,{roughness:.88,emissive:0x282a23,emissiveIntensity:.12}),
     brass:mat(0xc6ad6e,{metalness:.86,roughness:.24}),
-    lawn:mat(0x8aa16e,{map:grassTex,roughness:.99}),
+    lawn:mat(0x7d9666,{map:grassTex,roughness:1}),
     soil:mat(0x57483a),
     mulch:mat(0x614839),
-    leafDark:mat(0x416942,{roughness:.73}),
-    leafMid:mat(0x608754,{roughness:.72}),
-    leafLight:mat(0x849b61,{roughness:.74}),
+    leafDark:mat(0x416942,{roughness:.59,clearcoat:.11}),
+    leafMid:mat(0x608754,{roughness:.58,clearcoat:.11}),
+    leafLight:mat(0x849b61,{roughness:.58,clearcoat:.11}),
     flowerPink:mat(0xd9818d),
     flowerYellow:mat(0xf2cf64),
     flowerWhite:mat(0xf5e7d0),
@@ -186,24 +197,27 @@ export function createHOHouse(THREE,options={}){
     pot:mat(0xad775a),
     stone:mat(0xa6a49b),
     sky:mat(0x8197a4),
-    wagon:mat(0xc44d3e,{roughness:.23,metalness:.38,
-      clearcoat:1,clearcoatRoughness:.075}),
+    wagon:mat(0xc44d3e,{roughness:.27,metalness:.55,
+      clearcoat:.85,clearcoatRoughness:.14}),
     tire:mat(0x22272a,{roughness:.90}),
     hubcap:mat(0xd8dedf,{metalness:.94,roughness:.17,
       clearcoat:.5,clearcoatRoughness:.13}),
     treeTrunk:mat(0x79604a,{map:woodTex}),
     grassBlade:mat(0xffffff,{roughness:.92,side:THREE.DoubleSide}),
     tableWood:mat(0x936844,{map:woodTex}),
-    tableTop:mat(0xc4a67e,{map:woodTex,roughness:.58,clearcoat:.18}),
-    carGlass:mat(0x617d84,{roughness:.065,metalness:.05,
-      clearcoat:1,clearcoatRoughness:.05,side:THREE.DoubleSide,transparent:true,
-      opacity:.96,depthWrite:false}),
+    tableTop:mat(0xc4a67e,{map:woodTex,roughness:.7,clearcoat:.06}),
+    carGlass:mat(0x333d42,{roughness:.18,metalness:0,
+      clearcoat:.45,clearcoatRoughness:.17,side:THREE.DoubleSide,transparent:true,
+      opacity:.97,depthWrite:false}),
     carBlack:mat(0x202427,{roughness:.48,clearcoat:.12}),
-    carChrome:mat(0xe2e5e1,{metalness:.88,roughness:.16}),
+    carChrome:mat(0xc1c3c0,{metalness:.74,roughness:.24}),
     carTail:mat(0xc9302a,{roughness:.16,clearcoat:1,clearcoatRoughness:.06}),
     carLamp:mat(0xf4eada,{roughness:.12,clearcoat:1,clearcoatRoughness:.06}),
     rail:mat(0x84837a),
-    accent:mat(0x789d94)
+    accent:mat(0x789d94),
+    moldedJoint:mat(0x66736a,{roughness:.64}),
+    moldedRoofJoint:mat(0x4f5960,{roughness:.64}),
+    cutMatEdge:mat(0x819968,{roughness:1})
   };
   const sphereGeo=new THREE.SphereGeometry(1,12,9);
   const cubeGeo=new THREE.BoxGeometry(1,1,1);
