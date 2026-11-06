@@ -166,7 +166,9 @@ async function run(){
       path:path.join(images,'maple-junction-iphone-gameplay.png'),
       animations:'disabled'
     });
-    await phone.locator('#camera-toggle').click().catch(()=>{});
+    await phone.locator('#overview').tap();
+    if(await phone.locator('body').getAttribute('data-maple-camera')!=='overview')
+      throw Error('Mobile tabletop overview button did not work');
     if(bad.length)throw Error('Browser JavaScript failures: '+bad.join('; '));
     console.log('PASS Maple Junction complete 20x10 model railway:',initial);
     console.log('PASS live 3-lap course drive and train animation:',race);
