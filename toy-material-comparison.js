@@ -38,23 +38,23 @@ async function boot(){
   const app=new pc.AppBase(canvas);app.init(opts);
   app.setCanvasFillMode(pc.FILLMODE_FILL_WINDOW);
   app.setCanvasResolution(pc.RESOLUTION_AUTO);
-  app.scene.ambientLight=color('#7d898c');
-  app.scene.exposure=1.05;
+  app.scene.ambientLight=color('#627069');
+  app.scene.exposure=.86;
   const cam=new pc.Entity('Identical fixed comparison camera');
   cam.addComponent('camera',{nearClip:.15,farClip:220,fov:43,clearColor:color('#c2bbb1')});
-  cam.camera.toneMapping=pc.TONEMAP_ACES;app.root.addChild(cam);
+  cam.camera.toneMapping=pc.TONEMAP_NEUTRAL;app.root.addChild(cam);
 
   const key=new pc.Entity('Warm large studio key');
   key.addComponent('light',{type:'directional',color:color('#ffeed8'),
-    intensity:1.9,castShadows:true,shadowResolution:2048,shadowDistance:90});
+    intensity:1.27,castShadows:true,shadowResolution:2048,shadowDistance:90});
   key.setEulerAngles(59,-41,0);app.root.addChild(key);
   const fill=new pc.Entity('Cool studio fill');
   fill.addComponent('light',{type:'directional',color:color('#d3e3ef'),
-    intensity:.56,castShadows:false});
+    intensity:.23,castShadows:false});
   fill.setEulerAngles(28,142,0);app.root.addChild(fill);
   const rim=new pc.Entity('Edge-light grazing round plastic');
   rim.addComponent('light',{type:'directional',color:color('#fff9ed'),
-    intensity:.48,castShadows:false});
+    intensity:.16,castShadows:false});
   rim.setEulerAngles(38,210,0);app.root.addChild(rim);
 
   const environment=makeTexture(device,'Real studio card reflections',(ctx,w,h)=>{
@@ -106,23 +106,47 @@ async function boot(){
     }
     m.update();return m;
   };
+  const grassTex=makeTexture(device,'Cut-pile railway scenic flock',(ctx,w,h)=>{
+    ctx.fillStyle='#7d8751';ctx.fillRect(0,0,w,h);
+    const r=rand(71437);
+    for(let i=0;i<49000;i++){
+      const x=r()*w,y=r()*h;
+      const tone=r();
+      ctx.strokeStyle=tone<.3?'rgba(43,69,39,.48)':
+        tone<.65?'rgba(171,165,93,.50)':'rgba(109,135,69,.63)';
+      ctx.lineWidth=.35+r()*.6;
+      ctx.beginPath();ctx.moveTo(x,y);
+      ctx.lineTo(x+(r()-.5)*2.5,y-1-r()*2.3);ctx.stroke();
+    }
+  });
   const materials={
-    oldWall:plastic('Baseline plain colored box','#b5c9b8',{gloss:.44,coat:0,texture:false,ao:false}),
-    oldTrim:plastic('Baseline sharp white trim','#e8e6da',{gloss:.42,coat:0,texture:false,ao:false}),
-    oldRoof:plastic('Baseline gray untextured roof','#747b7a',{gloss:.34,coat:0,texture:false,ao:false}),
-    styrene:plastic('Satin pigmented injection molded wall','#b5c9b8',{gloss:.47,coat:.07}),
-    offwhite:plastic('Warm semi gloss molded window and fascia','#e8e6da',{gloss:.58,coat:.14}),
-    roofing:plastic('Grained molded gray roofing','#747b7a',{gloss:.34,coat:.025}),
-    roofRaised:plastic('Separated injection molded shingle tiles','#6e7472',{gloss:.36,coat:.02}),
-    groove:plastic('Recessed plastic parting lines and cavity','#64766c',{gloss:.28,coat:0}),
-    glass:plastic('Smoked inset acrylic glass','#465d63',{gloss:.88,coat:.58,texture:false,ao:false}),
-    shutter:plastic('Deep evergreen molded shutters','#57736b',{gloss:.49,coat:.10}),
-    concrete:plastic('Scored miniature gray concrete','#b6b4ac',{gloss:.12,coat:0,texture:false,ao:false}),
-    turf:plastic('Matte model grass base','#697a4b',{gloss:.05,coat:0,texture:false,ao:false}),
-    base:plastic('Exposed warm model display board','#92765c',{gloss:.19,coat:0,texture:false,ao:false}),
-    wallBack:plastic('Inset dark gray cavity shadow','#20292c',{gloss:.17,coat:0,texture:false,ao:false}),
-    sill:plastic('Pale plastic insert highlight','#f2ecdc',{gloss:.54,coat:.16})
+    oldWall:plastic('Old featureless siding','#839b84',{gloss:.33,coat:0,texture:false,ao:false}),
+    oldTrim:plastic('Old sharp window trim','#c9bda5',{gloss:.36,coat:0,texture:false,ao:false}),
+    oldRoof:plastic('Old straight box roofing','#555e5b',{gloss:.23,coat:0,texture:false,ao:false}),
+    styrene:plastic('Satin sage pigmented plastic house','#839b84',{gloss:.41,coat:.045}),
+    sidingEdge:plastic('Molded sage-satin clapboard lips','#819982',{gloss:.36,coat:.035}),
+    offwhite:plastic('Cream weathered injection-molded window trim','#cfc6ae',{gloss:.46,coat:.09}),
+    roofing:plastic('Molded charcoal gray roof','#505c59',{gloss:.27,coat:.015}),
+    roofRaised:plastic('Alternating gray plastic shingles','#47534f',{gloss:.25,coat:.01}),
+    roofHighlight:plastic('Molded shingle color variation','#5d6862',{gloss:.28,coat:.015}),
+    groove:plastic('Shadowed recessed manufacturing seams','#52645a',{gloss:.20,coat:0}),
+    glass:plastic('Deep smoked acrylic plastic glazing','#2d4f57',{gloss:.76,coat:.26,texture:false,ao:false}),
+    shutter:plastic('Deep forest green satin shutters','#405f55',{gloss:.45,coat:.07}),
+    concrete:plastic('Scored weathered model pavement','#999b8d',{gloss:.10,coat:0,texture:false,ao:false}),
+    turf:plastic('Matte handmade grass model railway scenery','#7e8759',{gloss:.03,coat:0,texture:false,ao:false}),
+    base:plastic('Natural painted timber display board','#947a60',{gloss:.15,coat:0,texture:false,ao:false}),
+    wallBack:plastic('Window recess and garage aperture','#28342f',{gloss:.13,coat:0,texture:false,ao:false}),
+    sill:plastic('Pale cast trim inserts','#dad0b7',{gloss:.46,coat:.09}),
+    plant:plastic('Dark model tree scenic foliage','#405744',{gloss:.10,coat:0,texture:false,ao:false}),
+    plantLight:plastic('Light green HO scenic clusters','#637958',{gloss:.08,coat:0,texture:false,ao:false}),
+    soil:plastic('Scenic earth and bark ballast','#625747',{gloss:.05,coat:0,texture:false,ao:false}),
+    metal:plastic('Little silver downspout and fixtures','#8a9690',{gloss:.58,coat:.20,metal:.25,texture:false,ao:false}),
+    warmLight:plastic('Amber plastic porch light','#b79a65',{gloss:.60,coat:.08}),
   };
+  materials.turf.diffuseMap=grassTex;
+  materials.turf.diffuseMapTiling=new pc.Vec2(7,6);
+  materials.turf.diffuse=color('#a8ad87');
+  materials.turf.update();
   const geometryCache=new Map();
   function roundedGeometry(size,radius){
     const key=size.map(n=>n.toFixed(4)).join('/')+'/'+radius.toFixed(4);
