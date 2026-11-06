@@ -141,7 +141,7 @@ async function main(){
     ];
     const renderedHashes=new Map();
     for(const [preset,tone,lens,materials] of renderModes){
-      await page.locator('[data-render-preset="'+preset+'"]').click();
+      await page.locator('button[data-render-preset="'+preset+'"]').click();
       await page.waitForFunction(
         expected=>document.body.dataset.renderPreset===expected,
         preset,{timeout:20000}
@@ -182,7 +182,7 @@ async function main(){
       await page.locator('body').getAttribute('data-render-materials')!=='plain'){
       throw Error('Individual rendering comparison switch did not work');
     }
-    await page.locator('[data-render-preset="original"]').click();
+    await page.locator('button[data-render-preset="original"]').click();
     if(shaderErrors.length)throw Error(
       'WebGL shader errors during rendering lab: '+shaderErrors.join('; '));
     console.log('PASS four A/B/C/D render lab presets',
@@ -230,7 +230,7 @@ async function main(){
     });
     // Photo preset uses the photographic perspective on phones without
     // the high-cost depth texture pass. Presets remain available by touch.
-    await phone.locator('[data-render-preset="photo"]').tap();
+    await phone.locator('button[data-render-preset="photo"]').tap();
     const phonePhoto=await phone.evaluate(()=>({
       preset:document.body.dataset.renderPreset,
       lens:document.body.dataset.renderLens,
