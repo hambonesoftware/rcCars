@@ -27,7 +27,7 @@ The glass uses thin transparent glazing, not heavyweight volumetric transmission
 
 **House:** real sloping gable roof planes, fascia and trim, clapboard map, window frames/muntins, attached garage with recessed sectional door, separate porch canopy/posts/stairs. Dimensional details are modeled rather than painted on a flat wall.
 
-**Artificial grass:** replace 1,250 big conical grass tufts with 16,000 fine cut nylon-style fibers in a single THREE.BufferGeometry; each triangle is 0.14–0.34 model units tall and 0.02–0.048 wide with a narrow bent tip. Assign mixed green/ochre per-vertex colors and avoid all hardscape, driveway, house, and flowerbed areas. Use dense speckle/fiber 256px ground texture to keep the flocked look at normal camera distance. This remains one draw call.
+**Artificial grass:** replace 1,250 big conical grass tufts with 32,000 fine cut nylon-style fibers in a single THREE.BufferGeometry; each triangle is 0.068–0.174 model units tall and 0.011–0.027 wide with a narrow bent tip. Assign mixed green/ochre per-vertex colors and avoid all hardscape, driveway, house, and flowerbed areas. Use dense speckle/fiber 256px ground texture to keep the flocked look at normal camera distance. This remains one draw call.
 
 **Die-cast toy:** smooth lofted body shell with changing width/hood profile; a separate tapered roof and raked windshields, car-side glazing, wheel-arch trim, black polymer chassis, wheels with five chrome spokes, tiny bumper/grille, molded headlights/taillights, side mirrors, door handles and body trim. Standard body front is +Z. Clearcoat creates strong believable highlights in the photographed exhibition lighting.
 
