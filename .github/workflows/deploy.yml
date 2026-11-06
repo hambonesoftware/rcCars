@@ -40,6 +40,8 @@ jobs:
           node --input-type=module --check < miniature-world.js
           node --check house-showcase.js
           node --input-type=module --check < house-showcase.js
+          node --input-type=module --check < house-render-lab.js
+          node --input-type=module --check < house-photo-pass.js
           node --check ho-hero-house.js
           node --input-type=module --check < ho-hero-house.js
           test -s house-showcase.html
