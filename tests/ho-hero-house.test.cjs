@@ -103,9 +103,9 @@ async function main(){
       grass:document.getElementById('object-count').textContent
     }));
     if(model.palette!=='sage'||model.seed!=='1407'||
-      model.car!=='diecast'||model.flocking<10000||
+      model.car!=='diecast'||model.flocking<30000||
       !model.realism?.includes('die-cast')||
-      Number(model.grass)<10000)throw Error(
+      Number(model.grass)<30000)throw Error(
         'Unexpected plastic / static-grass / die-cast prototype: '+
         JSON.stringify(model));
     await page.screenshot({
@@ -154,7 +154,7 @@ async function main(){
       animations:'disabled'
     });
     if(await phone.locator('body').getAttribute('data-model-car')!=='diecast'||
-      Number(await phone.locator('body').getAttribute('data-model-flocking'))<10000)
+      Number(await phone.locator('body').getAttribute('data-model-flocking'))<30000)
       throw Error('Mobile rendering lost die-cast or static-grass geometry');
     await phone.locator('[data-palette="blue"]').tap();
     if(await phone.locator('body').getAttribute('data-model-palette')!=='blue')
