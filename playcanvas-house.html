@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#ece9de">
 <meta name="description" content="Micro Mayhem's independent PlayCanvas engine test: a model-railroad plastic house, flocked yard, and glTF toy car.">
-<title>Micro Mayhem / PlayCanvas Miniature Lab</title>
+<title>Micro Mayhem / PlayCanvas Miniature Lab V2</title>
 <script type="importmap">
 {"imports":{"playcanvas":"https://cdn.jsdelivr.net/npm/playcanvas@2.23.3/+esm"}}
 </script>
@@ -76,9 +76,9 @@ h1{font-size:clamp(35px,4vw,65px);line-height:.98;letter-spacing:-.05em;margin:1
  <section class="viewer" aria-label="Live 3D PlayCanvas model railway scene">
   <canvas id="playcanvas"></canvas>
   <div class="overlay">
-   <div class="eyebrow">ENGINE TRIAL 001 / PLAYCANVAS 2.23.3</div>
+   <div class="eyebrow">ENGINE TRIAL 002 / PLAYCANVAS 2.23.3</div>
    <h1>PHYSICAL<br>TOY WORLD.</h1>
-   <p>A separate engine experiment with PBR plastic, molded structures, and a licensed glTF toy car.</p>
+   <p>A separate engine experiment with molded roof courses, clapboard seams, a detailed model-railroad yard, and a licensed glTF toy car.</p>
   </div>
   <div id="loading" role="status">Starting PlayCanvas miniature viewer…</div>
   <div class="pill">Drag to orbit · Pinch or scroll to zoom</div>
@@ -88,7 +88,7 @@ h1{font-size:clamp(35px,4vw,65px);line-height:.98;letter-spacing:-.05em;margin:1
   <div class="intro">
    <div class="eyebrow">MODEL RAILROAD ART TEST</div>
    <h2>Change the engine.<br>Judge the result.</h2>
-   <p>Same target style: inexpensive molded-plastic model house, glued-on synthetic grass, and a true modeled miniature car. The existing racing game remains untouched.</p>
+   <p>Same target style: inexpensive molded-plastic model house, glued-on synthetic grass, and a true modeled miniature car. Inspect the molded siding and roof detailing with the new Details camera. The latest V2 model adds physical cladding joints, roof shingles, garden ballast, driveway scoring, mailbox and wall lamps. The existing racing game remains untouched.</p>
   </div>
   <div class="divide"></div>
   <div>
@@ -104,6 +104,7 @@ h1{font-size:clamp(35px,4vw,65px);line-height:.98;letter-spacing:-.05em;margin:1
     <button type="button" data-view="front" aria-pressed="false">Front</button>
     <button type="button" data-view="three-quarter" aria-pressed="true">3/4 view</button>
     <button type="button" data-view="top" aria-pressed="false">Above</button>
+    <button type="button" data-view="detail" aria-pressed="false">Details</button>
    </div>
   </div>
   <div class="asset-status">
