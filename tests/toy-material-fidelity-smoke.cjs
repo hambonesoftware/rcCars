@@ -63,14 +63,20 @@ async function main(){
       context:!!document.querySelector('#fidelity-canvas').getContext('webgl2'),
       roofConnection:document.body.dataset.fidelityRoofConnection,
       garageRoof:document.body.dataset.fidelityGarageRoof,
-      lighting:document.body.dataset.fidelityLightTreatment
+      lighting:document.body.dataset.fidelityLightTreatment,
+      specular:document.body.dataset.fidelitySpecularPercent,
+      specularLight:document.body.dataset.fidelitySpecularLight,
+      specularIntensity:Number(document.body.dataset.fidelitySpecularIntensity)
     }));
     if(stats.engine!=='PlayCanvas 2.23.3'||stats.normal!=='tangent-styrene-normal'||
        stats.ao!=='crevice-texture-and-inset'||stats.beveled<60||
        stats.raised<65||!stats.context||stats.canvasWidth<850||
        stats.roofConnection!=='gable-and-eaves-aligned'||
        stats.garageRoof!=='pitched-molded-roof'||
-       stats.lighting!=='satin-neutral-v2'){
+       stats.lighting!=='satin-neutral-v2'||
+       stats.specular!=='45'||
+       stats.specularLight!=='directional-ggx-v1'||
+       Math.abs(stats.specularIntensity-.36)>.001){
       throw Error('Incomplete physical plastic fidelity preview '+JSON.stringify(stats));
     }
     await desktop.waitForTimeout(600);
@@ -83,6 +89,22 @@ async function main(){
     if(angle!=='20')throw Error('Adjustable light failed: '+angle);
     await desktop.screenshot({
       path:path.join(output,'molded-plastic-studio-angle.png'),
+      animations:'disabled'
+    });
+    await desktop.locator('#specular-light').fill('0');
+    if(await desktop.locator('body').getAttribute('data-fidelity-specular-percent')!=='0'||
+       await desktop.locator('body').getAttribute('data-fidelity-specular-intensity')!=='0.000')
+      throw Error('Specular slider did not disable extra specular grazing light');
+    await desktop.screenshot({
+      path:path.join(output,'molded-plastic-specular-low.png'),
+      animations:'disabled'
+    });
+    await desktop.locator('#specular-light').fill('90');
+    if(await desktop.locator('body').getAttribute('data-fidelity-specular-percent')!=='90'||
+       await desktop.locator('body').getAttribute('data-fidelity-specular-intensity')!=='0.720')
+      throw Error('Specular slider did not increase real-light and PBR highlights');
+    await desktop.screenshot({
+      path:path.join(output,'molded-plastic-specular-high.png'),
       animations:'disabled'
     });
     await desktop.close();
@@ -108,13 +130,15 @@ async function main(){
         roof:document.body.dataset.fidelityRoofConnection,
         garage:document.body.dataset.fidelityGarageRoof,
         indicator:document.querySelector('#scene-indicator').textContent,
-        scrolling:document.documentElement.scrollHeight>window.innerHeight+2
+        scrolling:document.documentElement.scrollHeight>window.innerHeight+2,
+        specular:document.body.dataset.fidelitySpecularPercent
       };
     });
     if(mobileUI.isolate!=='single-specimen'||
        mobileUI.roof!=='gable-and-eaves-aligned'||
        mobileUI.garage!=='pitched-molded-roof'||
        mobileUI.controlsHeight>167||
+       mobileUI.specular!=='45'||
        mobileUI.sceneHeight<390||
        mobileUI.scrolling)
       throw Error('Mobile miniature layout regression: '+JSON.stringify(mobileUI));
@@ -131,11 +155,18 @@ async function main(){
       animations:'disabled'
     });
     await mobile.locator('[data-specimen="improved"]').tap();
+    await mobile.locator('#specular-light').fill('80');
+    if(await mobile.locator('body').getAttribute('data-fidelity-specular-percent')!=='80')
+      throw Error('Mobile specular highlight control did not respond');
     await mobile.locator('[data-region="garage"]').tap();
     if(await mobile.locator('body').getAttribute('data-fidelity-region')!=='garage')
       throw Error('Mobile garage detail camera not selectable');
     await mobile.screenshot({
       path:path.join(output,'molded-plastic-mobile-garage.png'),
+      animations:'disabled'
+    });
+    await mobile.screenshot({
+      path:path.join(output,'molded-plastic-mobile-specular-high.png'),
       animations:'disabled'
     });
     await mobile.close();
