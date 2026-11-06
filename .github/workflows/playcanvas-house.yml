@@ -6,6 +6,7 @@ on:
     paths:
       - 'playcanvas-house.html'
       - 'playcanvas-toy-house.js'
+      - 'photographic-miniature.js'
       - 'tests/playcanvas-house-smoke.cjs'
       - '.github/workflows/playcanvas-house.yml'
   workflow_dispatch:
@@ -27,6 +28,7 @@ jobs:
       - name: Validate source syntax
         run: |
           node --input-type=module --check < playcanvas-toy-house.js
+          node --input-type=module --check < photographic-miniature.js
           node --check tests/playcanvas-house-smoke.cjs
       - name: Install test driver
         run: npm install --no-save --ignore-scripts --no-audit --no-fund playwright-core@1.56.1
