@@ -1,5 +1,8 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js';
 import {createHOHouse} from './ho-hero-house.js';
+import {RENDER_PRESETS,RENDER_FACTORS,validateRenderState,
+  createMaterialExperiment,createContactPatches} from './house-render-lab.js';
+import {createHousePhotoPass} from './house-photo-pass.js';
 
 const $=id=>document.getElementById(id);
 const stage=$('viewport');
@@ -98,9 +101,17 @@ studio.position.y=-2.20;
 studio.receiveShadow=true;
 scene.add(studio);
 
-const camera=new THREE.OrthographicCamera(-42,42,28,-28,.1,350);
+const orthographicCamera=new THREE.OrthographicCamera(-42,42,28,-28,.1,350);
+const perspectiveCamera=new THREE.PerspectiveCamera(36,1,.1,350);
+let camera=orthographicCamera;
 const modelGroup=new THREE.Group();
 scene.add(modelGroup);
+const materialExperiment=createMaterialExperiment(THREE);
+const contacts=createContactPatches(THREE);
+scene.add(contacts.group);
+let photoPass=null;
+const isLowPower=window.matchMedia('(pointer:coarse)').matches||
+  window.innerWidth<700;
 const params=new URLSearchParams(location.search);
 const seedParameter=params.get('seed');
 const validSeed=seedParameter!==null&&
@@ -117,6 +128,11 @@ const state={
   busy:false,
   frame:0
 };
+let activePreset='original';
+const labState={...RENDER_PRESETS.original};
+const initialPreset=params.get('preset');
+const startingPreset=Object.prototype.hasOwnProperty.call(
+  RENDER_PRESETS,initialPreset)?initialPreset:'original';
 
 function syncUI(){
   for(const element of document.querySelectorAll('[data-palette]')){
@@ -128,6 +144,25 @@ function syncUI(){
     const selected=element.dataset.view===state.sceneView;
     element.classList.toggle('selected',selected);
     element.setAttribute('aria-pressed',String(selected));
+  }
+  for(const button of document.querySelectorAll('[data-render-preset]')){
+    const selected=button.dataset.renderPreset===activePreset;
+    button.classList.toggle('selected',selected);
+    button.setAttribute('aria-pressed',String(selected));
+  }
+  for(const button of document.querySelectorAll('[data-lab-factor]')){
+    const key=button.dataset.labFactor;
+    const value=key==='dof'?button.dataset.labValue==='true':
+      button.dataset.labValue;
+    const selected=labState[key]===value;
+    button.classList.toggle('selected',selected);
+    button.setAttribute('aria-pressed',String(selected));
+  }
+  const selectedLabel=$('render-lab-status');
+  if(selectedLabel){
+    selectedLabel.textContent=
+      activePreset==='custom'?'Custom rendering comparison':
+      RENDER_PRESETS[activePreset]?.label||'Rendering comparison';
   }
   const seed=$('seed-readout');
   if(seed)seed.textContent=String(state.seed).padStart(4,'0');
@@ -162,6 +197,7 @@ function rebuild(){
     detail:true
   });
   modelGroup.add(built.root);
+  materialExperiment.apply(modelGroup,labState.materials==='micro');
   const houseName=$('house-name');
   if(houseName)houseName.textContent='Elm Street Gable House';
   $('model-summary').textContent=
@@ -207,18 +243,87 @@ function setView(view){
   }
   syncUI();
 }
-function setLighting(dusk){
-  state.dusk=dusk;
-  sun.intensity=dusk?2.25:3.55;
-  hemi.intensity=dusk?1.05:2.05;
-  ambient.intensity=dusk?.45:.28;
-  fill.intensity=dusk?.60:.92;
-  scene.background.set(dusk?'#b8aba2':'#c0cdc5');
+function updateRoomLighting(){
+  const room=labState.light==='room';
+  // Original daylight now restores EXACTLY the startup values. The older
+  // toggle silently restored different, overbright lights.
+  sun.intensity=state.dusk?(room?1.70:2.25):(room?2.48:2.65);
+  hemi.intensity=state.dusk?(room?.68:1.05):(room?1.04:1.70);
+  ambient.intensity=state.dusk?(room?.18:.45):(room?.18:.28);
+  fill.intensity=state.dusk?(room?.26:.60):(room?.38:.64);
+  scene.background.set(state.dusk?'#b8aba2':
+    room?'#c5c7ba':'#c0cdc5');
   scene.fog.color.copy(scene.background);
-  renderer.toneMappingExposure=dusk?1.17:1.26;
-  sun.color.set(dusk?'#ffb77b':'#ffe6bd');
-  sun.position.set(dusk?-53:-33,dusk?32:62,31);
+  renderer.toneMappingExposure=state.dusk?
+    (labState.tone==='neutral'?1.04:1.17):
+    (labState.tone==='neutral'?1.08:1.26);
+  sun.color.set(state.dusk?'#ffb77b':
+    room?'#fff1db':'#ffeee0');
+  sun.position.set(state.dusk?-53:(room?-27:-33),
+    state.dusk?32:(room?54:62),
+    room?38:31);
+  scene.environmentIntensity=room?.30:.43;
+}
+function setLighting(dusk){
+  state.dusk=Boolean(dusk);
+  updateRoomLighting();
   syncUI();
+}
+function applyRenderSettings(){
+  if(!validateRenderState(labState))
+    throw new Error('Invalid house rendering laboratory state');
+  renderer.toneMapping=labState.tone==='neutral'?
+    THREE.NeutralToneMapping:THREE.ACESFilmicToneMapping;
+  // Constrain the physical shadow map to the house and lawn. This gives
+  // approximately 3.7x more linear detail than the original 150/1024.
+  const detail=labState.shadows==='detail';
+  const resolution=detail&&!isLowPower?2048:1024;
+  if(sun.shadow.mapSize.x!==resolution){
+    sun.shadow.mapSize.set(resolution,resolution);
+    sun.shadow.map?.dispose();
+    sun.shadow.map=null;
+  }
+  const limit=detail?40:75;
+  sun.shadow.camera.left=-limit;
+  sun.shadow.camera.right=limit;
+  sun.shadow.camera.top=limit;
+  sun.shadow.camera.bottom=-limit;
+  sun.shadow.camera.updateProjectionMatrix();
+  sun.shadow.bias=detail?-.00014:-.00006;
+  sun.shadow.normalBias=detail?.023:.032;
+  sun.shadow.needsUpdate=true;
+  contacts.setEnabled(detail);
+  materialExperiment.apply(modelGroup,labState.materials==='micro');
+  camera=labState.lens==='perspective'?
+    perspectiveCamera:orthographicCamera;
+  updateRoomLighting();
+  document.body.dataset.renderPreset=activePreset;
+  document.body.dataset.renderTone=labState.tone;
+  document.body.dataset.renderLight=labState.light;
+  document.body.dataset.renderShadows=labState.shadows;
+  document.body.dataset.renderMaterials=labState.materials;
+  document.body.dataset.renderLens=labState.lens;
+  document.body.dataset.renderDof=String(labState.dof);
+  document.body.dataset.renderDofEffective=String(
+    labState.dof&&!isLowPower&&labState.lens==='perspective');
+  document.body.dataset.renderSeed=String(state.seed);
+  resize();
+  syncUI();
+}
+function selectRenderPreset(name){
+  const preset=RENDER_PRESETS[name];
+  if(!preset)return;
+  Object.assign(labState,preset);
+  activePreset=name;
+  applyRenderSettings();
+}
+function selectRenderFactor(key,value){
+  if(!Object.prototype.hasOwnProperty.call(RENDER_FACTORS,key))return;
+  const converted=key==='dof'?value==='true':value;
+  if(!RENDER_FACTORS[key].includes(converted))return;
+  labState[key]=converted;
+  activePreset='custom';
+  applyRenderSettings();
 }
 function resize(){
   const w=Math.max(1,window.innerWidth);
@@ -226,10 +331,18 @@ function resize(){
   const aspect=w/h;
   const baseHeight=aspect<.70?83:aspect<1?69:57;
   const visibleHeight=baseHeight/state.zoom;
-  camera.left=-visibleHeight*aspect*.5;
-  camera.right=visibleHeight*aspect*.5;
-  camera.top=visibleHeight*.5;
-  camera.bottom=-visibleHeight*.5;
+  if(camera.isPerspectiveCamera){
+    const radius=state.sceneView==='diecast'?36:87;
+    camera.fov=THREE.MathUtils.radToDeg(
+      2*Math.atan(baseHeight/(2*radius)));
+    camera.aspect=aspect;
+    camera.zoom=state.zoom;
+  }else{
+    camera.left=-visibleHeight*aspect*.5;
+    camera.right=visibleHeight*aspect*.5;
+    camera.top=visibleHeight*.5;
+    camera.bottom=-visibleHeight*.5;
+  }
   camera.updateProjectionMatrix();
   renderer.setSize(w,h);
 }
@@ -299,6 +412,14 @@ $('regen').addEventListener('click',()=>{
   rebuild();
 });
 $('light-switch').addEventListener('click',()=>setLighting(!state.dusk));
+for(const button of document.querySelectorAll('[data-render-preset]')){
+  button.addEventListener('click',()=>selectRenderPreset(
+    button.dataset.renderPreset));
+}
+for(const button of document.querySelectorAll('[data-lab-factor]')){
+  button.addEventListener('click',()=>selectRenderFactor(
+    button.dataset.labFactor,button.dataset.labValue));
+}
 window.addEventListener('resize',resize,{passive:true});
 window.addEventListener('keydown',e=>{
   if(e.key==='1'||e.key==='2'||e.key==='3'){
@@ -312,7 +433,27 @@ window.addEventListener('keydown',e=>{
 function animate(){
   requestAnimationFrame(animate);
   updateCamera();
-  renderer.render(scene,camera);
+  const usePhoto=labState.dof&&!isLowPower&&
+    labState.lens==='perspective';
+  if(usePhoto){
+    if(!photoPass){
+      try{photoPass=createHousePhotoPass(THREE,renderer);}
+      catch(error){
+        console.warn('Depth of field unavailable, showing original camera',error);
+      }
+    }
+    if(photoPass){
+      const target=state.sceneView==='diecast'?
+        new THREE.Vector3(9.7,1.03,13.4):
+        new THREE.Vector3(window.innerWidth>780?-8:0,2.1,
+          window.innerWidth>780?-1:0);
+      photoPass.render(scene,camera,target);
+    }else{
+      renderer.render(scene,camera);
+    }
+  }else{
+    renderer.render(scene,camera);
+  }
   if(state.frame<3){
     document.body.dataset.renderedFrame=String(++state.frame);
   }
@@ -320,6 +461,7 @@ function animate(){
 try{
   rebuild();
   setView('three-quarter');
+  selectRenderPreset(startingPreset);
   resize();
   animate();
   $('loading').classList.add('hidden');
