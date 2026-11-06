@@ -60,11 +60,17 @@ async function main(){
       beveled:Number(document.body.dataset.fidelityRoundedParts),
       raised:Number(document.body.dataset.fidelityMoldedPanels),
       canvasWidth:document.querySelector('#fidelity-canvas').width,
-      context:!!document.querySelector('#fidelity-canvas').getContext('webgl2')
+      context:!!document.querySelector('#fidelity-canvas').getContext('webgl2'),
+      roofConnection:document.body.dataset.fidelityRoofConnection,
+      garageRoof:document.body.dataset.fidelityGarageRoof,
+      lighting:document.body.dataset.fidelityLightTreatment
     }));
     if(stats.engine!=='PlayCanvas 2.23.3'||stats.normal!=='tangent-styrene-normal'||
        stats.ao!=='crevice-texture-and-inset'||stats.beveled<60||
-       stats.raised<65||!stats.context||stats.canvasWidth<850){
+       stats.raised<65||!stats.context||stats.canvasWidth<850||
+       stats.roofConnection!=='gable-and-eaves-aligned'||
+       stats.garageRoof!=='pitched-molded-roof'||
+       stats.lighting!=='satin-neutral-v2'){
       throw Error('Incomplete physical plastic fidelity preview '+JSON.stringify(stats));
     }
     await desktop.waitForTimeout(600);
@@ -92,6 +98,26 @@ async function main(){
       null,{timeout:50000});
     if(await mobile.locator('body').getAttribute('data-fidelity-mobile-mode')!=='improved')
       throw Error('Mobile did not start on molded specimen');
+    const mobileUI=await mobile.evaluate(()=>{
+      const scene=document.querySelector('.scene').getBoundingClientRect();
+      const controls=document.querySelector('.controls').getBoundingClientRect();
+      return {
+        sceneHeight:scene.height,
+        controlsHeight:controls.height,
+        isolate:document.body.dataset.fidelityIsolation,
+        roof:document.body.dataset.fidelityRoofConnection,
+        garage:document.body.dataset.fidelityGarageRoof,
+        indicator:document.querySelector('#scene-indicator').textContent,
+        scrolling:document.documentElement.scrollHeight>window.innerHeight+2
+      };
+    });
+    if(mobileUI.isolate!=='single-specimen'||
+       mobileUI.roof!=='gable-and-eaves-aligned'||
+       mobileUI.garage!=='pitched-molded-roof'||
+       mobileUI.controlsHeight>167||
+       mobileUI.sceneHeight<390||
+       mobileUI.scrolling)
+      throw Error('Mobile miniature layout regression: '+JSON.stringify(mobileUI));
     await mobile.waitForTimeout(300);
     await mobile.screenshot({
       path:path.join(output,'molded-plastic-mobile-after.png'),
@@ -115,7 +141,8 @@ async function main(){
     await mobile.close();
     if(errorList.length)throw Error('JavaScript error(s): '+errorList.join('; '));
     console.log('PASS: real PlayCanvas physical bevel meshes and tangent normal maps',stats);
-    console.log('PASS: exact same studio lights, draggable angle, phone specimen comparison');
+    console.log('PASS: connected pitched roofs, toned-down satin plastic and calibrated mobile UI');
+    console.log('PASS: exact same studio lights, draggable angle, phone specimen comparison',mobileUI);
   }finally{
     await browser.close();await new Promise(resolve=>server.close(resolve));
   }
