@@ -127,9 +127,11 @@ async function boot(){
     sidingEdge:plastic('Molded sage-satin clapboard lips','#819982',{gloss:.36,coat:.035}),
     offwhite:plastic('Cream weathered injection-molded window trim','#cfc6ae',{gloss:.46,coat:.09}),
     roofing:plastic('Molded charcoal gray roof','#505c59',{gloss:.27,coat:.015}),
-    roofRaised:plastic('Alternating gray plastic shingles','#47534f',{gloss:.25,coat:.01}),
-    roofHighlight:plastic('Molded shingle color variation','#5d6862',{gloss:.28,coat:.015}),
+    roofRaised:plastic('Alternating gray plastic shingles','#4b5752',{gloss:.25,coat:.01}),
+    roofHighlight:plastic('Molded shingle color variation','#555f59',{gloss:.28,coat:.015}),
     groove:plastic('Shadowed recessed manufacturing seams','#52645a',{gloss:.20,coat:0}),
+    garageInset:plastic('Soft inner shadow on press-formed garage panels','#a69e87',
+      {gloss:.27,coat:.01}),
     glass:plastic('Deep smoked acrylic plastic glazing','#2d4f57',{gloss:.76,coat:.26,texture:false,ao:false}),
     shutter:plastic('Deep forest green satin shutters','#405f55',{gloss:.45,coat:.07}),
     concrete:plastic('Scored weathered model pavement','#999b8d',{gloss:.10,coat:0,texture:false,ao:false}),
@@ -332,16 +334,31 @@ async function boot(){
     p('Garage raised backing',molded?materials.offwhite:materials.oldTrim,
       [3.8,2.32,.30],[5.57,3.20,.16],.047);
     if(molded){
-      for(let row=0;row<4;row++)for(let column=0;column<4;column++){
-        const x=1.72+column*1.39,y=.91+row*.79;
-        p('Distinct radiused molded garage panel',materials.offwhite,
-          [x,y,.433],[1.20,.64,.13],.08);
+      // A manufactured garage door is a SINGLE vacuum-formed sheet.
+      // The prior implementation looked like sixteen cereal boxes
+      // glued on a slab. Recessed stamping here is only ~0.02 deep.
+      for(let row=0;row<4;row++){
+        const y=1.095+row*.795;
+        p('Continuous shallow molded garage door section',materials.offwhite,
+          [3.8,y,.397],[5.35,.745,.050],.028);
         counts.panels++;
+        for(let column=0;column<4;column++){
+          const x=1.78+column*1.35;
+          p('Press-formed shallow inset surround',materials.garageInset,
+            [x,y,.426],[1.20,.615,.017],.030);
+          p('Inset center surface of stamped plastic',materials.offwhite,
+            [x,y,.433],[1.11,.525,.017],.024);
+          counts.panels++;
+        }
+        if(row>0){
+          p('Fine sectional garage seam shadow',materials.garageInset,
+            [3.8,y-.394,.434],[5.28,.020,.017],.008);
+          counts.grooves++;
+        }
       }
-      for(let row=1;row<4;row++){
-        p('Pressed garage joint shadow',materials.groove,
-          [3.8,.91+row*.79-.40,.406],[5.32,.026,.026],.01);
-        counts.grooves++;
+      for(const x of [1.05,6.55]){
+        p('Round-edged garage door perimeter frame',materials.offwhite,
+          [x,2.32,.449],[.13,3.40,.17],.046);
       }
     }
     // Physically connected gable roofs, not offset rectangular prisms.
@@ -550,7 +567,7 @@ async function boot(){
       const regionWidth=state.region==='garage'?8.9:11.8;
       const fitDistance=regionWidth/(2*horizontalHalfTan);
       state.target.set(specimenRoot+selectedX,
-        state.region==='garage'?3.15:3.85,-2.2);
+        state.region==='garage'?1.8:2.25,-2.2);
       state.zoom=Math.min(43,Math.max(18,fitDistance*1.16));
       state.pitch=.245;state.turn=.13;
     }else{
