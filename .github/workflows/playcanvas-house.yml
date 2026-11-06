@@ -1,0 +1,42 @@
+name: Verify PlayCanvas Miniature Engine Prototype
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'playcanvas-house.html'
+      - 'playcanvas-toy-house.js'
+      - 'tests/playcanvas-house-smoke.cjs'
+      - '.github/workflows/playcanvas-house.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: playcanvas-minihouse-2026
+  cancel-in-progress: true
+
+jobs:
+  test-playcanvas:
+    name: Real PlayCanvas WebGL2 desktop and touch preview
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate source syntax
+        run: |
+          node --input-type=module --check < playcanvas-toy-house.js
+          node --check tests/playcanvas-house-smoke.cjs
+      - name: Install test driver
+        run: npm install --no-save --ignore-scripts --no-audit --no-fund playwright-core@1.56.1
+      - name: Render and test native PlayCanvas scene
+        run: timeout 260s node tests/playcanvas-house-smoke.cjs
+      - name: Archive real browser screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playcanvas-miniature-prototype-desktop-and-phone
+          path: tests/screenshots/playcanvas-toy-house-*.png
+          if-no-files-found: ignore
+          retention-days: 14
