@@ -11,7 +11,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: micro-mayhem-ho-house-preview-2026
+  group: micro-mayhem-render-lab-final-2026-11
   cancel-in-progress: true
 
 jobs:
