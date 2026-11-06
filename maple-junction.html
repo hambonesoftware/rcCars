@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#e8e3d4">
+<meta name="description" content="Play Maple Junction Loop: three laps through a 20-by-10-foot HO model railway town with moving trains, scenic hills and miniature shops.">
+<title>Maple Junction Loop · Garage Gauntlet</title>
+<script type="importmap">
+{"imports":{"playcanvas":"https://cdn.jsdelivr.net/npm/playcanvas@2.23.3/+esm"}}
+</script>
+<style>
+:root{
+  font:500 14px/1.45 ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  color:#24392f;background:#d5d0bf;
+  --forest:#264f40;--cream:#f7f3e6;--muted:#7b887b;
+}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;overscroll-behavior:none}
+button,input{font:inherit}
+button{cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:none}
+button:focus-visible,a:focus-visible{outline:3px solid #ddb762;outline-offset:2px}
+a{color:inherit}
+body{display:flex;flex-direction:column;height:100dvh}
+header{height:53px;min-height:53px;background:var(--cream);border-bottom:1px solid #bec7b8;
+  display:flex;align-items:center;justify-content:space-between;padding:0 18px;gap:10px;z-index:10}
+.brand{display:flex;gap:10px;align-items:center;text-decoration:none;color:#2b4e3c;
+  font-size:12px;letter-spacing:.035em;font-weight:900;min-width:0}
+.brand .monogram{width:30px;height:30px;border-radius:7px;display:grid;place-items:center;
+  flex:none;background:var(--forest);color:#fff;font-size:18px}
+.brand span:last-child{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.header-actions{display:flex;gap:7px;align-items:center}
+.header-actions button,.header-actions a{border:1px solid #c5d2c4;background:#fffefa;
+  border-radius:8px;padding:8px 12px;text-decoration:none;font-weight:800;font-size:11px;color:#3b5c4a}
+main{position:relative;min-height:0;flex:1;background:#a7aca2;overflow:hidden}
+#maple-canvas{width:100%;height:100%;display:block;touch-action:none}
+#loading{position:absolute;inset:0;z-index:20;display:grid;place-items:center;
+  background:#d5d9ca;font-weight:900;color:var(--forest)}
+[hidden]{display:none!important}
+#hud{pointer-events:none;position:absolute;top:14px;left:14px;z-index:5;
+  display:flex;align-items:stretch;gap:8px;max-width:calc(100% - 30px)}
+.hud-panel{background:#f6f1e2ed;border:1px solid #ffffff98;border-radius:11px;
+  padding:10px 13px;box-shadow:0 6px 23px #17241a25}
+.caption{font-size:9px;font-weight:900;letter-spacing:.14em;color:#718474;white-space:nowrap}
+.value{font-size:23px;font-weight:900;letter-spacing:-.055em;line-height:1.1;color:#234637}
+#time{font-variant-numeric:tabular-nums;min-width:110px}
+.meta{color:#668075;font-size:10px;font-weight:800;white-space:nowrap;margin-top:2px}
+#progress-bar{height:5px;border-radius:5px;background:#c7d0bf;overflow:hidden;margin-top:5px;min-width:114px}
+#progress-fill{display:block;width:0%;height:100%;background:#38664d;border-radius:5px}
+#map-wrap{pointer-events:none;position:absolute;right:15px;top:14px;z-index:5;
+  background:#f7f2e4e9;border:1px solid #ffffffbd;border-radius:12px;padding:7px;
+  box-shadow:0 5px 20px #21382c2e}
+#course-minimap{width:186px;height:102px;display:block;border-radius:5px}
+#map-title{font-size:9px;font-weight:900;letter-spacing:.12em;color:#4c6b58;
+  padding:0 2px 5px}
+#message{opacity:0;pointer-events:none;position:absolute;top:145px;left:50%;
+  transform:translateX(-50%) translateY(-10px);
+  background:#294d3fe8;color:#fff;border-radius:8px;padding:9px 14px;
+  font-size:11px;font-weight:900;letter-spacing:.07em;white-space:nowrap;
+  transition:opacity .18s,transform .18s;z-index:8;max-width:88%;text-align:center}
+#message.active{opacity:1;transform:translateX(-50%) translateY(0)}
+#bottom-dock{position:absolute;bottom:16px;left:16px;right:16px;z-index:6;
+  display:flex;justify-content:space-between;align-items:flex-end;gap:12px;pointer-events:none}
+#bottom-dock>*{pointer-events:auto}
+#touch-steering,#touch-actions{display:flex;gap:8px}
+.drive-button{border:1px solid #edf0debd;background:#e9e9dcdf;color:#245240;
+  box-shadow:0 6px 18px #0a20192e;border-radius:17px;
+  min-height:64px;min-width:74px;padding:8px 12px;
+  font-size:13px;font-weight:950;touch-action:none;user-select:none}
+.drive-button.steer{font-size:27px}
+.drive-button.boost{background:#e8bc73;color:#403b29}
+.drive-button.held{background:#315c44;color:#fff;transform:scale(.975)}
+#scene-facts{position:absolute;bottom:15px;left:50%;transform:translateX(-50%);
+  z-index:4;background:#f7f4e5c9;border-radius:999px;padding:7px 12px;
+  font-size:9px;color:#3f5748;font-weight:850;pointer-events:none;white-space:nowrap}
+.overlay{position:absolute;inset:0;z-index:12;display:grid;place-items:center;
+  padding:16px;background:#273e3390}
+.dialog{width:min(96%,460px);background:#f8f4e8;border:1px solid #ffffffe6;
+  border-radius:18px;padding:clamp(20px,4vw,31px);box-shadow:0 27px 70px #182b2060}
+.eyebrow{color:#628069;font-size:10px;font-weight:900;letter-spacing:.15em}
+.dialog h1,.dialog h2{font-size:clamp(34px,6vw,52px);line-height:.98;
+  font-weight:950;letter-spacing:-.055em;margin:12px 0 14px}
+.dialog p{font-size:13px;color:#516759;line-height:1.55;margin:0 0 18px}
+.meta-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:15px 0 21px}
+.meta-grid>div{border:1px solid #d4dcce;border-radius:9px;padding:9px;background:#eef0e6;
+  font-weight:900;text-align:center;font-size:10px;color:#355948}
+.meta-grid strong{display:block;font-size:17px;margin-bottom:2px;color:#223f31}
+.primary{border:0;background:#28513e;color:white;border-radius:10px;padding:15px 18px;
+  font-size:14px;font-weight:900;width:100%}
+.secondary{border:1px solid #b5c5b4;background:#fffdf6;color:#315640;
+  border-radius:9px;padding:11px;font-size:13px;font-weight:800;width:100%;margin-top:9px}
+#pause-overlay{background:#263d329c}
+#finish-screen{background:#273e3397}
+footer{display:none}
+@media(max-width:800px){
+ header{height:44px;min-height:44px;padding:0 9px;gap:8px}
+ .brand{font-size:10px;letter-spacing:-.02em;gap:6px;max-width:65%}
+ .brand .monogram{width:27px;height:27px;font-size:15px}
+ .header-actions{gap:5px}
+ .header-actions button,.header-actions a{font-size:10px;padding:7px}
+ #hud{top:9px;left:8px;gap:5px;max-width:calc(100% - 15px)}
+ .hud-panel{padding:7px 9px;border-radius:9px}
+ .caption{font-size:8px;letter-spacing:.045em}
+ .value{font-size:18px}
+ #time{min-width:84px}
+ .meta{font-size:8px}
+ #hud .sector-panel{display:none}
+ #map-wrap{top:78px;right:8px;padding:5px;border-radius:8px}
+ #course-minimap{width:116px;height:64px}
+ #map-title{font-size:7px;padding:0 2px 2px}
+ #message{top:148px;font-size:9px;padding:7px 10px}
+ #bottom-dock{bottom:calc(10px + env(safe-area-inset-bottom));left:9px;right:9px}
+ #touch-steering,#touch-actions{gap:6px}
+ .drive-button{min-height:58px;min-width:61px;padding:7px 8px;border-radius:12px;font-size:11px}
+ .drive-button.steer{font-size:21px}
+ #scene-facts{display:none}
+ .dialog{padding:22px 19px}
+ .dialog h1,.dialog h2{font-size:35px}
+ .dialog p{font-size:12px}
+ .meta-grid strong{font-size:14px}
+}
+@media(max-height:600px){
+ #map-wrap{display:none}
+ .drive-button{min-height:47px}
+ .dialog h1,.dialog h2{font-size:29px}
+ .dialog p{margin-bottom:10px}
+}
+</style>
+</head>
+<body>
+<header>
+  <a class="brand" href="./courses.html"><span class="monogram">M</span><span>GARAGE GAUNTLET / MAPLE JUNCTION</span></a>
+  <div class="header-actions">
+    <button id="overview" type="button" aria-label="Toggle overview and follow camera">VIEW</button>
+    <a href="./courses.html">All courses</a>
+  </div>
+</header>
+<main>
+  <canvas id="maple-canvas" aria-label="Playable 3D 20-foot by 10-foot model railway town"></canvas>
+  <div id="loading" role="status">Building Maple Junction model railway…</div>
+  <div id="hud" role="group" aria-label="Maple Junction race statistics">
+    <div class="hud-panel"><div class="caption">LAP</div><div id="lap" class="value">1 / 3</div><div class="meta" id="brake-status">CLEAN LINE</div></div>
+    <div class="hud-panel"><div class="caption">RACE TIME</div><div id="time" class="value">00:00.00</div><div class="meta">BEST <span id="best">--:--.--</span></div></div>
+    <div class="hud-panel sector-panel"><div class="caption">ON THE COURSE</div><div id="sector" class="meta">MAIN STREET</div><div id="progress-bar"><span id="progress-fill"></span></div></div>
+    <div class="hud-panel"><div class="caption">SCALE SPEED</div><div class="value"><span id="speed">0</span><small style="font-size:10px"> KM/H</small></div><div class="meta">TOY CAR</div></div>
+  </div>
+  <div id="map-wrap" aria-label="Minimap and course">
+    <div id="map-title">MAPLE JUNCTION · 10 × 20</div>
+    <canvas id="course-minimap" width="186" height="102"></canvas>
+  </div>
+  <div id="message" role="status" aria-live="polite"></div>
+  <div id="bottom-dock">
+    <div id="touch-steering">
+      <button id="left" class="drive-button steer" aria-label="Hold to steer left">◀</button>
+      <button id="right" class="drive-button steer" aria-label="Hold to steer right">▶</button>
+    </div>
+    <div id="touch-actions">
+      <button id="brake" class="drive-button" aria-label="Hold to brake">BRAKE</button>
+      <button id="boost" class="drive-button boost" aria-label="Hold for turbo boost">BOOST</button>
+    </div>
+  </div>
+  <div id="scene-facts">20 × 10 FT TRAIN-TABLE · REAL 3D HILLS · RUNNING HO TRAIN · MOLDED SPECULAR PLASTIC</div>
+  <section id="intro" class="overlay" aria-label="Maple Junction race introduction">
+    <div class="dialog">
+      <div class="eyebrow">GARAGE GAUNTLET · MODEL RAILROAD SERIES · COURSE 05</div>
+      <h1>MAPLE<br>JUNCTION LOOP.</h1>
+      <p>Race through a complete miniature American train town: Main Street, a residential block, the wooded high ridge, and the railway depot. The tiny train keeps running while you compete.</p>
+      <div class="meta-grid">
+        <div><strong>20 × 10</strong>FOOT TABLE</div>
+        <div><strong>3 LAPS</strong>TIME TRIAL</div>
+        <div><strong>HO</strong>MODEL TOWN</div>
+      </div>
+      <button id="start-race" type="button" class="primary">START RACING →</button>
+      <p style="font-size:10px;margin:12px 0 0">Steering assist and auto-throttle are on. Use ◀ ▶, brake and boost on phone. On desktop: A/D or arrows to steer, W for speed, S to brake, SPACE to boost, V for table view.</p>
+    </div>
+  </section>
+  <section id="pause-overlay" class="overlay" hidden aria-label="Race paused">
+    <div class="dialog">
+      <div class="eyebrow">MAPLE JUNCTION / PIT STOP</div><h2>PAUSED.</h2>
+      <p>The town and the railway are still here. Resume your lap or restart.</p>
+      <button id="resume" class="primary">RESUME RACE</button>
+      <button id="restart" class="secondary">RESTART FROM MAIN STREET</button>
+    </div>
+  </section>
+  <section id="finish-screen" class="overlay" hidden aria-label="Race finished">
+    <div class="dialog">
+      <div class="eyebrow">THREE LAPS · MAPLE JUNCTION LOOP</div>
+      <h2 id="finish-title">COURSE COMPLETE!</h2>
+      <p>All three laps completed across the model railroad town.</p>
+      <div class="meta-grid">
+        <div><strong id="finish-time">--:--.--</strong>YOUR TIME</div>
+        <div><strong id="finish-best">--:--.--</strong>PERSONAL BEST</div>
+        <div><strong>3 / 3</strong>LAPS</div>
+      </div>
+      <button id="race-again" class="primary">RACE AGAIN →</button>
+      <a href="./courses.html" class="secondary" style="display:block;text-decoration:none;text-align:center">ALL COURSES</a>
+    </div>
+  </section>
+</main>
+<script type="module" src="./maple-junction.js"></script>
+</body>
+</html>
