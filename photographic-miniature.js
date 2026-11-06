@@ -96,7 +96,11 @@ export function buildPhotographicMiniature({pc,app,root,device,block,makeMateria
   }
   function triangle(b,a,c,d) {
     const pa=new pc.Vec3(...a),pb=new pc.Vec3(...c),pd=new pc.Vec3(...d);
-    const n=new pc.Vec3().sub2(pb,pa).cross(new pc.Vec3().sub2(pd,pa)).normalize();
+    // PlayCanvas Vec3.cross takes TWO operands (unlike Three.js cross).
+    // Passing one leaves rhs undefined and crashes before the first frame.
+    const edgeA=new pc.Vec3().sub2(pb,pa);
+    const edgeB=new pc.Vec3().sub2(pd,pa);
+    const n=new pc.Vec3().cross(edgeA,edgeB).normalize();
     const i=b.positions.length/3;
     for(const p of [pa,pb,pd]){
       b.positions.push(p.x,p.y,p.z);
