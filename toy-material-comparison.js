@@ -209,6 +209,37 @@ async function boot(){
     if(molded)counts.moldedParts++;else counts.baselineParts++;
     return e;
   }
+  // Scenic foliage uses one batched mesh per pigment rather than hundreds
+  // of little box/sphere draw calls. These are fake glued-on 1:87 fibers.
+  function flockMesh(group){
+    const rnd=rand(74320);
+    const batches=Array.from({length:3},()=>({p:[],n:[],uv:[],ix:[]}));
+    for(let i=0;i<2350;i++){
+      const x=-8.05+rnd()*16.10,z=-5.25+rnd()*9.45;
+      if(x>1.0&&z>.65)continue;
+      if(x>-2.42&&x<-.68&&z>.50)continue;
+      if(x>-6.98&&x<-5.18&&z>-.30&&z<1.43)continue;
+      const batch=batches[i%3],height=.065+rnd()*.15;
+      const dx=(rnd()-.5)*.10,dz=(rnd()-.5)*.11;
+      const b=batch.p.length/3;
+      batch.p.push(x-.023,.126,z-.015,x+dx,.126+height,z+dz,x+.025,.126,z+.024);
+      batch.n.push(0,0,1,0,0,1,0,0,1);
+      batch.uv.push(0,0,.5,1,1,0);
+      batch.ix.push(b,b+1,b+2);
+    }
+    for(let i=0;i<batches.length;i++){
+      const b=batches[i],geom=new pc.Geometry();
+      geom.positions=b.p;geom.normals=b.n;geom.uvs=b.uv;geom.indices=b.ix;
+      const mat=i===0?materials.plant:i===1?materials.plantLight:materials.turf;
+      mat.cull=pc.CULLFACE_NONE;mat.update();
+      const node=new pc.Entity('Batched HO static grass fibers');
+      node.addComponent('render',{meshInstances:[
+        new pc.MeshInstance(pc.Mesh.fromGeometry(device,geom),mat)
+      ]});
+      node.render.castShadows=false;node.render.receiveShadows=true;
+      group.addChild(node);
+    }
+  }
   function specimen(position,isMolded){
     const group=new pc.Entity(isMolded?'AFTER: physically manufactured model kit':'BEFORE: flat primitive CG house');
     group.setLocalPosition(position,0,0);app.root.addChild(group);
@@ -437,10 +468,71 @@ async function boot(){
     }
     p('Front access path',materials.concrete,[-1.5,.13,3.26],
       [1.56,.10,5.30],.035);
+    if(molded){
+      flockMesh(group);
+      // Physical model-railway scenery makes the object sit on a surface:
+      // dark ballast under low plants, warm raised curbs and scale details.
+      for(const [x,w] of [[-6.74,1.7],[-3.12,1.40],[.15,.8]]){
+        p('Actual inset gravel planting bed',materials.soil,
+          [x,.17,.69],[w,.11,.78],.075);
+        p('Tiny molded garden retaining lip',materials.concrete,
+          [x,.20,1.13],[w+.14,.13,.13],.035);
+      }
+      function plantedCluster(x,z,scale){
+        const anchor=new pc.Entity('Commercial HO scenic shrub insert');
+        group.addChild(anchor);
+        const centers=[
+          [-.22,0,-.12,.54],[.25,.07,.08,.56],[0,.27,0,.62],
+          [-.04,.12,.26,.43]
+        ];
+        for(let i=0;i<centers.length;i++){
+          const [dx,dy,dz,r]=centers[i];
+          const part=new pc.Entity('Glued-on textured scenery clump');
+          part.addComponent('render',{type:'sphere',
+            material:i%2===0?materials.plant:materials.plantLight});
+          part.setLocalPosition(x+dx*scale,.43+(dy+r*.22)*scale,z+dz*scale);
+          part.setLocalScale(r*scale,(r*.76)*scale,r*.87*scale);
+          part.render.castShadows=true;part.render.receiveShadows=true;
+          anchor.addChild(part);
+        }
+      }
+      for(const [x,z,scale] of [[-7.2,.67,.76],[-3.2,.70,.57],
+        [.15,.73,.46],[7.42,.38,.62],[6.90,-3.82,.76]]){
+        plantedCluster(x,z,scale);
+      }
+      for(const z of [1.75,3.35,4.94]){
+        p('Miniature scored driveway expansion seam',materials.groove,
+          [3.88,.205,z],[5.6,.016,.025],.005);
+      }
+      p('1:87 painted curb by frontage',materials.concrete,
+        [0,.20,5.88],[16.4,.20,.19],.045);
+      p('Cast model mailbox post',materials.offwhite,
+        [-7.7,.76,3.62],[.15,1.25,.13],.038);
+      p('Dark injection-molded mini mailbox',materials.shutter,
+        [-7.7,1.41,3.70],[.64,.27,.38],.09);
+      p('Mailbox stamped opening',materials.wallBack,
+        [-7.7,1.42,3.91],[.49,.12,.025],.012);
+    }
     return group;
   }
   const old=specimen(-10.55,false);
   const improved=specimen(10.55,true);
+  // A continuous tabletop and warm backdrop make the camera read as a
+  // photographed physical object on a workbench, not a CAD void.
+  const stageMaterial=plastic('Warm photographic workbench','#a19484',
+    {gloss:.09,coat:0,texture:false,ao:false});
+  const backdropMaterial=plastic('Warm neutral photographic paper sweep','#908f81',
+    {gloss:.04,coat:0,texture:false,ao:false});
+  const bench=new pc.Entity('Physical workbench surface');
+  bench.addComponent('render',{type:'box',material:stageMaterial});
+  bench.setLocalPosition(0,-1.17,-2.8);
+  bench.setLocalScale(62,.25,43);
+  bench.render.receiveShadows=true;app.root.addChild(bench);
+  const backdrop=new pc.Entity('Photographic workshop sweep');
+  backdrop.addComponent('render',{type:'box',material:backdropMaterial});
+  backdrop.setLocalPosition(0,10,-19.5);
+  backdrop.setLocalScale(66,28,.24);
+  backdrop.render.receiveShadows=false;app.root.addChild(backdrop);
   const divider=new pc.Entity('Independent comparison gap');app.root.addChild(divider);
   function camera(){
     const phone=window.innerWidth<780;
