@@ -17,7 +17,7 @@ const assetStatus=document.querySelector('#asset-status');
 const viewer=document.querySelector('.viewer');
 const state={
   light:'table',
-  view:'three-quarter',
+  view:'diorama',
   yaw:Math.PI/4.2,
   pitch:.48,
   radius:37,
@@ -135,6 +135,37 @@ async function start(){
   });
   camera.camera.toneMapping=pc.TONEMAP_NEUTRAL;
   app.root.addChild(camera);
+
+  // A real camera-frame pass is used here, not a blurred CSS overlay.
+  // The 3D depth buffer drives the focal-plane effect. Keep its sampling
+  // deliberately modest so the preview remains practical on mobile GPUs.
+  let photoFrame=null;
+  function initPhotoFrame(){
+    if(photoFrame)return photoFrame;
+    try{
+      const frame=new pc.CameraFrame(app,camera.camera);
+      frame.dof.enabled=true;
+      frame.dof.nearBlur=false;
+      frame.dof.highQuality=false;
+      frame.dof.blurRadius=3.1;
+      frame.dof.blurRings=2;
+      frame.dof.blurRingPoints=4;
+      frame.dof.focusDistance=48;
+      frame.dof.focusRange=16;
+      frame.vignette.intensity=.105;
+      frame.vignette.inner=.64;
+      frame.vignette.outer=1.28;
+      frame.vignette.color=color('#3d342b');
+      frame.update();
+      photoFrame=frame;
+      document.body.dataset.pcPhotoPass='depth-of-field-v5';
+      return frame;
+    }catch(error){
+      console.warn('Photo camera-frame unavailable, keeping original renderer',error);
+      document.body.dataset.pcPhotoPass='fallback';
+      return null;
+    }
+  }
 
   const sun=new pc.Entity('Indoor daylight key');
   sun.addComponent('light',{
@@ -604,10 +635,27 @@ async function start(){
     }else if(state.view==='detail'){
       state.target.set(-5.1,4.3,.5);
       state.yaw=.27;state.pitch=.24;state.radius=phone?24:20;
+    }else if(state.view==='diorama'){
+      // Lower street-corner camera: a human looking across an HO layout,
+      // not a drone surveying a CAD architectural model.
+      state.target.set(phone?.2:0,2.8,1.9);
+      state.yaw=.49;
+      state.pitch=phone?.22:.20;
+      state.radius=phone?67:46;
     }else{
       state.yaw=phone?.35:.42;
       state.pitch=phone?.43:.33;
       state.radius=phone?69:49;
+    }
+    if(photoFrame){
+      const photo=state.view==='diorama'||state.view==='detail';
+      photoFrame.dof.enabled=photo;
+      photoFrame.dof.focusDistance=state.radius;
+      photoFrame.dof.focusRange=state.view==='detail'?5:16;
+      photoFrame.dof.blurRadius=state.view==='detail'?3.5:2.6;
+      photoFrame.vignette.intensity=photo?.11:.035;
+      photoFrame.update();
+      document.body.dataset.pcPhotographicFocus=photo?'on':'off';
     }
     document.body.dataset.pcView=state.view;
     for(const el of document.querySelectorAll('button[data-view]')){
@@ -671,6 +719,8 @@ async function start(){
   });
   applyView();
   applyLighting();
+  initPhotoFrame();
+  applyView();
   app.on('update',()=>cameraUpdate());
   app.start();
   state.ready=true;
@@ -678,7 +728,7 @@ async function start(){
   document.body.dataset.pcEngine='PlayCanvas';
   document.body.dataset.pcVersion='2.23.3';
   document.body.dataset.pcSidingPieces=String(sidingPieces);
-  document.body.dataset.pcMiniatureDetails='v4';
+  document.body.dataset.pcMiniatureDetails='v5';
   document.body.dataset.pcCarSource='loading';
   loading.hidden=true;
   requestAnimationFrame(()=>{
