@@ -1,4 +1,5 @@
 import * as pc from 'playcanvas';
+import {buildPhotographicMiniature} from './photographic-miniature.js';
 
 /**
  * Micro Mayhem · PlayCanvas miniature world proof-of-concept.
@@ -122,15 +123,15 @@ async function start(){
   app.init(options);
   app.setCanvasFillMode(pc.FILLMODE_FILL_WINDOW);
   app.setCanvasResolution(pc.RESOLUTION_AUTO);
-  app.scene.ambientLight=color('#9eabb0');
-  app.scene.exposure=1.18;
+  app.scene.ambientLight=color('#969d9b');
+  app.scene.exposure=1.08;
 
   const camera=new pc.Entity('PlayCanvas photographic camera');
   camera.addComponent('camera',{
-    clearColor:color('#ced9cf'),
+    clearColor:color('#b9b6a9'),
     nearClip:.4,
     farClip:250,
-    fov:37
+    fov:40
   });
   camera.camera.toneMapping=pc.TONEMAP_NEUTRAL;
   app.root.addChild(camera);
@@ -138,20 +139,20 @@ async function start(){
   const sun=new pc.Entity('Indoor daylight key');
   sun.addComponent('light',{
     type:'directional',
-    color:color('#fff1d8'),
-    intensity:1.45,
+    color:color('#fff4e6'),
+    intensity:1.72,
     castShadows:true,
     shadowResolution:2048,
     shadowDistance:58
   });
-  sun.setEulerAngles(45,-36,0);
+  sun.setEulerAngles(59,-42,0);
   app.root.addChild(sun);
 
   const fill=new pc.Entity('Diffused ceiling bounce');
   fill.addComponent('light',{
     type:'directional',
-    color:color('#d8e3e7'),
-    intensity:.37,
+    color:color('#e7e3d9'),
+    intensity:.28,
     castShadows:false
   });
   fill.setEulerAngles(40,146,0);
@@ -369,12 +370,8 @@ async function start(){
     block(model,'Shrub mounting stem',mats.hedge,[x,.39,z],[.15,.33,.15],[0,0,0],'cylinder');
     block(model,'Single-piece molded shrub',mats.shrub,[x,.78,z],[s,1.0,s], [0,0,0],'sphere');
   };
-  for(let i=0;i<7;i++){
-    shrubAt(-11.4+i*1.20,1.7,.88);
-  }
-  for(let i=0;i<6;i++){
-    shrubAt(14.5,-8.5+i*2.6,.94);
-  }
+  // V3 plants are grouped into natural leaf-cloud meshes by the hero builder,
+  // not the previous conspicuously spherical toy hedge placeholders.
   // Model railroad fence: repeat snap-fit plastic pickets.
   for(let x=-15.5;x<15.6;x+=.9){
     if(x>5.1&&x<12)continue;
@@ -395,12 +392,13 @@ async function start(){
   }
   // The rounded plastic toy tree pieces are explicitly modeled as an
   // inexpensive clip-on product: rigid trunk and tight foliage forms.
-  for(const [x,z,h] of [[-14.0,-10.1,6.6],[15.6,-10.7,7.4]]){
-    block(model,'Brown plastic tree trunk',mats.tree,[x,h*.47,z],[.43,h*.92,.39],[0,0,0],'cylinder');
-    block(model,'One-piece molded tree canopy',mats.leaves,[x,h*.90,z],[3.6,3.6,3.4],[0,0,0],'sphere');
-    block(model,'Separate bright canopy shell',mats.leavesBright,
-      [x+.8,h*1.12,z-.5],[2.5,2.15,2.4],[0,0,0],'sphere');
-  }
+  // The previous spherical foliage was removed. The new hero asset has
+  // detailed branch armatures and hundreds of batched irregular leaf clusters.
+  // Preserve the first generation under a disabled parent for comparison.
+  house.enabled=false;
+  buildPhotographicMiniature({
+    pc,app,root:model,device,block,makeMaterial
+  });
 
   function fallbackToyCar(){
     const car=new pc.Entity('Fallback local toy car');
@@ -452,17 +450,17 @@ async function start(){
 
   function applyLighting(){
     if(state.light==='studio'){
-      sun.light.intensity=2.1;
-      fill.light.intensity=.52;
-      app.scene.ambientLight=color('#a6b3b8');
+      sun.light.intensity=2.08;
+      fill.light.intensity=.42;
+      app.scene.ambientLight=color('#9a9c99');
       camera.camera.toneMapping=pc.TONEMAP_ACES;
-      app.scene.exposure=1.12;
+      app.scene.exposure=1.04;
     }else{
-      sun.light.intensity=1.45;
-      fill.light.intensity=.37;
-      app.scene.ambientLight=color('#9eabb0');
+      sun.light.intensity=1.72;
+      fill.light.intensity=.28;
+      app.scene.ambientLight=color('#969d9b');
       camera.camera.toneMapping=pc.TONEMAP_NEUTRAL;
-      app.scene.exposure=1.18;
+      app.scene.exposure=1.08;
     }
     document.body.dataset.pcLight=state.light;
     for(const el of document.querySelectorAll('button[data-light]')){
@@ -470,16 +468,17 @@ async function start(){
     }
   }
   function applyView(){
-    state.target.set(0,2.3,-.4);
+    const phone=window.matchMedia('(max-width:850px)').matches;
+    state.target.set(phone?-.3:0,3.45,-1.65);
     if(state.view==='front'){
-      state.yaw=.06;state.pitch=.29;state.radius=36;
+      state.yaw=.04;state.pitch=.28;state.radius=phone?48:38;
     }else if(state.view==='top'){
-      state.yaw=.75;state.pitch=1.15;state.radius=38;
+      state.yaw=.54;state.pitch=1.05;state.radius=phone?58:43;
     }else if(state.view==='detail'){
-      state.target.set(-5.2,4.25,1.2);
-      state.yaw=.31;state.pitch=.27;state.radius=17.5;
+      state.target.set(-5.1,4.3,.5);
+      state.yaw=.27;state.pitch=.24;state.radius=phone?24:20;
     }else{
-      state.yaw=Math.PI/4.2;state.pitch=.48;state.radius=37;
+      state.yaw=.42;state.pitch=.33;state.radius=phone?51:41;
     }
     document.body.dataset.pcView=state.view;
     for(const el of document.querySelectorAll('button[data-view]')){
@@ -537,7 +536,10 @@ async function start(){
     event.preventDefault();
     state.radius=Math.min(65,Math.max(18,state.radius*Math.exp(event.deltaY*.001)));
   },{passive:false});
-  window.addEventListener('resize',()=>app.resizeCanvas());
+  window.addEventListener('resize',()=>{
+    app.resizeCanvas();
+    if(state.view!=='custom')applyView();
+  });
   applyView();
   applyLighting();
   app.on('update',()=>cameraUpdate());
@@ -547,7 +549,7 @@ async function start(){
   document.body.dataset.pcEngine='PlayCanvas';
   document.body.dataset.pcVersion='2.23.3';
   document.body.dataset.pcSidingPieces=String(sidingPieces);
-  document.body.dataset.pcMiniatureDetails='v2';
+  document.body.dataset.pcMiniatureDetails='v3';
   document.body.dataset.pcCarSource='loading';
   loading.hidden=true;
   requestAnimationFrame(()=>{
