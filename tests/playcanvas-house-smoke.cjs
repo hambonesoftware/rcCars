@@ -99,10 +99,12 @@ async function main(){
       clapboards:Number(document.body.dataset.pcHouseClapboards||0),
       materials:document.body.dataset.pcMaterialSystem,
       lighting:document.body.dataset.pcLightingSystem,
-      reflections:document.body.dataset.pcReflectionEnvironment
+      reflections:document.body.dataset.pcReflectionEnvironment,
+      photoPass:document.body.dataset.pcPhotoPass,
+      focus:document.body.dataset.pcPhotographicFocus
     }));
     if(before.engine!=='PlayCanvas'||before.version!=='2.23.3'||
-      before.light!=='table'||before.view!=='three-quarter'||
+      before.light!=='table'||before.view!=='diorama'||
       !before.context||
       before.hero!=='molded-geometry-v3'||
       before.shingles!=='batched-individual-shingles'||
@@ -110,7 +112,9 @@ async function main(){
       before.clapboards<20||
       before.materials!=='plastic-clearcoat-v4'||
       before.lighting!=='photographic-softbox-v4'||
-      before.reflections!=='prefiltered-studio-atlas'){
+      before.reflections!=='prefiltered-studio-atlas'||
+      before.photoPass!=='depth-of-field-v5'||
+      before.focus!=='on'){
       throw Error('Unexpected desktop PlayCanvas engine state '+
         JSON.stringify(before));
     }
@@ -121,6 +125,9 @@ async function main(){
     });
     await desktop.locator('button[data-light="studio"]').click();
     await desktop.locator('button[data-view="front"]').click();
+    if(await desktop.locator('body').getAttribute('data-pc-photographic-focus')!=='off'){
+      throw Error('Inspection views must disable depth of field');
+    }
     if(await desktop.locator('body').getAttribute('data-pc-light')!=='studio'||
       await desktop.locator('body').getAttribute('data-pc-view')!=='front'){
       throw Error('PlayCanvas lighting or front view did not update');
@@ -166,6 +173,8 @@ async function main(){
       hero:document.body.dataset.pcHeroAsset,
       materials:document.body.dataset.pcMaterialSystem,
       reflections:document.body.dataset.pcReflectionEnvironment,
+      photoPass:document.body.dataset.pcPhotoPass,
+      focus:document.body.dataset.pcPhotographicFocus,
       cameraTextVisible:getComputedStyle(document.querySelector('.overlay h1')).display!=='none',
       viewportHeight:document.querySelector('.viewer').clientHeight
     }));
@@ -174,6 +183,8 @@ async function main(){
       mobileState.hero!=='molded-geometry-v3'||
       mobileState.materials!=='plastic-clearcoat-v4'||
       mobileState.reflections!=='prefiltered-studio-atlas'||
+      mobileState.photoPass!=='depth-of-field-v5'||
+      mobileState.focus!=='on'||
       mobileState.cameraTextVisible)throw Error('Bad phone canvas or full view: '+
       JSON.stringify(mobileState));
     await phone.screenshot({
