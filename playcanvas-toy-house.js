@@ -494,21 +494,99 @@ async function start(){
     }
   });
 
-  function applyLighting(){
-    if(state.light==='studio'){
-      sun.light.intensity=2.08;
-      fill.light.intensity=.42;
-      app.scene.ambientLight=color('#9a9c99');
-      camera.camera.toneMapping=pc.TONEMAP_ACES;
-      app.scene.exposure=1.04;
-    }else{
-      sun.light.intensity=1.72;
-      fill.light.intensity=.28;
-      app.scene.ambientLight=color('#969d9b');
-      camera.camera.toneMapping=pc.TONEMAP_NEUTRAL;
-      app.scene.exposure=1.08;
+  // Real prefiltered image-based lighting: glossy styrene needs something
+  // to reflect. The canvas is an artificial photo studio with two light cards,
+  // intentionally not an HDR photo asset or a fake fullscreen image overlay.
+  let photographyRig=null;
+  function makeStudioEnvironment(){
+    const width=512,height=256;
+    const panel=document.createElement('canvas');
+    panel.width=width;panel.height=height;
+    const ctx=panel.getContext('2d',{alpha:false});
+    const ambient=ctx.createLinearGradient(0,0,0,height);
+    ambient.addColorStop(0,'#ced7da');
+    ambient.addColorStop(.46,'#9fa9a7');
+    ambient.addColorStop(.70,'#94978f');
+    ambient.addColorStop(1,'#8f7765');
+    ctx.fillStyle=ambient;ctx.fillRect(0,0,width,height);
+    function rectangularSoftbox(x,y,w,h){
+      const glow=ctx.createRadialGradient(
+        x+w/2,y+h/2,6,x+w/2,y+h/2,Math.max(w,h)*1.45
+      );
+      glow.addColorStop(0,'rgba(255,253,242,.69)');
+      glow.addColorStop(.57,'rgba(253,247,227,.20)');
+      glow.addColorStop(1,'rgba(253,247,227,0)');
+      ctx.fillStyle=glow;
+      ctx.fillRect(x-w,y-h,w*3,h*3);
+      ctx.fillStyle='#f7f4ea';
+      ctx.fillRect(x,y,w,h);
     }
+    rectangularSoftbox(49,47,113,80);
+    rectangularSoftbox(318,61,54,105);
+    const tex=new pc.Texture(device,{
+      width,height,format:pc.PIXELFORMAT_RGBA8,
+      projection:pc.TEXTUREPROJECTION_EQUIRECT,
+      mipmaps:false
+    });
+    tex.name='V4 miniature photographic softbox environment';
+    tex.setSource(panel);
+    tex.addressU=pc.ADDRESS_CLAMP_TO_EDGE;
+    tex.addressV=pc.ADDRESS_CLAMP_TO_EDGE;
+    return tex;
+  }
+  function initPhotographicRig(){
+    if(photographyRig)return photographyRig;
+    const rim=new pc.Entity('V4 cool edge-card photographic light');
+    rim.addComponent('light',{
+      type:'directional',
+      color:color('#dce9f4'),
+      intensity:.29,
+      castShadows:false
+    });
+    rim.setEulerAngles(34,137,0);
+    app.root.addChild(rim);
+    const bounce=new pc.Entity('V4 warm tabletop bounced photo fill');
+    bounce.addComponent('light',{
+      type:'directional',
+      color:color('#f4d8bb'),
+      intensity:.16,
+      castShadows:false
+    });
+    bounce.setEulerAngles(-20,18,0);
+    app.root.addChild(bounce);
+    photographyRig={rim,bounce,environment:null};
+    try{
+      const source=makeStudioEnvironment();
+      const prefiltered=pc.EnvLighting.generateLightingSource(source);
+      const atlas=pc.EnvLighting.generateAtlas(prefiltered);
+      app.scene.envAtlas=atlas;
+      photographyRig.environment=atlas;
+      prefiltered.destroy();
+      source.destroy();
+    }catch(error){
+      console.warn('V4 studio reflection atlas unavailable; using direct lights',error);
+    }
+    document.body.dataset.pcReflectionEnvironment=
+      photographyRig.environment?'prefiltered-studio-atlas':'direct-light-fallback';
+    return photographyRig;
+  }
+  function applyLighting(){
+    const rig=initPhotographicRig();
+    const studio=state.light==='studio';
+    sun.light.color=color(studio?'#fff4e8':'#fff0db');
+    sun.light.intensity=studio?2.19:1.89;
+    sun.setEulerAngles(studio?53:60,studio?-41:-40,0);
+    fill.light.color=color(studio?'#dce8ed':'#dce3e9');
+    fill.light.intensity=studio?.43:.30;
+    fill.setEulerAngles(studio?35:38,studio?140:146,0);
+    rig.rim.light.intensity=studio?.54:.29;
+    rig.bounce.light.intensity=studio?.21:.16;
+    app.scene.ambientLight=color(studio?'#989d9a':'#858d8c');
+    app.scene.exposure=studio?1.00:1.03;
+    app.scene.skyboxIntensity=studio?.89:.72;
+    camera.camera.toneMapping=pc.TONEMAP_ACES;
     document.body.dataset.pcLight=state.light;
+    document.body.dataset.pcLightingSystem='photographic-softbox-v4';
     for(const el of document.querySelectorAll('button[data-light]')){
       el.setAttribute('aria-pressed',String(el.dataset.light===state.light));
     }
@@ -600,7 +678,7 @@ async function start(){
   document.body.dataset.pcEngine='PlayCanvas';
   document.body.dataset.pcVersion='2.23.3';
   document.body.dataset.pcSidingPieces=String(sidingPieces);
-  document.body.dataset.pcMiniatureDetails='v3';
+  document.body.dataset.pcMiniatureDetails='v4';
   document.body.dataset.pcCarSource='loading';
   loading.hidden=true;
   requestAnimationFrame(()=>{
