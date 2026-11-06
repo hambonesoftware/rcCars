@@ -482,6 +482,8 @@ export function buildMapleWorld(app,device,{specular=50}={}){
         p.z+(q.z-p.z)*t);
       entity.setLocalEulerAngles(0,Math.atan2(tx,tz)*180/Math.PI,0);
     }
+    document.body.dataset.mapleTrainX=trainEntities[0].getLocalPosition().x.toFixed(2);
+    document.body.dataset.mapleTrainZ=trainEntities[0].getLocalPosition().z.toFixed(2);
   }
   updateTrain(0);
   // A static railway crossing at a visible west-side road junction.
