@@ -294,6 +294,17 @@ export function createHOHouse(THREE,options={}){
     }
     solid(parent,m.roofEdge,x,eave+rise+.025,z,
       .23,.19,d+over*2,{name:'roof ridge'});
+    // This roof was molded as TWO thick halves, then snapped together.
+    // The slightly raised plastic ridge joint and end-caps remain visible.
+    solid(parent,m.moldedRoofJoint,x,eave+rise+.155,z,
+      .13,.13,d+over*2+.08,{name:'visible roof-half snap joint'});
+    for(const end of [-1,1]){
+      solid(parent,m.roofEdge,x,eave+rise+.16,
+        z+end*(d*.5+over),.35,.21,.12,
+        {name:'snap-on roof end cap'});
+    }
+    manufacturing.visibleShellJoints+=3;
+    manufacturing.snapFitParts+=2;
     triangleGable(parent,m.siding,x,z+d*.5,w,eave,rise);
     triangleGable(parent,m.siding,x,z-d*.5,w,eave,rise);
     // The painted rake boards trace the sloping gable at both ends.
@@ -355,7 +366,9 @@ export function createHOHouse(THREE,options={}){
   // top layer, with the roadway at the front of the model railroad lot.
   solid(root,m.tableWood,0,-1.04,-1.4,48,2.10,62);
   solid(root,m.tableTop,0,-.11,-1.4,47.2,.20,61.2);
-  slab(root,m.lawn,0,-4.8,44.8,48.0,.095,.15);
+  // A pale foam sheet is actually glued to a plastic display base.
+  slab(root,m.cutMatEdge,0,-4.8,45.12,48.32,.063,.05);
+  slab(root,m.lawn,0,-4.8,44.8,48.0,.135,.17);
   slab(root,m.asphalt,0,26.45,46,10.9,.115,.12);
   slab(root,m.curb,0,21.25,46,.43,.29,.25);
   slab(root,m.concrete,0,22.20,46,1.66,.28,.18);
@@ -384,6 +397,24 @@ export function createHOHouse(THREE,options={}){
   }
   solid(root,m.trim,main.x,main.eave+.48,main.z,
     main.w+.35,.28,main.d+.35);
+  // Four colored styrene wall panels meet at unmistakable seams.
+  // A real inexpensive kit has darker fine joint lines even after the
+  // corner clip-on molding has been attached.
+  for(const x of [main.x-main.w*.5,main.x+main.w*.5]){
+    for(const z of [main.z-main.d*.5,main.z+main.d*.5]){
+      solid(root,m.moldedJoint,x,main.eave*.5+.48,z,
+        .07,main.eave-.45,.10,
+        {castShadow:false,name:'molded wall-panel corner seam'});
+      manufacturing.visibleShellJoints++;
+    }
+  }
+  // The rear face retains two discrete slots for removable snap tabs.
+  for(const x of [main.x-3.8,main.x+3.8]){
+    solid(root,m.moldedJoint,x,1.2,
+      main.z-main.d*.5-.07,.62,.08,.12,
+      {name:'rear wall clip socket'});
+    manufacturing.snapFitParts++;
+  }
   gableRoof(root,main.x,main.z,main.w,main.d,
     main.eave+.49,main.rise);
   // Chimney visibly breaches the roofline on the left rear side.
@@ -399,6 +430,14 @@ export function createHOHouse(THREE,options={}){
     garage.w,garage.eave,garage.d,{name:'attached single-car garage'});
   gableRoof(root,garage.x,garage.z,garage.w,garage.d,
     garage.eave+.45,garage.rise,{overhang:.42});
+  // The separate little garage snaps into the main house shell.
+  for(const side of [-1,1]){
+    const garageSide=garage.x+side*garage.w*.5;
+    solid(root,m.moldedJoint,garageSide,
+      3.42,garageFront+.035,.10,5.60,.11,
+      {name:'garage facade panel seam'});
+    manufacturing.visibleShellJoints++;
+  }
   solid(root,m.trim,garage.x,garage.eave+.38,garage.z,
     garage.w+.35,.22,garage.d+.28);
   for(const x of [garage.x-garage.w*.5,garage.x+garage.w*.5]){
@@ -429,6 +468,14 @@ export function createHOHouse(THREE,options={}){
   }
   solid(root,m.iron,garage.x,1.15,garageDoorZ+.32,
     .14,.27,.14);
+  // Push-fit plastic door insert: the shadow line must wrap all sides,
+  // unlike the photoreal layered garage door in V2.
+  for(const side of [-1,1]){
+    solid(root,m.moldedJoint,garage.x+side*3.31,3.0,
+      garageDoorZ+.28,.10,5.05,.095,
+      {castShadow:false,name:'garage-door snap-in seam'});
+    manufacturing.snapFitParts++;
+  }
 
   // House front: real readable dimensions in panes, trim, front door,
   // porch posts, a roof, stairs, and a numbered miniature address plaque.
@@ -487,15 +534,20 @@ export function createHOHouse(THREE,options={}){
   slab(root,m.mulch,18.1,-.25,2.15,8.3,.23,.10);
 
   function shrub(x,z,radius=1.1,height=1.1){
-    for(let i=0;i<4;i++){
-      round(root,choose([m.leafMid,m.leafDark,m.leafLight]),
-        x+(random()-.5)*radius*.75,
-        .48+height*.47+random()*.22,
-        z+(random()-.5)*radius*.77,
-        radius*(.55+random()*.14),
-        height*(.43+random()*.16),
-        radius*(.52+random()*.2));
-    }
+    // A cheap clip-in bush is ONE slightly faceted molded canopy with a
+    // little visible mounting stem, not four floating CGI spheres.
+    tube(root,m.leafDark,x,.30,z,.12,.13,.44,7);
+    const canopy=new THREE.Mesh(
+      new THREE.DodecahedronGeometry(1,0),
+      choose([m.leafMid,m.leafDark,m.leafLight]));
+    canopy.position.set(x,.49+height*.44,z);
+    canopy.scale.set(radius*1.12,height*.54,radius);
+    canopy.rotation.y=random()*.4;
+    canopy.castShadow=true;
+    canopy.receiveShadow=true;
+    canopy.name='single-piece molded plastic garden shrub';
+    root.add(canopy);
+    manufacturing.moldedShrubs++;
   }
   for(const x of [-12.8,-11.0,-9.4,.18,1.7]){
     shrub(x,3.85,.60+random()*.13,.72);
@@ -521,18 +573,30 @@ export function createHOHouse(THREE,options={}){
         x+b*.66,height*.67,z+.15,.14,.21,height*.48,7);
       branch.rotation.z=-b*.45;
     }
-    for(let i=0;i<9;i++){
-      const a=i/9*Math.PI*2;
-      const r=i>5?2.1:1.6;
-      round(root,
-        choose([m.leafDark,m.leafMid,m.leafLight]),
-        x+Math.cos(a)*r,
-        height*(.85+(i%3)*.046),
-        z+Math.sin(a)*r,
-        1.8+random()*.47,1.47+random()*.35,
-        1.75+random()*.4);
+    // Three interlocking foliage clusters show the silhouette of
+    // inexpensive molded trees rather than floating plastic spheres.
+    for(let i=0;i<4;i++){
+      const a=i*Math.PI*.5+.2;
+      const mesh=new THREE.Mesh(
+        new THREE.IcosahedronGeometry(1,1),
+        choose([m.leafDark,m.leafMid,m.leafLight]));
+      mesh.position.set(x+Math.cos(a)*1.05,
+        height*(.92+(i%2)*.036),
+        z+Math.sin(a)*1.05);
+      mesh.scale.set(2.35,1.57,2.25);
+      mesh.rotation.y=a;
+      mesh.castShadow=true;
+      mesh.receiveShadow=true;
+      mesh.name='molded tree foliage crown';
+      root.add(mesh);
     }
-    round(root,m.leafMid,x,height*1.08,z,2.5,1.90,2.35);
+    const top=new THREE.Mesh(
+      new THREE.IcosahedronGeometry(1,1),m.leafMid);
+    top.position.set(x,height*1.075,z);
+    top.scale.set(2.25,1.60,2.18);
+    top.castShadow=true;
+    top.name='molded tree canopy top';
+    root.add(top);
   }
   modelTree(-17.4,-13.8,8.0);
   modelTree(18.0,-13.6,9.5);
@@ -773,9 +837,16 @@ export function createHOHouse(THREE,options={}){
       solid(car,m.carChrome,side*.80,.61,2.39,
         .35,.07,.055,{castShadow:false});
     }
-    // Molded plastic model-car display base remains distinct from
-    // its glossy painted shell.
-    solid(car,m.carBlack,0,.18,0,2.38,.12,4.08);
+    // The exposed black injection-molded chassis is visibly thick,
+    // precisely as on a cheap die-cast collectible. Unlike a scale
+    // automobile it has one simple underside with no suspension detail.
+    solid(car,m.carBlack,0,.18,0,2.38,.20,4.08,
+      {name:'thick black-plastic die-cast base'});
+    for(const side of [-1,1]){
+      solid(car,m.carBlack,side*1.12,.31,0,.19,.25,3.72,
+        {name:'black-plastic side sill'});
+    }
+    manufacturing.snapFitParts++;
     car.userData.diecast=true;
     return car;
   }
@@ -814,7 +885,7 @@ export function createHOHouse(THREE,options={}){
     const tint=fibers[Math.min(fibers.length-1,
       Math.floor(random()*fibers.length))];
     const width=.011+random()*.016;
-    const length=.068+random()*.106;
+    const length=.071+random()*.040;
     const theta=random()*Math.PI*2;
     const bend=(random()-.5)*length*.32;
     const dx=Math.cos(theta)*width;
@@ -863,10 +934,15 @@ export function createHOHouse(THREE,options={}){
     textures:6,grassTufts:produced,
     flockingFibers:produced,
     diecastCars:1,
-    realismPass:'physically layered molded plastic, cut nylon static grass and die-cast enamel',
+    realismPass:'injection molded cheap plastic toy house, glued fake grass mat and die-cast toy',
     geometrySource:'procedural Three.js',
-    architecture:'painted plastic siding / molded glazing / attached garage',
-    yard:'flocked model railroad lawn, driveway, garden, fences, miniature die-cast car'
+    architecture:'snap-fit colored-styrene wall panels / two-piece roof / thick window inserts',
+    yard:'glued pre-flocked grass mat, chunky model shrubs, molded picket fence, die-cast car',
+    manufacturing:{...manufacturing},
+    roofShellClearcoat:m.roof.clearcoat,
+    houseWallClearcoat:m.siding.clearcoat,
+    houseWallRoughness:m.siding.roughness,
+    carPaintClearcoat:m.wagon.clearcoat
   };
   return {root,stats};
 }
