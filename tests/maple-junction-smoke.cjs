@@ -70,7 +70,8 @@ async function run(){
       race:document.body.dataset.mapleRaceState,
       context:!!document.querySelector('#maple-canvas').getContext('webgl2'),
       introVisible:!document.querySelector('#intro').hidden,
-      trainX:Number(document.body.dataset.mapleTrainX)
+      trainX:Number(document.body.dataset.mapleTrainX),
+      trainZ:Number(document.body.dataset.mapleTrainZ)
     }));
     if(!initial.title.includes('Maple Junction')||initial.course!=='Maple Junction Loop'||
        initial.world!=='20x10-feet'||initial.buildings<12||initial.trees<30||
@@ -88,7 +89,7 @@ async function run(){
       error:document.body.dataset.mapleFrameError,
       race:document.body.dataset.mapleRaceState
     }));
-    if(Math.hypot(trainDebug.x-initial.trainX,trainDebug.z)<.06)
+    if(Math.hypot(trainDebug.x-initial.trainX,trainDebug.z-initial.trainZ)<.06)
       throw Error('Train motion regression: '+JSON.stringify({
         before:initial.trainX,after:trainDebug,jsErrors:bad
       }));
