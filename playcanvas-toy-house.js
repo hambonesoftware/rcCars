@@ -272,7 +272,7 @@ async function start(){
   // One-piece clip-in shrubs: faceted molded geometries instead of
   // diffuse sphere clouds.
   const shrubAt=(x,z,s)=>{
-    block(model,'Shrub mounting stem',mats.hedge,[x,.39,z],[.15,.33,.15],'','cylinder');
+    block(model,'Shrub mounting stem',mats.hedge,[x,.39,z],[.15,.33,.15],[0,0,0],'cylinder');
     block(model,'Single-piece molded shrub',mats.shrub,[x,.78,z],[s,1.0,s], [0,0,0],'sphere');
   };
   for(let i=0;i<7;i++){
