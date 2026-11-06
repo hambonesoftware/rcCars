@@ -10,7 +10,7 @@ const canvas=document.querySelector('#fidelity-canvas');
 const output=document.querySelector('#render-status');
 const info=document.querySelector('#lab-facts');
 const state={turn:.11,pitch:.24,zoom:64,target:new pc.Vec3(0,3.4,-.8),
-  pointer:null,mode:'both'};
+  pointer:null,mode:'both',region:'house'};
 const counts={baselineParts:0,moldedParts:0,beveled:0,panels:0,grooves:0};
 const color=(hex)=>new pc.Color(
   parseInt(hex.slice(1,3),16)/255,
@@ -336,15 +336,21 @@ async function boot(){
     const phone=window.innerWidth<780;
     if(phone){
       state.mode=state.mode==='both'?'improved':state.mode;
-      state.target.set(state.mode==='before'?-10.55:10.55,3.55,-.2);
-      state.zoom=27.5;
-      state.pitch=.30;state.turn=.07;
+      const specimenRoot=state.mode==='before'?-10.55:10.55;
+      // On a portrait screen show one meaningful portion at a time,
+      // never a huge roof cropped by the left and right edges.
+      const selectedX=state.region==='garage'?3.80:-3.65;
+      state.target.set(specimenRoot+selectedX,3.45,-2.35);
+      state.zoom=46.5;
+      state.pitch=.27;state.turn=.035;
     }else{
-      state.target.set(0,3.5,-1.6);
-      state.zoom=65;state.pitch=.25;state.turn=.04;
+      // Make both equally lit specimens fill the comparison board.
+      state.target.set(0,3.55,-1.40);
+      state.zoom=45.5;state.pitch=.27;state.turn=.045;
     }
     renderCamera();
     document.body.dataset.fidelityMobileMode=state.mode;
+    document.body.dataset.fidelityRegion=state.region;
   }
   function renderCamera(){
     const rad=state.zoom,c=Math.cos(state.pitch);
@@ -360,6 +366,14 @@ async function boot(){
       state.mode=button.dataset.specimen;
       document.querySelectorAll('[data-specimen]').forEach(b=>
         b.setAttribute('aria-pressed',String(b.dataset.specimen===state.mode)));
+      camera();
+    });
+  });
+  document.querySelectorAll('[data-region]').forEach(button=>{
+    button.addEventListener('click',()=>{
+      state.region=button.dataset.region;
+      document.querySelectorAll('[data-region]').forEach(b=>
+        b.setAttribute('aria-pressed',String(b.dataset.region===state.region)));
       camera();
     });
   });
