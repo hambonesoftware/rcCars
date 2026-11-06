@@ -36,6 +36,10 @@ label{display:flex;flex-direction:column;gap:7px;font-size:12px;font-weight:700}
 .compare button{border:1px solid #a6b3a9;background:#fff;border-radius:9px;padding:11px 13px;color:#2d503e;font-weight:750;cursor:pointer}
 .compare button[aria-pressed=true]{background:#325744;color:white;border-color:#325744}
 .mobile-label{display:none}
+.lighting-controls{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.lighting-controls .light-control{min-width:185px}
+.specular-value{font-size:10px;font-weight:800;color:#466653;min-width:27px;
+  font-variant-numeric:tabular-nums}
 .scene-indicator{position:absolute;top:14px;left:14px;z-index:3;
   border-radius:999px;background:rgba(246,243,228,.94);padding:7px 12px;
   font-size:11px;letter-spacing:.02em;color:#203e33;font-weight:850;
@@ -60,13 +64,15 @@ footer{font-size:10px;color:#778578;background:#f5f3ed;padding:0 22px 12px}
   .compare button{flex:1;min-height:39px;padding:8px 5px;font-size:12px;
     border-radius:10px}
   .mobile-label{display:flex}
-  .light-control{width:100%;display:flex;flex-direction:row;
-    align-items:center;gap:14px;font-size:10px;font-weight:650;
-    white-space:nowrap;margin-top:2px}
-  .light-control input{flex:1;width:auto;min-width:0;height:16px}
+  .lighting-controls{order:3;display:grid;grid-template-columns:1fr 1fr;
+    width:100%;gap:10px;align-items:center;margin-top:2px}
+  .lighting-controls .light-control{display:flex;flex-direction:row;
+    min-width:0;align-items:center;gap:6px;font-size:10px;font-weight:650;
+    white-space:nowrap;margin:0}
+  .light-control input{flex:1;width:100%;min-width:0;height:18px}
+  .specular-value{display:none}
   .mobile-region{order:2}
   .compare:not(.mobile-region){order:1}
-  .light-control{order:3}
   footer{display:none}
 }
 
@@ -90,11 +96,19 @@ footer{font-size:10px;color:#778578;background:#f5f3ed;padding:0 22px 12px}
   <section class="controls">
     <div class="intro">
       <h1>One manufactured miniature. Same lighting, real geometry.</h1>
-      <p>The roof and garage now connect to the walls. Compare molded siding, physically rounded parts, real gable ends, inset acrylic, landscaping, and controlled satin plastic.</p>
+      <p>Compare manufactured edges, formed roof shingles, and subtle specular reflections. Adjust Angle and Specular to move and strengthen the molded-plastic highlights without making the grass glossy.</p>
     </div>
-    <label class="light-control">Light direction
-      <input id="rotate-light" type="range" min="-95" max="50" step="5" value="-41" aria-label="Rotate studio light to inspect molded plastic highlights">
-    </label>
+    <div class="lighting-controls" role="group" aria-label="Photographic miniature lighting">
+      <label class="light-control">Angle
+        <input id="rotate-light" type="range" min="-95" max="50" step="5" value="-41"
+          aria-label="Light direction angle">
+      </label>
+      <label class="light-control">Specular
+        <input id="specular-light" type="range" min="0" max="100" step="5" value="45"
+          aria-label="Specular highlight strength on molded plastic">
+        <span id="specular-value" class="specular-value" aria-hidden="true">45%</span>
+      </label>
+    </div>
     <div class="compare mobile-label" role="group" aria-label="Choose one comparison specimen on mobile">
       <button data-specimen="before" aria-pressed="false">Before</button>
       <button data-specimen="improved" aria-pressed="true">Molded</button>
