@@ -115,6 +115,10 @@ async function main(){
     });
     await desktop.locator('button[data-light="studio"]').click();
     await desktop.locator('button[data-view="front"]').click();
+    if(await desktop.locator('body').getAttribute('data-pc-light')!=='studio'||
+      await desktop.locator('body').getAttribute('data-pc-view')!=='front'){
+      throw Error('PlayCanvas lighting or front view did not update');
+    }
     await desktop.locator('button[data-view="detail"]').click();
     if(await desktop.locator('body').getAttribute('data-pc-view')!=='detail'){
       throw Error('Close macro detail camera was not activated');
@@ -123,10 +127,6 @@ async function main(){
       path:path.join(output,'playcanvas-toy-house-detail.png'),
       animations:'disabled'
     });
-    if(await desktop.locator('body').getAttribute('data-pc-light')!=='studio'||
-      await desktop.locator('body').getAttribute('data-pc-view')!=='front'){
-      throw Error('PlayCanvas scene controls did not update');
-    }
     await desktop.locator('button[data-light="table"]').click();
     await desktop.locator('button[data-view="top"]').click();
     await desktop.screenshot({
