@@ -506,6 +506,17 @@ async function start(){
     try{
       const car=asset.resource.instantiateRenderEntity();
       car.name='Khronos ToyCar · licensed CC0';
+      // The published glTF example contains three main mesh nodes:
+      // ToyCar, Fabric (the red showroom drape) and Glass.
+      // The Fabric is a display backdrop, not a component of the vehicle.
+      // Excluding it makes this an actual car parked on our driveway.
+      const redShowroomDrape=car.findByName('Fabric');
+      if(redShowroomDrape){
+        redShowroomDrape.destroy();
+        document.body.dataset.pcCarClothRemoved='true';
+      }else{
+        document.body.dataset.pcCarClothRemoved='missing';
+      }
       car.setLocalPosition(8.65,.4,6.55);
       car.setLocalScale(.95,.95,.95);
       car.setLocalEulerAngles(0,20,0);
@@ -638,10 +649,12 @@ async function start(){
     }else if(state.view==='diorama'){
       // Lower street-corner camera: a human looking across an HO layout,
       // not a drone surveying a CAD architectural model.
-      state.target.set(phone?.2:0,2.8,1.9);
-      state.yaw=.49;
-      state.pitch=phone?.22:.20;
-      state.radius=phone?67:46;
+      // Aim below the center of the house to avoid wasting half of
+      // a phone portrait on empty studio background. Leave garage in view.
+      state.target.set(phone?1.4:1.3,phone?-.65:1.0,1.8);
+      state.yaw=phone?.36:.45;
+      state.pitch=phone?.37:.30;
+      state.radius=phone?76:49;
     }else{
       state.yaw=phone?.35:.42;
       state.pitch=phone?.43:.33;
