@@ -145,7 +145,7 @@ function syncUI(){
     element.classList.toggle('selected',selected);
     element.setAttribute('aria-pressed',String(selected));
   }
-  for(const button of document.querySelectorAll('[data-render-preset]')){
+  for(const button of document.querySelectorAll('button[data-render-preset]')){
     const selected=button.dataset.renderPreset===activePreset;
     button.classList.toggle('selected',selected);
     button.setAttribute('aria-pressed',String(selected));
@@ -412,7 +412,7 @@ $('regen').addEventListener('click',()=>{
   rebuild();
 });
 $('light-switch').addEventListener('click',()=>setLighting(!state.dusk));
-for(const button of document.querySelectorAll('[data-render-preset]')){
+for(const button of document.querySelectorAll('button[data-render-preset]')){
   button.addEventListener('click',()=>selectRenderPreset(
     button.dataset.renderPreset));
 }
