@@ -91,11 +91,19 @@ async function main(){
       light:document.body.dataset.pcLight,
       view:document.body.dataset.pcView,
       car:document.body.dataset.pcCarSource,
-      context:!!document.getElementById('playcanvas').getContext('webgl2')
+      context:!!document.getElementById('playcanvas').getContext('webgl2'),
+      hero:document.body.dataset.pcHeroAsset,
+      shingles:document.body.dataset.pcRoofSystem,
+      foliage:document.body.dataset.pcFoliageSystem,
+      clapboards:Number(document.body.dataset.pcHouseClapboards||0)
     }));
     if(before.engine!=='PlayCanvas'||before.version!=='2.23.3'||
       before.light!=='table'||before.view!=='three-quarter'||
-      !before.context){
+      !before.context||
+      before.hero!=='molded-geometry-v3'||
+      before.shingles!=='batched-individual-shingles'||
+      before.foliage!=='triangulated-branch-leaves'||
+      before.clapboards<20){
       throw Error('Unexpected desktop PlayCanvas engine state '+
         JSON.stringify(before));
     }
@@ -106,6 +114,14 @@ async function main(){
     });
     await desktop.locator('button[data-light="studio"]').click();
     await desktop.locator('button[data-view="front"]').click();
+    await desktop.locator('button[data-view="detail"]').click();
+    if(await desktop.locator('body').getAttribute('data-pc-view')!=='detail'){
+      throw Error('Close macro detail camera was not activated');
+    }
+    await desktop.screenshot({
+      path:path.join(output,'playcanvas-toy-house-detail.png'),
+      animations:'disabled'
+    });
     if(await desktop.locator('body').getAttribute('data-pc-light')!=='studio'||
       await desktop.locator('body').getAttribute('data-pc-view')!=='front'){
       throw Error('PlayCanvas scene controls did not update');
@@ -139,10 +155,15 @@ async function main(){
       engine:document.body.dataset.pcEngine,
       ready:document.body.dataset.pcReady,
       width:document.querySelector('#playcanvas').clientWidth,
-      height:document.querySelector('#playcanvas').clientHeight
+      height:document.querySelector('#playcanvas').clientHeight,
+      hero:document.body.dataset.pcHeroAsset,
+      cameraTextVisible:getComputedStyle(document.querySelector('.overlay h1')).display!=='none',
+      viewportHeight:document.querySelector('.viewer').clientHeight
     }));
     if(mobileState.engine!=='PlayCanvas'||mobileState.width<300||
-      mobileState.height<200)throw Error('Bad phone canvas: '+
+      mobileState.height<350||
+      mobileState.hero!=='molded-geometry-v3'||
+      mobileState.cameraTextVisible)throw Error('Bad phone canvas or full view: '+
       JSON.stringify(mobileState));
     await phone.screenshot({
       path:path.join(output,'playcanvas-toy-house-mobile.png'),
