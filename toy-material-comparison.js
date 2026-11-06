@@ -203,16 +203,24 @@ async function boot(){
     const amount=percent/100;
     // Constant light intensity: changed pixels come from material
     // reflection properties, not from a brighter diffuse key light.
+    // Use PlayCanvas's dedicated specular-color workflow rather than
+    // the metallic workflow. These are dielectric injection-molded
+    // plastics, not metals. Vary the actual Fresnel F0 reflection from
+    // nearly matte to a visible photographic softbox reflection.
+    const reflection=.015+.835*amount;
     for(const [mat,minGloss,maxGloss,coat] of highlightedPlastic){
-      mat.specularityFactor=.06+.94*amount;
+      mat.useMetalness=false;
+      mat.useMetalnessSpecularColor=false;
+      mat.metalness=0;
+      mat.specular.set(reflection,reflection,reflection);
+      mat.specularityFactor=1;
       mat.gloss=minGloss+(maxGloss-minGloss)*amount;
       mat.clearCoat=coat*amount;
       mat.update();
     }
     document.body.dataset.fidelitySpecularPercent=String(percent);
-    document.body.dataset.fidelitySpecularLight='constant-light-brdf-v2';
-    document.body.dataset.fidelitySpecularIntensity=
-      highlightedPlastic[0][0].specularityFactor.toFixed(3);
+    document.body.dataset.fidelitySpecularLight='dielectric-specular-f0-v3';
+    document.body.dataset.fidelitySpecularIntensity=reflection.toFixed(3);
     document.body.dataset.fidelitySpecularGloss=
       materials.offwhite.gloss.toFixed(3);
     document.body.dataset.fidelityDiffuseLightIntensity=
