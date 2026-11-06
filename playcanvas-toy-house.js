@@ -177,6 +177,12 @@ async function start(){
     hedge:makeMaterial('Molded plastic hedge pieces','#47734b',{roughness:.68}),
     shrub:makeMaterial('Plastic shrub foliage','#648d59',{roughness:.73}),
     flowers:makeMaterial('Pink molded flowers','#d68b91',{roughness:.67}),
+    flowerCream:makeMaterial('Pressed plastic blossom insert','#e8d0a1',{roughness:.55,clearcoat:.13}),
+    sidingEdge:makeMaterial('Fine lap-siding mold parting line','#a0afa0',{roughness:.63}),
+    drivewayJoint:makeMaterial('Scribed concrete panel joints','#8b8d83',{roughness:.95}),
+    gardenBed:makeMaterial('Fine dark model-railroad bark ballast','#625346',{roughness:1}),
+    gardenStone:makeMaterial('Painted garden edging stones','#d2c9af',{roughness:.89}),
+    gutter:makeMaterial('Snap-on pale plastic gutters','#ecebe4',{roughness:.45,clearcoat:.16}),
     tree:makeMaterial('Brown molded tree trunk','#866a51',{roughness:.75}),
     leaves:makeMaterial('Plastic foliage canopy','#668454',{roughness:.75}),
     leavesBright:makeMaterial('Plastic foliage canopy highlights','#94a875',{roughness:.72}),
@@ -215,6 +221,30 @@ async function start(){
       [.16,.15,11.0]);
   }
   block(house,'Roof ridge joint',mats.seam,[-4,9.58,-4],[.31,.19,11.2]);
+  // Distinct injection-molded shingle courses follow the actual roof slope.
+  // This is relief geometry, not a photograph pasted on a box.
+  for(const side of [-1,1]){
+    const roofCenter=-4+side*3.38;
+    const roofAngle=side*-housePitch;
+    for(let n=1;n<=8;n++){
+      const localX=(n-4.5)*.77;
+      const x=roofCenter+localX;
+      const y=7.98-side*Math.tan(housePitch*Math.PI/180)*localX+.20;
+      block(house,'Raised molded shingle-course lap',mats.seam,
+        [x,y,-4],[.053,.04,10.45],[0,0,roofAngle]);
+    }
+    for(let n=0;n<5;n++){
+      const z=-8.55+n*2.25;
+      const x=roofCenter+side*.15;
+      const y=7.98-side*Math.tan(housePitch*Math.PI/180)*(x-roofCenter)+.22;
+      block(house,'Short offset shingle end joint',mats.seam,
+        [x,y,z],[.85,.036,.05],[0,0,roofAngle]);
+    }
+  }
+  for(const z of [-9.25,1.25]){
+    block(house,'White clip-on eave gutter',mats.gutter,[-4,7.04,z],
+      [13.7,.18,.20]);
+  }
 
   const garagePitch=26;
   for(const side of [-1,1]){
@@ -236,6 +266,34 @@ async function start(){
     block(house,'Window sill',mats.trim,[x,y-h*.53,z+.31],[w+.43,.14,.46]);
   }
   const frontZ=.78;
+  // Mold-part lap lines terminate at actual window and door openings.
+  // Avoid drawing horizontal stripes straight across the acrylic glazing.
+  const frontOpenings=[
+    [-8.45,3.8,2.0,1.9],
+    [-.02,3.8,2.0,1.9],
+    [-4.0,4.85,1.85,1.62],
+    [-4.0,1.75,1.60,2.85]
+  ];
+  let sidingPieces=0;
+  for(let y=.64;y<=6.60;y+=.29){
+    let runs=[[-10.57,2.57]];
+    for(const [cx,cy,w,h] of frontOpenings){
+      if(y<cy-h/2-.11||y>cy+h/2+.11)continue;
+      const left=cx-w/2-.12,right=cx+w/2+.12;
+      runs=runs.flatMap(([a,b])=>{
+        if(right<=a||left>=b)return [[a,b]];
+        const parts=[];
+        if(left-a>.20)parts.push([a,left]);
+        if(b-right>.20)parts.push([right,b]);
+        return parts;
+      });
+    }
+    for(const [a,b] of runs){
+      block(house,'Scale molded clapboard overlap',mats.sidingEdge,
+        [(a+b)/2,y,frontZ+.025],[b-a,.045,.11]);
+      sidingPieces++;
+    }
+  }
   framedWindow(-8.45,3.8,frontZ,2.0,1.9);
   framedWindow(-.02,3.8,frontZ,2.0,1.9);
   framedWindow(-4.0,4.85,frontZ,1.85,1.62);
@@ -260,6 +318,42 @@ async function start(){
 
   block(model,'Garage concrete driveway',mats.pavement,[8.65,.28,6.30],[6.8,.10,9.7]);
   block(model,'House path to the street',mats.pavement,[-4,.29,6.35],[1.78,.09,9.5]);
+  // Scribed expansion joints, slab modules and ballast planters reveal
+  // the separate pieces of a hand-built railway layout.
+  for(const z of [3.55,6.1,8.65]){
+    block(model,'Driveway expansion joint',mats.drivewayJoint,
+      [8.65,.337,z],[6.68,.012,.042]);
+    block(model,'Walkway joint',mats.drivewayJoint,
+      [-4,.348,z],[1.72,.012,.043]);
+  }
+  block(model,'Fine ballast front planting bed',mats.gardenBed,
+    [-9.2,.325,2.52],[3.0,.095,1.25]);
+  block(model,'Fine ballast side planting bed',mats.gardenBed,
+    [1.26,.325,2.52],[2.45,.095,1.25]);
+  for(const x of [-10.62,-9.74,-8.86,-7.98,.15,.95,1.75]){
+    block(model,'Scattered molded ornamental foliage',mats.shrub,
+      [x,.55,2.5],[.52,.48,.55],[0,0,0],'sphere');
+    block(model,'Clip-in flower head',mats.flowers,
+      [x+.14,.88,2.48],[.20,.15,.19],[0,0,0],'sphere');
+    block(model,'Small cream flower insert',mats.flowerCream,
+      [x-.15,.82,2.3],[.17,.12,.14],[0,0,0],'sphere');
+  }
+  for(const [x,z] of [[-10.8,3.27],[-7.72,3.27],[-.05,3.25],[2.52,3.25]]){
+    block(model,'Garden bed stone edging',mats.gardenStone,
+      [x,.39,z],[.68,.18,.31]);
+  }
+  // Separate toy accessories keep recognizable real-world scale.
+  block(model,'Mailbox mounting post',mats.wood,[-14.7,.84,9.28],[.15,1.3,.15]);
+  block(model,'Injection-molded rural mailbox',mats.garageDoor,
+    [-14.7,1.58,9.28],[.76,.46,.48]);
+  block(model,'Molded red mailbox flag',mats.carBody,
+    [-14.25,1.66,9.28],[.06,.44,.15]);
+  for(const x of [-7.8,0.10]){
+    block(house,'Porch wall lantern body',mats.seam,[x,3.22,.94],
+      [.31,.52,.29]);
+    block(house,'Lantern acrylic diffuser',mats.trim,[x,3.25,1.13],
+      [.18,.33,.12]);
+  }
 
   // A slightly raised trim edge makes the pre-flocked synthetic sheet look
   // like a physical layer glued to a layout board.
@@ -376,10 +470,14 @@ async function start(){
     }
   }
   function applyView(){
+    state.target.set(0,2.3,-.4);
     if(state.view==='front'){
       state.yaw=.06;state.pitch=.29;state.radius=36;
     }else if(state.view==='top'){
       state.yaw=.75;state.pitch=1.15;state.radius=38;
+    }else if(state.view==='detail'){
+      state.target.set(-5.2,4.25,1.2);
+      state.yaw=.31;state.pitch=.27;state.radius=17.5;
     }else{
       state.yaw=Math.PI/4.2;state.pitch=.48;state.radius=37;
     }
@@ -448,6 +546,8 @@ async function start(){
   document.body.dataset.pcReady='true';
   document.body.dataset.pcEngine='PlayCanvas';
   document.body.dataset.pcVersion='2.23.3';
+  document.body.dataset.pcSidingPieces=String(sidingPieces);
+  document.body.dataset.pcMiniatureDetails='v2';
   document.body.dataset.pcCarSource='loading';
   loading.hidden=true;
   requestAnimationFrame(()=>{
