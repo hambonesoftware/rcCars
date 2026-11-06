@@ -77,6 +77,7 @@ async function main(){
       const state=await desktop.evaluate(()=>({
         data:{...document.body.dataset},
         errorText:document.querySelector('#loading')?.textContent,
+        errorStack:document.body.dataset.pcErrorStack,
         canvas:!!document.querySelector('#playcanvas')
       })).catch(e=>({error:String(e)}));
       throw Error('PlayCanvas did not start: '+JSON.stringify(state)+
