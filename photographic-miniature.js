@@ -48,6 +48,15 @@ export function buildPhotographicMiniature({pc,app,root,device,block,makeMateria
       ctx.lineTo(x+(r()-.5)*3,y-1-r()*4.5);ctx.stroke();
     }
   });
+  const roofGranules=createTexture('Subtle mineral grit in molded roof shingles',(ctx,w,h)=>{
+    ctx.fillStyle='#e3e3df';ctx.fillRect(0,0,w,h);
+    const r=rand(9901);
+    for(let i=0;i<37000;i++){
+      const v=Math.floor(171+r()*73);
+      ctx.fillStyle='rgba('+v+','+v+','+v+',.34)';
+      ctx.fillRect(r()*w,r()*h,.7+r()*1.25,.7+r()*1.25);
+    }
+  });
   const gravelMap=createTexture('HO scenic ballast',(ctx,w,h)=>{
     ctx.fillStyle='#766a5c';ctx.fillRect(0,0,w,h);
     const r=rand(1537);
@@ -67,10 +76,10 @@ export function buildPhotographicMiniature({pc,app,root,device,block,makeMateria
     white:material('Off-white hand-painted cast trim','#efece0',.42,.21,styreneMap),
     trimShadow:material('Recessed casting parting lines','#818c80',.84),
     foundation:material('Cast stone model footing','#a0a29a',.94,gravelMap),
-    roof:material('Fine granular asphalt shingle kit','#6b7270',.93),
-    ridge:material('Hip and ridge caps','#676b65',.86),
-    darkRoof:material('Weathered shingle variant','#535f60',.96),
-    paleRoof:material('Faded shingle variant','#818680',.92),
+    roof:material('Fine granular asphalt shingle kit','#707771',.93,0,roofGranules),
+    ridge:material('Hip and ridge caps','#696e6b',.86),
+    darkRoof:material('Weathered shingle variant','#69706b',.96,0,roofGranules),
+    paleRoof:material('Faded shingle variant','#757b74',.92,0,roofGranules),
     dark:material('Dark inset window cavity','#282d32',.93),
     glass:material('Smoked acrylic glazed windows','#536d73',.12,.65),
     curtain:material('Cream interior curtains','#c7c2ac',.93),
@@ -173,7 +182,7 @@ export function buildPhotographicMiniature({pc,app,root,device,block,makeMateria
           const za=Math.max(zStart,zStart+(col-.5)*(zEnd-zStart)/cols+offset)+gap;
           const zb=Math.min(zEnd,zStart+(col+.5)*(zEnd-zStart)/cols+offset)-gap;
           if(zb<=za)continue;
-          const palette=random()<.13?1:random()<.22?2:0;
+          const palette=random()<.07?1:random()<.09?2:0;
           const face=shingles[palette];
           quad(face,[x0,y0,za],[x0,y0,zb],[x1,y1,zb],[x1,y1,za]);
         }
@@ -414,8 +423,11 @@ export function buildPhotographicMiniature({pc,app,root,device,block,makeMateria
     }
     for(let i=0;i<15;i++){
       const fx=x+(random()-.5)*(w-.42),fz=z+(random()-.5)*(d-.25);
-      block(root,'Static scenic flowering clump',mats.leafMid,
-        [fx,.59,fz],[.20,.37,.20],[0,0,0],'cone');
+      // Rounded foliage clusters replace the spiky cone placeholders.
+      block(root,'Hand shaped miniature flower clump',mats.leafMid,
+        [fx,.59,fz],[.25,.28,.28],[0,0,0],'sphere');
+      block(root,'Offset leaf tuft',mats.leaf,
+        [fx+.10,.56,fz-.08],[.22,.18,.22],[0,0,0],'sphere');
       block(root,'Tiny molded flower head',i%3?mats.rose:mats.gold,
         [fx,.82,fz],[.11,.10,.12],[0,0,0],'sphere');
     }
@@ -427,8 +439,9 @@ export function buildPhotographicMiniature({pc,app,root,device,block,makeMateria
   app.root.addChild(room);
   block(room,'Real tabletop underneath HO display base',mats.worktop,
     [0,-1.71,0],[78,.50,61]);
-  block(room,'Neutral background wall',mats.wall,[0,26,-34],
-    [110,58,.7]);
+  // Deliberately omit the visible rectangular room wall. Its hard edge
+  // read as a digital polygon in photo QA; use the camera's warm seamless
+  // backdrop behind the physical bench instead.
   block(room,'Scale ruler outside model base',mats.silver,
     [-24,-1.42,18],[10,.095,.65]);
   for(let i=0;i<21;i++){
