@@ -120,13 +120,16 @@ function rebuild(){
   const houseName=$('house-name');
   if(houseName)houseName.textContent='Elm Street Gable House';
   $('model-summary').textContent=
-    'Painted clapboard · gabled roof · attached garage';
+    'Molded painted styrene · static-grass fibers · gloss die-cast car';
   $('object-count').textContent=String(built.stats.grassTufts);
   document.body.dataset.modelReady='true';
   document.body.dataset.modelPalette=built.stats.palette;
   document.body.dataset.modelSeed=String(built.stats.seed);
   document.body.dataset.modelDetail=built.stats.architecture;
   document.body.dataset.modelType='procedural Three.js geometry';
+  document.body.dataset.modelCar='diecast';
+  document.body.dataset.modelFlocking=String(built.stats.flockingFibers);
+  document.body.dataset.modelRealism=built.stats.realismPass;
   syncUI();
 }
 
@@ -138,6 +141,9 @@ function setView(view){
   }else if(view==='street'){
     state.yaw=-.30;state.elevation=.31;
     state.zoom=1.12;
+  }else if(view==='diecast'){
+    state.yaw=.75;state.elevation=.32;
+    state.zoom=3.0;
   }else{
     state.yaw=-.57;state.elevation=.54;
     state.zoom=1.0;
@@ -171,12 +177,15 @@ function resize(){
   renderer.setSize(w,h);
 }
 function updateCamera(){
-  const r=87;
-  const focus=new THREE.Vector3(
-    window.innerWidth>780?-8:0,
-    2.1,
-    window.innerWidth>780?-1:0
-  );
+  const closeup=state.sceneView==='diecast';
+  const r=closeup?36:87;
+  const focus=closeup?
+    new THREE.Vector3(9.7,1.03,13.4):
+    new THREE.Vector3(
+      window.innerWidth>780?-8:0,
+      2.1,
+      window.innerWidth>780?-1:0
+    );
   const c=Math.cos(state.elevation);
   camera.position.set(
     focus.x+Math.sin(state.yaw)*c*r,
@@ -210,7 +219,7 @@ renderer.domElement.addEventListener('pointercancel',endDrag);
 renderer.domElement.addEventListener('wheel',e=>{
   e.preventDefault();
   state.zoom=THREE.MathUtils.clamp(
-    state.zoom*Math.exp(-e.deltaY*.0011),.65,1.75);
+    state.zoom*Math.exp(-e.deltaY*.0011),.65,4.2);
   resize();
 },{passive:false});
 for(const element of document.querySelectorAll('[data-palette]')){
