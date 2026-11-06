@@ -218,8 +218,11 @@ async function boot(){
     p('A real tabletop base',materials.base,[0,-.5,0],[17.2,1.05,13.1],.09);
     p('Short fake grass mat',materials.turf,[0,.045,-.8],[16.6,.13,10.85],.04);
     // House: physical enclosure + subdivided façade panels.
+    // Flush the wall shell to the facade. Previously its front face was
+    // nearly a full scene unit behind the trim and roofing, producing
+    // the "floating roof and applied stickers" effect on a phone.
     p('Main house deep structural enclosure',molded?materials.styrene:materials.oldWall,
-      [-3.66,3.2,-3.30],[8.1,5.4,4.7],.065);
+      [-3.66,3.20,-2.75],[8.1,5.40,5.6],.065);
     p('Garage enclosure',molded?materials.styrene:materials.oldWall,
       [3.80,2.37,-2.83],[6.72,3.75,5.7],.07);
     const front=.0,winX=-5.1,winY=3.42;
@@ -245,7 +248,7 @@ async function boot(){
         for(const [a,b] of spans){
           const width=b-a-.028;
           if(width<.15)continue;
-          p('Snap-molded rounded clapboard edge',materials.offwhite,
+          p('Snap-molded rounded clapboard edge',materials.sidingEdge,
             [(a+b)/2,y,.31],[width,.047,.085],.018);
           counts.panels++;
         }
@@ -310,35 +313,118 @@ async function boot(){
         counts.grooves++;
       }
     }
-    const degrees=Math.atan2(2.24,4.27)*180/Math.PI;
-    for(const sign of [-1,1]){
-      const roofX=-3.66+sign*2.31;
-      p('Sloped roof panel',molded?materials.roofing:materials.oldRoof,
-        [roofX,7.0,-3.25],[4.87,.20,5.34],.075,[0,0,-sign*degrees]);
-      if(molded){
-        for(let row=0;row<5;row++){
-          const u=(row+.5)/5;
-          const run=4.75;
-          const dx=(u-.5)*run;
-          const px=roofX+dx*Math.cos(degrees*Math.PI/180)*sign;
-          const py=7.0-dx*Math.sin(degrees*Math.PI/180);
-          for(let k=0;k<6;k++){
-            const z=-5.60+k*.91;
-            p('Overlapping rounded molded roofing slate',k%5===0?materials.roofRaised:materials.roofing,
-              [px,py+.135,z],[.84,.079,.98],.021,[0,0,-sign*degrees]);
-            counts.panels++;
+    // Physically connected gable roofs, not offset rectangular prisms.
+    // A roof's eave meets the walls, its triangular gable fills the
+    // formerly open gap, and shingle rows follow the actual roof slope.
+    function gable(name,xc,halfWidth,eave,ridge,z,isFront){
+      const points=[
+        [xc-halfWidth,eave,z],[xc+halfWidth,eave,z],[xc,ridge,z]
+      ];
+      const normals=isFront?[0,0,1]:[0,0,-1];
+      const order=isFront?[0,1,2]:[0,2,1];
+      const geom=new pc.Geometry();
+      geom.positions=points.flat();
+      geom.normals=[...normals,...normals,...normals];
+      geom.uvs=[0,0,1,0,.5,1];
+      geom.indices=order;
+      geom.tangents=pc.calculateTangents(geom.positions,geom.normals,geom.uvs,geom.indices);
+      const entity=new pc.Entity(name);
+      const mesh=pc.Mesh.fromGeometry(device,geom);
+      entity.addComponent('render',{meshInstances:[
+        new pc.MeshInstance(mesh,molded?materials.styrene:materials.oldWall)
+      ]});
+      entity.render.castShadows=true;
+      entity.render.receiveShadows=true;
+      group.addChild(entity);
+    }
+    function pitchedRoof(name,xc,centerZ,halfWidth,eave,ridge,depth,rows,columns){
+      const angle=Math.atan2(ridge-eave,halfWidth);
+      const degrees=angle*180/Math.PI;
+      const slopedLength=Math.hypot(halfWidth,ridge-eave);
+      const front=centerZ+depth/2,back=centerZ-depth/2;
+      gable(name+' front cast plastic gable',xc,halfWidth-.12,eave+.06,ridge-.1,
+        front-.54,true);
+      gable(name+' back cast plastic gable',xc,halfWidth-.12,eave+.06,ridge-.1,
+        back+.54,false);
+      for(const side of [-1,1]){
+        const panelX=xc+side*halfWidth*.50;
+        const panelY=(eave+ridge)/2;
+        const rot=[0,0,-side*degrees];
+        p(name+' continuous pitched roof shell',
+          molded?materials.roofing:materials.oldRoof,
+          [panelX,panelY,centerZ],[slopedLength+.14,.19,depth],.045,rot);
+        // A vertical edge fascia and front sloping face trim make the roof
+        // visibly one manufactured casting instead of a free-floating plane.
+        p(name+' timber-cast eave fascia',
+          molded?materials.offwhite:materials.oldTrim,
+          [xc+side*halfWidth,eave-.075,centerZ],[.18,.22,depth+.12],
+          .055);
+        p(name+' gable fascia at front edge',
+          molded?materials.offwhite:materials.oldTrim,
+          [panelX,panelY,front+.07],[slopedLength+.19,.17,.18],
+          .06,rot);
+        if(molded){
+          for(let row=0;row<rows;row++){
+            const f=(row+.51)/rows;
+            const roofX=xc+side*halfWidth*f;
+            const roofY=ridge+(eave-ridge)*f+.13;
+            const tileWidth=slopedLength/rows+.10;
+            for(let column=0;column<columns;column++){
+              const stagger=(row%2)*.12;
+              const z=back+(column+.5)*depth/columns+stagger;
+              p(name+' overlapping molded shingle',
+                (row+column)%8===0?materials.roofHighlight:
+                (row+column)%3===0?materials.roofRaised:materials.roofing,
+                [roofX,roofY,z],
+                [tileWidth,.072,depth/columns+.06],.024,rot);
+              counts.panels++;
+            }
           }
         }
       }
+      p(name+' continuous ridge cap',
+        molded?materials.roofing:materials.oldRoof,
+        [xc,ridge-.015,centerZ],[.33,.26,depth+.13],.10);
+      if(molded){
+        for(let column=0;column<columns;column++){
+          const z=back+(column+.5)*depth/columns;
+          p(name+' stamped ridge shingle cap',materials.roofRaised,
+            [xc,ridge+.135,z],[.37,.08,depth/columns+.03],.036);
+          counts.panels++;
+        }
+      }
     }
-    p('Roof ridge cast capping',molded?materials.roofing:materials.oldRoof,
-      [-3.66,8.27,-3.25],[.37,.26,5.6],.12);
+    // Main wall reaches y=5.90, main roof eaves are y=5.83.
+    // Garage wall reaches y=4.245, garage eaves are y=4.20.
+    pitchedRoof('Main house',-3.66,-2.75,4.35,5.83,8.10,6.75,6,8);
+    pitchedRoof('Attached garage',3.80,-2.83,3.58,4.20,5.82,6.60,4,7);
     if(molded){
-      for(const x of [-7.7,.36]){
-        p('Real soffit and gutter shadow',materials.groove,
-          [x,5.80,-3.12],[.19,.16,5.6],.035);
-        p('Rounded snap-fit guttering',materials.offwhite,
-          [x,5.72,-3.12],[.15,.16,5.85],.062);
+      // Real assembly-line details: a covered entrance, support posts,
+      // gutters and drains, cast foundations and edge contact shadows.
+      p('Front entrance overhanging veranda canopy',materials.roofing,
+        [-1.52,3.80,1.03],[2.87,.22,1.65],.09);
+      for(const x of [-2.70,-.34]){
+        p('Molded veranda support column',materials.offwhite,
+          [x,2.17,1.65],[.17,3.23,.18],.065);
+        p('Column socket footing',materials.offwhite,
+          [x,.61,1.65],[.33,.20,.33],.065);
+      }
+      p('House foundation separate molded stone strip',materials.concrete,
+        [-3.66,.43,-2.75],[8.25,.53,5.74],.05);
+      p('Garage foundation lower molded plinth',materials.concrete,
+        [3.80,.40,-2.83],[6.86,.48,5.85],.035);
+      p('Molded end cap of porch roof',materials.offwhite,
+        [-1.52,3.72,1.84],[2.9,.14,.19],.06);
+      p('Plastic exterior porch lamp body',materials.metal,
+        [-.35,3.20,.52],[.19,.38,.19],.05);
+      p('Amber light diffuser',materials.warmLight,
+        [-.35,3.20,.65],[.13,.23,.04],.018);
+      for(const x of [-7.99,.7,7.41]){
+        const gutterY=x===7.41?4.1:5.73;
+        p('Vacuum-plated molded rain downspout',materials.metal,
+          [x,2.9,x===7.41?-.05:-.12],[.11,4.6,.12],.045);
+        p('Rain downspout bend',materials.metal,
+          [x,.67,.14],[.17,.11,.40],.04);
       }
     }
     p('Driveway concrete slab',materials.concrete,[3.88,.14,3.18],
