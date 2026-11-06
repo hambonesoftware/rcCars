@@ -70,10 +70,26 @@ export function createHOHouse(THREE,options={}){
         ctx.fillRect(x,y,r(.5,3),r(.5,3));
       }
     }else if(kind==='grass'){
-      for(let i=0;i<6000;i++){
-        const bright=random()>.5;
-        ctx.fillStyle=bright?'rgba(247,255,196,.13)':'rgba(24,54,25,.16)';
-        ctx.fillRect(r(0,256),r(0,256),r(.5,2.5),r(2,6));
+      // The ground mat is fine foam flocking and fibers glued to a
+      // substrate. A dense mottled tile replaces flat videogame grass.
+      for(let i=0;i<26000;i++){
+        const x=r(0,256),y=r(0,256);
+        const variant=random();
+        ctx.fillStyle=variant<.24?'rgba(39,81,37,.26)':
+          variant<.61?'rgba(70,120,49,.19)':
+          variant<.87?'rgba(195,202,130,.25)':
+          'rgba(151,124,74,.18)';
+        ctx.fillRect(x,y,r(.6,2.2),r(.5,2.5));
+      }
+      for(let i=0;i<1700;i++){
+        const x=r(0,256),y=r(0,256);
+        ctx.strokeStyle=random()<.6?
+          'rgba(48,89,43,.23)':'rgba(220,204,141,.18)';
+        ctx.lineWidth=.6;
+        ctx.beginPath();
+        ctx.moveTo(x,y);
+        ctx.lineTo(x+r(-1.2,1.2),y-r(1,5));
+        ctx.stroke();
       }
     }else if(kind==='wood'){
       for(let y=0;y<256;y+=16){
@@ -736,35 +752,77 @@ export function createHOHouse(THREE,options={}){
   }
   modelStationWagon(9.7,13.4);
 
-  // Small, instanced paper-like ground tufts add hand-applied static
-  // grass texture in silhouette. Exclude paving, buildings and gardens.
-  const grassTufts=detailed?1250:550;
-  const tuftGeo=new THREE.ConeGeometry(.13,.60,3);
-  const blades=new THREE.InstancedMesh(tuftGeo,m.grassBlade,grassTufts);
-  const temp=new THREE.Object3D();
+  /**
+   * Flocked artificial grass for a model railroad display. Cone plants
+   * looked like tiny weeds; hobby grass is a dense carpet of straight,
+   * short, mixed-green nylon fibers. Thousands of single-triangle filaments
+   * are packed into ONE BufferGeometry and ONE draw call. The colored ground
+   * texture supplies the fine flocking that stays visible at a distance.
+   */
+  const grassTufts=detailed?16000:6700;
+  const grassPositions=[];
+  const grassColors=[];
   let produced=0,tries=0;
-  while(produced<grassTufts&&tries<grassTufts*8){
+  const fibers=[
+    new THREE.Color('#4b703b'),
+    new THREE.Color('#6e9150'),
+    new THREE.Color('#8fa96c'),
+    new THREE.Color('#a1a25f'),
+    new THREE.Color('#b1a17b')
+  ];
+  while(produced<grassTufts&&tries<grassTufts*9){
     tries++;
     const x=-21.0+random()*42;
     const z=-18.7+random()*38.9;
+    // Paths, garage slab, flower beds and house footprints do not receive
+    // floating grass fibers. This is static turf on exposed layout scenery.
     if(x>4.8&&x<14.3&&z>4&&z<22.1)continue;
     if(x>-6.2&&x<-3.5&&z>3&&z<22.3)continue;
     if(x>-14.6&&x<4.0&&z>-12.8&&z<5.4)continue;
     if(x>4.8&&x<15.1&&z>-12.3&&z<5.1)continue;
     if((x<-14.3&&Math.abs(z-3.9)<2.1)||
       (x>16.0&&Math.abs(z-3)<2.0))continue;
-    temp.position.set(x,.28,z);
-    temp.rotation.set(0,random()*6.28,(random()-.5)*.23);
-    temp.scale.set(.68+random()*.65,.45+random()*.90,
-      .68+random()*.65);
-    temp.updateMatrix();
-    blades.setMatrixAt(produced++,temp.matrix);
+    const tint=fibers[Math.min(fibers.length-1,
+      Math.floor(random()*fibers.length))];
+    const width=.020+random()*.028;
+    const length=.14+random()*.20;
+    const theta=random()*Math.PI*2;
+    const bend=(random()-.5)*length*.32;
+    const dx=Math.cos(theta)*width;
+    const dz=Math.sin(theta)*width;
+    const tipX=x+Math.cos(theta)*bend;
+    const tipZ=z+Math.sin(theta)*bend;
+    grassPositions.push(
+      x-dx,.227,z-dz,
+      x+dx,.227,z+dz,
+      tipX,.227+length,tipZ
+    );
+    const bottom=tint.clone().multiplyScalar(.77+random()*.10);
+    const upper=tint.clone().multiplyScalar(.98+random()*.18);
+    grassColors.push(
+      bottom.r,bottom.g,bottom.b,
+      bottom.r,bottom.g,bottom.b,
+      upper.r,upper.g,upper.b
+    );
+    produced++;
   }
-  blades.count=produced;
-  blades.instanceMatrix.needsUpdate=true;
-  blades.castShadow=false;
-  blades.receiveShadow=true;
-  root.add(blades);
+  const flocking=new THREE.BufferGeometry();
+  flocking.setAttribute('position',
+    new THREE.Float32BufferAttribute(grassPositions,3));
+  flocking.setAttribute('color',
+    new THREE.Float32BufferAttribute(grassColors,3));
+  flocking.computeVertexNormals();
+  flocking.computeBoundingSphere();
+  const flockMat=new THREE.MeshStandardMaterial({
+    color:0xffffff,vertexColors:true,
+    side:THREE.DoubleSide,roughness:1,metalness:0
+  });
+  const flockMesh=new THREE.Mesh(flocking,flockMat);
+  flockMesh.castShadow=false;
+  flockMesh.receiveShadow=true;
+  flockMesh.name='HO model railroad cut static-grass fibers';
+  flockMesh.userData.staticGrassFibers=produced;
+  root.add(flockMesh);
 
   // A single timber-framed exhibition plaque makes the whole asset read
   // like a high-quality electric-train-set model, not real-size terrain.
@@ -774,9 +832,12 @@ export function createHOHouse(THREE,options={}){
   const stats={
     kind:'HO hero house',seed,palette,
     textures:6,grassTufts:produced,
+    flockingFibers:produced,
+    diecastCars:1,
+    realismPass:'physically layered molded plastic, cut nylon static grass and die-cast enamel',
     geometrySource:'procedural Three.js',
-    architecture:'attached garage / clapboard gable / front porch',
-    yard:'driveway, garden, fences, mailbox, model trees, flowers'
+    architecture:'painted plastic siding / molded glazing / attached garage',
+    yard:'flocked model railroad lawn, driveway, garden, fences, miniature die-cast car'
   };
   return {root,stats};
 }
