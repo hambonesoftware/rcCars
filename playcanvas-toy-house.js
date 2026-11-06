@@ -559,6 +559,7 @@ async function start(){
 start().catch(error=>{
   console.error('PlayCanvas miniature engine failed to start',error);
   document.body.dataset.pcReady='error';
+  document.body.dataset.pcErrorStack=String(error?.stack||error).slice(0,2500);
   loading.textContent='PlayCanvas viewer could not start: '+
     (error?.message||String(error));
   assetStatus.textContent='Renderer failed; inspect error console';
