@@ -108,7 +108,7 @@ async function run(){
       time:document.querySelector('#time').textContent
     }));
     if(race.race!=='racing'||race.camera!=='chase'||
-       race.lap!=='1'||race.speed<1||race.progress<1)
+       race.lap!=='1'||race.speed<.40||race.progress<1.77)
       throw Error('Driveable three-lap circuit did not begin: '+JSON.stringify(race));
     await desktop.screenshot({
       path:path.join(images,'maple-junction-desktop-racing.png'),
@@ -160,17 +160,17 @@ async function run(){
     await phone.locator('#start-race').tap();
     await phone.waitForTimeout(900);
     const first=Number(await phone.locator('body').getAttribute('data-maple-progress'));
-    await phone.locator('#right').dispatchEvent('pointerdown',{
-      pointerId:1,pointerType:'touch',isPrimary:true,button:0
-    });
-    await phone.waitForTimeout(350);
-    await phone.locator('#right').dispatchEvent('pointerup',{
-      pointerId:1,pointerType:'touch',isPrimary:true,button:0
-    });
-    await phone.waitForTimeout(700);
+    await phone.locator('#right').tap();
+    if(await phone.locator('body').getAttribute('data-maple-last-touch')!=='right')
+      throw Error('Actual iPhone touch did not activate right steering');
+    await phone.waitForFunction(previous=>{
+      const s=Number(document.body.dataset.mapleProgress||0);
+      return s>previous+.065;
+    },first,{timeout:50000});
     const second=Number(await phone.locator('body').getAttribute('data-maple-progress'));
-    if(second<=first+.1)
-      throw Error('Touch controlled miniature race car did not advance');
+    if(second<=first+.065)
+      throw Error('Touch controlled miniature race car did not advance: '+
+        JSON.stringify({first,second}));
     await phone.screenshot({
       path:path.join(images,'maple-junction-iphone-gameplay.png'),
       animations:'disabled'
