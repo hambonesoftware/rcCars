@@ -56,7 +56,14 @@ async function main(){
       viewport:{width:1440,height:900},deviceScaleFactor:1
     });
     const errors=[];
+    const shaderErrors=[];
     page.on('pageerror',e=>errors.push(e.message));
+    page.on('console',message=>{
+      if(message.type()==='error'&&
+        /WebGLProgram|Shader Error|ERROR:\s*0:\d+/.test(message.text())){
+        shaderErrors.push(message.text());
+      }
+    });
     page.on('requestfailed',r=>{
       if(/three\.module\.js|ho-hero-house\.js|house-showcase\.js/.test(r.url())){
         errors.push(r.url()+' '+r.failure()?.errorText);
@@ -124,6 +131,62 @@ async function main(){
       path:path.join(screenshotDir,'house-hero-desktop.png'),
       animations:'disabled'
     });
+    // The house itself stays identical across these four controlled
+    // render tests. Camera view and procedural seed must not change.
+    const renderModes=[
+      ['original','aces','ortho','plain'],
+      ['room','neutral','ortho','plain'],
+      ['surface','neutral','ortho','micro'],
+      ['photo','neutral','perspective','micro']
+    ];
+    const renderedHashes=new Map();
+    for(const [preset,tone,lens,materials] of renderModes){
+      await page.locator('[data-render-preset="'+preset+'"]').click();
+      await page.waitForFunction(
+        expected=>document.body.dataset.renderPreset===expected,
+        preset,{timeout:20000}
+      );
+      const state=await page.evaluate(()=>({
+        seed:document.body.dataset.modelSeed,
+        palette:document.body.dataset.modelPalette,
+        tone:document.body.dataset.renderTone,
+        lens:document.body.dataset.renderLens,
+        materials:document.body.dataset.renderMaterials,
+        dof:document.body.dataset.renderDof,
+        effective:document.body.dataset.renderDofEffective
+      }));
+      if(state.seed!=='1407'||state.palette!=='sage'||
+        state.tone!==tone||state.lens!==lens||
+        state.materials!==materials)
+        throw Error('Rendering preset failed to preserve source model: '+
+          JSON.stringify({preset,state}));
+      if(preset==='photo'&&state.effective!=='true')
+        throw Error('Desktop depth-based photographic lens was not enabled');
+      await page.waitForTimeout(350);
+      const screenshot=path.join(screenshotDir,
+        'house-render-lab-'+preset+'.png');
+      await page.locator('#viewport canvas').screenshot({
+        path:screenshot,animations:'disabled'
+      });
+      const crypto=require('node:crypto');
+      renderedHashes.set(preset,
+        crypto.createHash('sha256').update(fs.readFileSync(screenshot))
+          .digest('hex'));
+    }
+    if(new Set(renderedHashes.values()).size<4){
+      throw Error('Some visual rendering presets produced identical canvas files');
+    }
+    await page.locator('#lab-details summary').click();
+    await page.locator('[data-lab-factor="materials"][data-lab-value="plain"]').click();
+    if(await page.locator('body').getAttribute('data-render-preset')!=='custom'||
+      await page.locator('body').getAttribute('data-render-materials')!=='plain'){
+      throw Error('Individual rendering comparison switch did not work');
+    }
+    await page.locator('[data-render-preset="original"]').click();
+    if(shaderErrors.length)throw Error(
+      'WebGL shader errors during rendering lab: '+shaderErrors.join('; '));
+    console.log('PASS four A/B/C/D render lab presets',
+      JSON.stringify(Object.fromEntries(renderedHashes)));
     await page.locator('[data-view="diecast"]').click();
     if(await page.locator('[data-view="diecast"]').getAttribute('aria-pressed')!=='true')
       throw Error('Die-cast model closeup camera failed');
@@ -163,6 +226,24 @@ async function main(){
       null,{timeout:45000});
     await phone.screenshot({
       path:path.join(screenshotDir,'house-hero-phone.png'),
+      animations:'disabled'
+    });
+    // Photo preset uses the photographic perspective on phones without
+    // the high-cost depth texture pass. Presets remain available by touch.
+    await phone.locator('[data-render-preset="photo"]').tap();
+    const phonePhoto=await phone.evaluate(()=>({
+      preset:document.body.dataset.renderPreset,
+      lens:document.body.dataset.renderLens,
+      dofEffective:document.body.dataset.renderDofEffective,
+      ready:document.body.dataset.modelReady
+    }));
+    if(phonePhoto.preset!=='photo'||phonePhoto.lens!=='perspective'||
+      phonePhoto.dofEffective!=='false'||phonePhoto.ready!=='true'){
+      throw Error('Mobile safe photographic rendering fallback failed: '+
+        JSON.stringify(phonePhoto));
+    }
+    await phone.locator('#viewport canvas').screenshot({
+      path:path.join(screenshotDir,'house-render-lab-phone-photo.png'),
       animations:'disabled'
     });
     if(await phone.locator('body').getAttribute('data-model-car')!=='diecast'||
