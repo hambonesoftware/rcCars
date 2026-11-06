@@ -419,6 +419,48 @@ async function start(){
     return car;
   }
   const fallbackCar=fallbackToyCar();
+  // Imported glTF models may use radically different authoring units.
+  // Measure the real render bounds and fit the CC0 die-cast car to the
+  // physical width of the miniature driveway.
+  function fitImportedCar(car){
+    const renderers=car.findComponents('render');
+    const bounds=()=>{
+      const low=[Infinity,Infinity,Infinity],high=[-Infinity,-Infinity,-Infinity];
+      let meshes=0;
+      for(const renderer of renderers){
+        for(const mesh of renderer.meshInstances||[]){
+          const bb=mesh.aabb;
+          if(!bb?.center||!bb?.halfExtents)continue;
+          for(let i=0;i<3;i++){
+            const key=['x','y','z'][i];
+            const v=bb.center[key],e=bb.halfExtents[key];
+            low[i]=Math.min(low[i],v-e);
+            high[i]=Math.max(high[i],v+e);
+          }
+          meshes++;
+        }
+      }
+      return {low,high,meshes};
+    };
+    let b=bounds();
+    if(!b.meshes)return false;
+    const length=Math.max(b.high[0]-b.low[0],b.high[2]-b.low[2]);
+    if(!Number.isFinite(length)||length<=1e-5)return false;
+    const factor=Math.max(.08,Math.min(1000,4.25/length));
+    car.setLocalScale(.95*factor,.95*factor,.95*factor);
+    b=bounds();
+    if(!b.meshes||!b.low.every(Number.isFinite))return false;
+    const cx=(b.low[0]+b.high[0])/2;
+    const cz=(b.low[2]+b.high[2])/2;
+    const origin=car.getLocalPosition();
+    car.setLocalPosition(
+      origin.x+8.45-cx,
+      origin.y+.36-b.low[1],
+      origin.z+6.25-cz
+    );
+    document.body.dataset.pcCarScaleFactor=factor.toFixed(3);
+    return true;
+  }
   const carUrl='https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/ToyCar/glTF-Binary/ToyCar.glb';
   // The Khronos CC0 model is the asset-quality benchmark. It provides
   // actual artist-authored geometry and car materials, not primitive blocks.
@@ -437,10 +479,14 @@ async function start(){
       car.setLocalScale(.95,.95,.95);
       car.setLocalEulerAngles(0,20,0);
       app.root.addChild(car);
+      if(!fitImportedCar(car)){
+        car.enabled=false;
+        throw Error('ToyCar GLB had invalid dimensions');
+      }
       fallbackCar.enabled=false;
       state.modelLoaded=true;
       document.body.dataset.pcCarSource='khronos-cc0-glb';
-      assetStatus.textContent='Khronos ToyCar.glb loaded · real 3D asset · CC0 license';
+      assetStatus.textContent='Khronos ToyCar GLB loaded · scaled to the HO driveway · CC0';
     }catch(e){
       console.warn('GLB instantiate failed; retaining fallback',e);
       assetStatus.textContent='Toy-car glTF could not be instantiated; fallback visible';
@@ -471,14 +517,14 @@ async function start(){
     const phone=window.matchMedia('(max-width:850px)').matches;
     state.target.set(phone?-.3:0,3.45,-1.65);
     if(state.view==='front'){
-      state.yaw=.04;state.pitch=.28;state.radius=phone?48:38;
+      state.yaw=.04;state.pitch=.28;state.radius=phone?55:45;
     }else if(state.view==='top'){
-      state.yaw=.54;state.pitch=1.05;state.radius=phone?58:43;
+      state.yaw=.54;state.pitch=1.05;state.radius=phone?62:47;
     }else if(state.view==='detail'){
       state.target.set(-5.1,4.3,.5);
       state.yaw=.27;state.pitch=.24;state.radius=phone?24:20;
     }else{
-      state.yaw=.42;state.pitch=.33;state.radius=phone?51:41;
+      state.yaw=.42;state.pitch=.33;state.radius=phone?57:49;
     }
     document.body.dataset.pcView=state.view;
     for(const el of document.querySelectorAll('button[data-view]')){
