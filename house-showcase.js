@@ -20,6 +20,54 @@ stage.appendChild(renderer.domElement);
 const scene=new THREE.Scene();
 scene.background=new THREE.Color('#c0cdc5');
 scene.fog=new THREE.Fog('#c0cdc5',105,175);
+
+/**
+ * Studio-shaped reflections are essential for scale die-cast lacquer and
+ * molded polystyrene. A small runtime PMREM capture supplies rectangular
+ * softbox highlights to MeshPhysicalMaterial clearcoat/chrome, without
+ * downloading an HDR environment map. The background stays the hobby
+ * display studio color and the probes never appear in the visible scene.
+ */
+function makePlasticStudioReflections(){
+  const studio=new THREE.Scene();
+  studio.background=new THREE.Color(0x76858b);
+  const panels=[
+    {p:[-7,6,3],size:[4.6,7.5],color:0xffffff},
+    {p:[6,4,4],size:[3.3,6.3],color:0xe8f2f5},
+    {p:[0,8,-4],size:[10,2.6],color:0xfff5df},
+    {p:[0,2,8],size:[7.5,1.7],color:0x777f83}
+  ];
+  for(const part of panels){
+    const shape=new THREE.Mesh(
+      new THREE.PlaneGeometry(...part.size),
+      new THREE.MeshBasicMaterial({color:part.color,side:THREE.DoubleSide})
+    );
+    shape.position.set(...part.p);
+    shape.lookAt(0,0,0);
+    studio.add(shape);
+  }
+  let probe=null;
+  try{
+    const generator=new THREE.PMREMGenerator(renderer);
+    try{
+      probe=generator.fromScene(studio,.035,.1,25);
+      scene.environment=probe.texture;
+      scene.environmentIntensity=.82;
+    }finally{
+      generator.dispose();
+    }
+  }catch(error){
+    // The basic 3D house must still run on phones that cannot allocate
+    // an additional temporary environment capture.
+    console.warn('Physical miniature reflection probe unavailable',error);
+  }
+  studio.traverse(object=>{
+    object.geometry?.dispose();
+    object.material?.dispose();
+  });
+  return probe;
+}
+const studioReflectionProbe=makePlasticStudioReflections();
 const hemi=new THREE.HemisphereLight(0xf6faf5,0x8a8572,2.05);
 scene.add(hemi);
 const ambient=new THREE.AmbientLight(0xf7e8d1,.28);
