@@ -6,6 +6,8 @@ on:
     paths:
       - 'ho-hero-house.js'
       - 'house-showcase.js'
+      - 'house-render-lab.js'
+      - 'house-photo-pass.js'
       - 'house-showcase.html'
       - 'tests/ho-hero-house.test.cjs'
       - '.github/workflows/house-preview.yml'
@@ -25,6 +27,8 @@ jobs:
         run: |
           node --input-type=module --check < ho-hero-house.js
           node --input-type=module --check < house-showcase.js
+          node --input-type=module --check < house-render-lab.js
+          node --input-type=module --check < house-photo-pass.js
       - name: Install headless browser
         run: npm install --no-save --ignore-scripts --no-audit --no-fund playwright-core@1.56.1
       - name: Render and exercise the actual procedural model
@@ -34,6 +38,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ho-hero-house-desktop-and-phone
-          path: tests/screenshots/house-hero-*.png
+          path: |
+            tests/screenshots/house-hero-*.png
+            tests/screenshots/house-render-lab-*.png
           if-no-files-found: ignore
           retention-days: 14
