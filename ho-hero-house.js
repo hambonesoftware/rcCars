@@ -583,19 +583,24 @@ export function createHOHouse(THREE,options={}){
     root.add(car);
     const loft=(sections,material,label)=>{
       const positions=[],uv=[],faces=[];
-      const ring=8;
+      const ring=16;
       for(const section of sections){
         const {z:zz,w,bottom,top}=section;
+        // More continuous molded shoulders at the fenders, beltline
+        // and roof corners avoid the low-poly videogame vehicle profile.
         const outline=[
-          [-w*.82,bottom], [w*.82,bottom],
-          [w,bottom+.18], [w,top-.19],
-          [w*.82,top],[-w*.82,top],
-          [-w,top-.19],[-w,bottom+.18]
+          [-w*.82,bottom],[-w*.4,bottom],[w*.4,bottom],[w*.82,bottom],
+          [w*.96,bottom+.06],[w,bottom+.18],
+          [w,top-.22],[w*.95,top-.09],
+          [w*.78,top],[0,top+.012],
+          [-w*.78,top],[-w*.95,top-.09],
+          [-w,top-.22],[-w,bottom+.18],
+          [-w*.96,bottom+.06],[-w*.82,bottom]
         ];
         for(let j=0;j<ring;j++){
           const p=outline[j];
           positions.push(p[0],p[1],zz);
-          uv.push(j/7,(zz+3)/6);
+          uv.push(j/15,(zz+3)/6);
         }
       }
       for(let i=0;i<sections.length-1;i++){
@@ -759,7 +764,7 @@ export function createHOHouse(THREE,options={}){
    * are packed into ONE BufferGeometry and ONE draw call. The colored ground
    * texture supplies the fine flocking that stays visible at a distance.
    */
-  const grassTufts=detailed?16000:6700;
+  const grassTufts=detailed?32000:11000;
   const grassPositions=[];
   const grassColors=[];
   let produced=0,tries=0;
@@ -784,8 +789,8 @@ export function createHOHouse(THREE,options={}){
       (x>16.0&&Math.abs(z-3)<2.0))continue;
     const tint=fibers[Math.min(fibers.length-1,
       Math.floor(random()*fibers.length))];
-    const width=.020+random()*.028;
-    const length=.14+random()*.20;
+    const width=.011+random()*.016;
+    const length=.068+random()*.106;
     const theta=random()*Math.PI*2;
     const bend=(random()-.5)*length*.32;
     const dx=Math.cos(theta)*width;
@@ -793,9 +798,9 @@ export function createHOHouse(THREE,options={}){
     const tipX=x+Math.cos(theta)*bend;
     const tipZ=z+Math.sin(theta)*bend;
     grassPositions.push(
-      x-dx,.227,z-dz,
-      x+dx,.227,z+dz,
-      tipX,.227+length,tipZ
+      x-dx,.172,z-dz,
+      x+dx,.172,z+dz,
+      tipX,.172+length,tipZ
     );
     const bottom=tint.clone().multiplyScalar(.77+random()*.10);
     const upper=tint.clone().multiplyScalar(.98+random()*.18);
