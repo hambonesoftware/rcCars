@@ -116,23 +116,33 @@ export function createHOHouse(THREE,options={}){
   // require a physically layered specular model, not universally matte
   // MeshStandardMaterial. The material is still lightweight enough for
   // Three.js 0.164.1/WebGL2 and does not require an HDR texture download.
-  const mat=(color,opts={})=>new THREE.MeshPhysicalMaterial({
-    color,roughness:opts.roughness??.76,
-    metalness:opts.metalness??0,map:opts.map||null,
-    side:opts.side||THREE.FrontSide,
-    clearcoat:opts.clearcoat??0,
-    clearcoatRoughness:opts.clearcoatRoughness??.25,
-    opacity:opts.opacity??1,
-    transparent:opts.transparent??false,
-    depthWrite:opts.depthWrite??true,
-    transmission:opts.transmission??0,
-    thickness:opts.thickness??0,
-    ior:opts.ior??1.5,
-    bumpMap:opts.bumpMap||null,
-    bumpScale:opts.bumpScale??.02,
-    emissive:opts.emissive??0x000000,
-    emissiveIntensity:opts.emissiveIntensity??0
-  });
+  // Reserve costly layered clearcoat shader calculations for actual
+  // manufactured plastic, die-cast metal and glossy glass. Matte grass,
+  // brick, flowers, roof gravel and asphalt use simpler Standard materials.
+  const mat=(color,opts={})=>{
+    const common={
+      color,roughness:opts.roughness??.76,
+      metalness:opts.metalness??0,map:opts.map||null,
+      side:opts.side||THREE.FrontSide,
+      opacity:opts.opacity??1,transparent:opts.transparent??false,
+      depthWrite:opts.depthWrite??true,
+      bumpMap:opts.bumpMap||null,bumpScale:opts.bumpScale??.02,
+      emissive:opts.emissive??0x000000,
+      emissiveIntensity:opts.emissiveIntensity??0
+    };
+    const physical=(opts.clearcoat??0)>0||
+      (opts.metalness??0)>.24||
+      Boolean(opts.transmission)||Boolean(opts.transparent);
+    if(physical)return new THREE.MeshPhysicalMaterial({
+      ...common,
+      clearcoat:opts.clearcoat??0,
+      clearcoatRoughness:opts.clearcoatRoughness??.25,
+      transmission:opts.transmission??0,
+      thickness:opts.thickness??0,
+      ior:opts.ior??1.5
+    });
+    return new THREE.MeshStandardMaterial(common);
+  };
   const m={
     siding:mat(colors.wall,{map:sidingTex,roughness:.37,clearcoat:.34,clearcoatRoughness:.31,bumpMap:sidingTex,bumpScale:.014}),
     sidingLight:mat(0xe9e5d5,{map:sidingTex,roughness:.38,clearcoat:.25}),
