@@ -80,10 +80,18 @@ async function run(){
       throw Error('The photographed 20x10 train-table scene is incomplete: '+
         JSON.stringify(initial));
     }
-    await desktop.waitForTimeout(950);
-    const changedTrainX=Number(await desktop.locator('body').getAttribute('data-maple-train-x'));
-    if(Math.abs(changedTrainX-initial.trainX)<.06)
-      throw Error('Train is not physically moving in the model railroad layout');
+    await desktop.waitForTimeout(2200);
+    const trainDebug=await desktop.evaluate(()=>({
+      x:Number(document.body.dataset.mapleTrainX),
+      z:Number(document.body.dataset.mapleTrainZ),
+      frames:document.body.dataset.mapleFrameCount,
+      error:document.body.dataset.mapleFrameError,
+      race:document.body.dataset.mapleRaceState
+    }));
+    if(Math.hypot(trainDebug.x-initial.trainX,trainDebug.z)<.06)
+      throw Error('Train motion regression: '+JSON.stringify({
+        before:initial.trainX,after:trainDebug,jsErrors:bad
+      }));
     await desktop.screenshot({
       path:path.join(images,'maple-junction-desktop-full-train-table.png'),
       animations:'disabled'
