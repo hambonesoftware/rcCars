@@ -170,7 +170,7 @@ export function createHOHouse(THREE,options={}){
     tableWood:mat(0x936844,{map:woodTex}),
     tableTop:mat(0xc4a67e,{map:woodTex,roughness:.58,clearcoat:.18}),
     carGlass:mat(0x617d84,{roughness:.065,metalness:.05,
-      clearcoat:1,clearcoatRoughness:.05,transparent:true,
+      clearcoat:1,clearcoatRoughness:.05,side:THREE.DoubleSide,transparent:true,
       opacity:.96,depthWrite:false}),
     carBlack:mat(0x202427,{roughness:.48,clearcoat:.12}),
     carChrome:mat(0xe2e5e1,{metalness:.88,roughness:.16}),
@@ -553,36 +553,185 @@ export function createHOHouse(THREE,options={}){
     tube(root,m.brass,-18.9+side*.47,.70,21.1,.13,.13,.43,7);
   }
 
+  /**
+   * The toy car is an actual low-poly die-cast body, not stacked cuboids:
+   * rounded shoulder sections, tapering bonnet, a sloped glasshouse, dark
+   * inset glazing, wheel-arch lips, a molded base, bumpers and chrome rims.
+   * Its surfacing and scale are tuned to suggest a premium 1:87 toy rather
+   * than a full-size vehicle or cartoon prop.
+   */
   function modelStationWagon(x,z){
     const car=new THREE.Group();
-    car.position.set(x,.34,z);
+    car.name='Die-cast 1:87-style model wagon';
+    car.position.set(x,.24,z);
     root.add(car);
-    solid(car,m.wagon,0,.52,0,2.35,.70,4.18);
-    solid(car,m.wagon,0,1.17,-.28,2.09,.65,2.56);
-    solid(car,m.glass,0,1.39,1.01,1.90,.35,.11);
-    solid(car,m.glass,0,1.38,-1.54,1.90,.35,.11);
-    for(const side of [-1,1]){
-      solid(car,m.glass,side*1.075,1.32,-.15,.08,.43,1.95);
-      for(const zz of [-1.41,1.44]){
-        const wheel=new THREE.Mesh(
-          new THREE.CylinderGeometry(.46,.46,.36,14),m.tire);
-        wheel.rotation.z=Math.PI*.5;
-        wheel.position.set(side*1.18,.17,zz);
-        car.add(wheel);
-        const hub=new THREE.Mesh(
-          new THREE.CylinderGeometry(.24,.24,.37,12),m.hubcap);
-        hub.rotation.z=Math.PI*.5;
-        hub.position.copy(wheel.position);
-        hub.position.x+=side*.012;
-        car.add(hub);
+    const loft=(sections,material,label)=>{
+      const positions=[],uv=[],faces=[];
+      const ring=8;
+      for(const section of sections){
+        const {z:zz,w,bottom,top}=section;
+        const outline=[
+          [-w*.82,bottom], [w*.82,bottom],
+          [w,bottom+.18], [w,top-.19],
+          [w*.82,top],[-w*.82,top],
+          [-w,top-.19],[-w,bottom+.18]
+        ];
+        for(let j=0;j<ring;j++){
+          const p=outline[j];
+          positions.push(p[0],p[1],zz);
+          uv.push(j/7,(zz+3)/6);
+        }
       }
-      solid(car,m.trimShadow,side*1.17,.48,0,.11,.16,3.80);
-    }
-    solid(car,m.brass,0,.56,2.15,1.66,.18,.08);
+      for(let i=0;i<sections.length-1;i++){
+        for(let j=0;j<ring;j++){
+          const next=(j+1)%ring;
+          const aa=i*ring+j,ab=i*ring+next;
+          const ba=(i+1)*ring+j,bb=(i+1)*ring+next;
+          faces.push(aa,ab,ba,ab,bb,ba);
+        }
+      }
+      for(let j=1;j<ring-1;j++){
+        faces.push(0,j+1,j);
+        const start=(sections.length-1)*ring;
+        faces.push(start,start+j,start+j+1);
+      }
+      const geom=new THREE.BufferGeometry();
+      geom.setAttribute('position',
+        new THREE.Float32BufferAttribute(positions,3));
+      geom.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));
+      geom.setIndex(faces);
+      geom.computeVertexNormals();
+      const mesh=new THREE.Mesh(geom,material);
+      mesh.name=label;
+      mesh.castShadow=true;
+      mesh.receiveShadow=true;
+      car.add(mesh);
+      return mesh;
+    };
+    const panel=(points,material,label)=>{
+      const geom=new THREE.BufferGeometry();
+      const pos=[];
+      for(const p of points)pos.push(...p);
+      geom.setAttribute('position',
+        new THREE.Float32BufferAttribute(pos,3));
+      geom.setIndex([0,1,2,0,2,3]);
+      geom.computeVertexNormals();
+      const mesh=new THREE.Mesh(geom,material);
+      mesh.name=label;
+      mesh.castShadow=false;
+      car.add(mesh);
+      return mesh;
+    };
+    // Soft, shoulder-rounded cast-metal shell with a genuine front bumper.
+    loft([
+      {z:-2.34,w:.96,bottom:.34,top:.99},
+      {z:-2.13,w:1.15,bottom:.30,top:1.14},
+      {z:-1.55,w:1.24,bottom:.28,top:1.23},
+      {z:-.40,w:1.27,bottom:.28,top:1.26},
+      {z:.66,w:1.27,bottom:.28,top:1.25},
+      {z:1.59,w:1.24,bottom:.30,top:1.20},
+      {z:2.20,w:1.13,bottom:.37,top:1.03},
+      {z:2.35,w:.93,bottom:.47,top:.91}
+    ],m.wagon,'painted die-cast lower body');
+    // A tapered, raked roof and windshield give a proper estate-car shape.
+    loft([
+      {z:-1.52,w:.82,bottom:1.14,top:1.34},
+      {z:-1.19,w:.90,bottom:1.25,top:1.94},
+      {z:-.85,w:.88,bottom:1.34,top:2.04},
+      {z:.71,w:.91,bottom:1.33,top:2.08},
+      {z:1.31,w:.86,bottom:1.16,top:1.37}
+    ],m.wagon,'tapered wagon roof and pillars');
+    panel([
+      [-.81,1.36,1.333],[.81,1.36,1.333],
+      [.77,1.98,.725],[-.77,1.98,.725]
+    ],m.carGlass,'sloped front windshield');
+    panel([
+      [-.78,1.40,-1.535],[.78,1.40,-1.535],
+      [.77,1.96,-1.18],[-.77,1.96,-1.18]
+    ],m.carGlass,'sloped rear windshield');
     for(const side of [-1,1]){
-      round(car,m.windowFrame,side*.70,.75,2.13,.25,.13,.085);
-      round(car,m.brick,side*.7,.75,-2.14,.24,.13,.08);
+      // Door glass lies slightly outside the body shell for visible
+      // highlights, and its narrow black pillars define true windows.
+      const xx=side*.935;
+      panel([
+        [xx,1.38,1.08],[xx,1.38,-1.30],
+        [xx,1.98,-1.08],[xx,2.01,.60]
+      ],m.carGlass,'tinted side greenhouse');
+      solid(car,m.carBlack,xx,1.68,-.12,.075,.65,.082);
+      solid(car,m.carBlack,xx,1.37,.10,.075,.09,2.18);
+      solid(car,m.carBlack,xx,2.04,-.10,.07,.095,1.72);
+      // Two cast door handles and subtle side molding.
+      for(const zz of [-.74,.69]){
+        solid(car,m.carChrome,side*1.28,1.15,zz,
+          .057,.075,.34,{castShadow:false});
+      }
+      solid(car,m.carChrome,side*1.25,.81,0,
+        .05,.062,3.22,{castShadow:false});
+      // Side mirrors are two separate black-plastic housings with bright
+      // molded glass inserts.
+      solid(car,m.carBlack,side*1.09,1.40,1.00,
+        .55,.22,.42);
+      solid(car,m.carChrome,side*1.35,1.40,1.00,
+        .055,.15,.30,{castShadow:false});
+      for(const zz of [-1.51,1.45]){
+        // A dark wheel-opening lip frames a real rolling tire,
+        // not a dark square pasted onto the model.
+        const arch=new THREE.Mesh(
+          new THREE.TorusGeometry(.53,.067,6,24,Math.PI),m.carBlack);
+        arch.position.set(side*1.256,.50,zz);
+        arch.rotation.y=Math.PI*.5;
+        car.add(arch);
+        const tire=new THREE.Mesh(
+          new THREE.CylinderGeometry(.46,.46,.34,24),m.tire);
+        tire.rotation.z=Math.PI*.5;
+        tire.position.set(side*1.30,.47,zz);
+        tire.name='black rubber toy wheel';
+        tire.castShadow=true;
+        car.add(tire);
+        const face=new THREE.Mesh(
+          new THREE.CylinderGeometry(.305,.305,.35,24),m.hubcap);
+        face.rotation.z=Math.PI*.5;
+        face.position.set(side*1.32,.47,zz);
+        face.name='metallic chrome wheel';
+        car.add(face);
+        const axleX=side*1.49;
+        for(let spoke=0;spoke<5;spoke++){
+          const theta=spoke*2*Math.PI/5;
+          const spokeMesh=solid(car,m.carChrome,
+            axleX,.47+Math.sin(theta)*.16,
+            zz+Math.cos(theta)*.16,
+            .065,.068,.30,{castShadow:false});
+          spokeMesh.rotation.x=-theta;
+        }
+        const cap=new THREE.Mesh(
+          new THREE.CylinderGeometry(.104,.104,.39,14),m.carChrome);
+        cap.rotation.z=Math.PI*.5;
+        cap.position.set(axleX,.47,zz);
+        car.add(cap);
+      }
     }
+    // Underbody, fascia, grille, registration plate and separate lenses.
+    solid(car,m.carBlack,0,.21,0,2.31,.25,4.20);
+    solid(car,m.carChrome,0,.52,2.34,2.02,.12,.115);
+    solid(car,m.carBlack,0,.80,2.355,1.30,.25,.08);
+    for(let i=-3;i<=3;i++)
+      solid(car,m.carChrome,i*.163,.80,2.407,
+        .049,.20,.035,{castShadow:false});
+    solid(car,m.carChrome,0,.44,2.405,.68,.17,.035);
+    solid(car,m.carChrome,0,.52,-2.385,2.06,.12,.08);
+    solid(car,m.carBlack,0,.44,-2.410,.71,.21,.045);
+    for(const side of [-1,1]){
+      solid(car,m.carLamp,side*.79,.91,2.325,
+        .48,.21,.08,{castShadow:false});
+      solid(car,m.carTail,side*.79,.87,-2.390,
+        .42,.30,.06,{castShadow:false});
+      solid(car,m.carChrome,side*.80,.61,2.39,
+        .35,.07,.055,{castShadow:false});
+    }
+    // Molded plastic model-car display base remains distinct from
+    // its glossy painted shell.
+    solid(car,m.carBlack,0,.18,0,2.38,.12,4.08);
+    car.userData.diecast=true;
     return car;
   }
   modelStationWagon(9.7,13.4);
