@@ -97,8 +97,8 @@ async function main(){
        stats.garageRoof!=='pitched-molded-roof'||
        stats.lighting!=='satin-neutral-v2'||
        stats.specular!=='65'||
-       stats.specularLight!=='constant-light-brdf-v2'||
-       Math.abs(stats.specularIntensity-.671)>.001||
+       stats.specularLight!=='dielectric-specular-f0-v3'||
+       Math.abs(stats.specularIntensity-.558)>.001||
        Math.abs(stats.diffuseLightIntensity-.82)>.001||
        !(stats.specularGloss>.65)){
       throw Error('Incomplete physical plastic fidelity preview '+JSON.stringify(stats));
@@ -117,7 +117,7 @@ async function main(){
     });
     await desktop.locator('#specular-light').fill('0');
     if(await desktop.locator('body').getAttribute('data-fidelity-specular-percent')!=='0'||
-       await desktop.locator('body').getAttribute('data-fidelity-specular-intensity')!=='0.060')
+       await desktop.locator('body').getAttribute('data-fidelity-specular-intensity')!=='0.015')
       throw Error('Specular slider did not set matte baseline');
     await desktop.waitForTimeout(350);
     const low=await desktop.screenshot({
@@ -126,7 +126,7 @@ async function main(){
     });
     await desktop.locator('#specular-light').fill('100');
     if(await desktop.locator('body').getAttribute('data-fidelity-specular-percent')!=='100'||
-       await desktop.locator('body').getAttribute('data-fidelity-specular-intensity')!=='1.000'||
+       await desktop.locator('body').getAttribute('data-fidelity-specular-intensity')!=='0.850'||
        await desktop.locator('body').getAttribute('data-fidelity-diffuse-light-intensity')!=='0.820')
       throw Error('Specular slider did not change material BRDF independently of diffuse light');
     await desktop.waitForTimeout(350);
@@ -137,11 +137,11 @@ async function main(){
     // We MUST measure the rendered image. Changing an intensity variable is
     // not proof that the user will see a reflective highlight.
     const regions={
-      moldedGarage:pixelChange(low,high,{x:1160,y:400,w:230,h:150}),
-      moldedRoof:pixelChange(low,high,{x:860,y:225,w:350,h:120}),
-      plainGarage:pixelChange(low,high,{x:350,y:400,w:230,h:150}),
-      sky:pixelChange(low,high,{x:900,y:60,w:400,h:100}),
-      grass:pixelChange(low,high,{x:920,y:570,w:300,h:45})
+      moldedGarage:pixelChange(low,high,{x:1150,y:525,w:230,h:105}),
+      moldedRoof:pixelChange(low,high,{x:865,y:360,w:290,h:110}),
+      plainGarage:pixelChange(low,high,{x:430,y:525,w:210,h:105}),
+      sky:pixelChange(low,high,{x:900,y:225,w:400,h:100}),
+      grass:pixelChange(low,high,{x:870,y:670,w:270,h:40})
     };
     console.log('Specular image measurements (low vs high):',JSON.stringify(regions));
     if(regions.moldedGarage.mean<8||
