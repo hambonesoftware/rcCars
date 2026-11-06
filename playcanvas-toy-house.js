@@ -515,7 +515,10 @@ async function start(){
   }
   function applyView(){
     const phone=window.matchMedia('(max-width:850px)').matches;
-    state.target.set(phone?-.3:0,3.45,-1.65);
+    // Phone hero view must frame the entire miniature AND driveway,
+    // not fill the portrait with roof and blank backdrop.
+    if(phone)state.target.set(.15,1.65,2.45);
+    else state.target.set(.15,3.20,-.80);
     if(state.view==='front'){
       state.yaw=.04;state.pitch=.28;state.radius=phone?55:45;
     }else if(state.view==='top'){
@@ -524,7 +527,9 @@ async function start(){
       state.target.set(-5.1,4.3,.5);
       state.yaw=.27;state.pitch=.24;state.radius=phone?24:20;
     }else{
-      state.yaw=.42;state.pitch=.33;state.radius=phone?57:49;
+      state.yaw=phone?.35:.42;
+      state.pitch=phone?.43:.33;
+      state.radius=phone?69:49;
     }
     document.body.dataset.pcView=state.view;
     for(const el of document.querySelectorAll('button[data-view]')){
