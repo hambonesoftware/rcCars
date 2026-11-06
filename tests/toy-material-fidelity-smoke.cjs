@@ -1,0 +1,115 @@
+'use strict';
+/** Real Chromium WebGL2 fidelity proof. No mock pixels or AI-generated screenshots. */
+const fs=require('node:fs');
+const path=require('node:path');
+const http=require('node:http');
+const {execFileSync}=require('node:child_process');
+const {chromium}=require('playwright-core');
+const root=path.resolve(__dirname,'..');
+const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.png':'image/png'};
+function chromiumPath(){
+  for(const v of [process.env.CHROME_PATH,'/usr/bin/chromium','/usr/bin/google-chrome']){
+    if(v&&fs.existsSync(v))return v;
+  }
+  return execFileSync('which',['chromium'],{encoding:'utf8'}).trim();
+}
+const server=http.createServer((req,res)=>{
+  let url;
+  try{url=new URL(req.url,'http://127.0.0.1');}
+  catch(error){res.writeHead(400);res.end('Bad URL');return;}
+  let file;
+  try{file=path.resolve(root,'.'+decodeURIComponent(url.pathname));}
+  catch(error){res.writeHead(400);res.end('Invalid path');return;}
+  if(!file.startsWith(root+path.sep)){res.writeHead(403);res.end('Forbidden');return;}
+  fs.stat(file,(error,stat)=>{
+    if(error||!stat.isFile()){res.writeHead(404);res.end('Not found');return;}
+    res.writeHead(200,{'Content-Type':mime[path.extname(file)]||'application/octet-stream'});
+    fs.createReadStream(file).pipe(res);
+  });
+});
+async function main(){
+  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+  const base='http://127.0.0.1:'+server.address().port+'/toy-material-comparison.html';
+  const browser=await chromium.launch({
+    executablePath:chromiumPath(),headless:true,
+    args:['--no-sandbox','--disable-dev-shm-usage','--enable-unsafe-swiftshader',
+      '--use-gl=angle','--use-angle=swiftshader']
+  });
+  const output=path.join(root,'tests','screenshots');
+  fs.mkdirSync(output,{recursive:true});
+  const errorList=[];
+  try{
+    const desktop=await browser.newPage({viewport:{width:1600,height:1000},deviceScaleFactor:1});
+    desktop.on('pageerror',error=>errorList.push('desktop: '+error.message));
+    await desktop.goto(base,{waitUntil:'domcontentloaded',timeout:50000});
+    try{
+      await desktop.waitForFunction(()=>document.body.dataset.fidelityReady==='true',
+        null,{timeout:50000});
+    }catch(error){
+      throw Error('Desktop startup: '+JSON.stringify(await desktop.evaluate(()=>({
+        state:document.body.dataset.fidelityReady,
+        error:document.body.dataset.fidelityError,
+        status:document.querySelector('#render-status').textContent
+      }))));
+    }
+    const stats=await desktop.evaluate(()=>({
+      engine:document.body.dataset.fidelityEngine,
+      reflections:document.body.dataset.fidelityReflections,
+      normal:document.body.dataset.fidelityNormalMap,
+      ao:document.body.dataset.fidelityAO,
+      beveled:Number(document.body.dataset.fidelityRoundedParts),
+      raised:Number(document.body.dataset.fidelityMoldedPanels),
+      canvasWidth:document.querySelector('#fidelity-canvas').width,
+      context:!!document.querySelector('#fidelity-canvas').getContext('webgl2')
+    }));
+    if(stats.engine!=='PlayCanvas 2.23.3'||stats.normal!=='tangent-styrene-normal'||
+       stats.ao!=='crevice-texture-and-inset'||stats.beveled<60||
+       stats.raised<65||!stats.context||stats.canvasWidth<850){
+      throw Error('Incomplete physical plastic fidelity preview '+JSON.stringify(stats));
+    }
+    await desktop.waitForTimeout(600);
+    await desktop.screenshot({
+      path:path.join(output,'molded-plastic-before-after-desktop.png'),
+      animations:'disabled'
+    });
+    await desktop.locator('#rotate-light').fill('20');
+    const angle=await desktop.locator('body').getAttribute('data-fidelity-light-angle');
+    if(angle!=='20')throw Error('Adjustable light failed: '+angle);
+    await desktop.screenshot({
+      path:path.join(output,'molded-plastic-studio-angle.png'),
+      animations:'disabled'
+    });
+    await desktop.close();
+
+    const context=await browser.newContext({
+      viewport:{width:390,height:844},deviceScaleFactor:2,
+      isMobile:true,hasTouch:true
+    });
+    const mobile=await context.newPage();
+    mobile.on('pageerror',e=>errorList.push('mobile: '+e.message));
+    await mobile.goto(base,{waitUntil:'domcontentloaded',timeout:50000});
+    await mobile.waitForFunction(()=>document.body.dataset.fidelityReady==='true',
+      null,{timeout:50000});
+    if(await mobile.locator('body').getAttribute('data-fidelity-mobile-mode')!=='improved')
+      throw Error('Mobile did not start on molded specimen');
+    await mobile.waitForTimeout(300);
+    await mobile.screenshot({
+      path:path.join(output,'molded-plastic-mobile-after.png'),
+      animations:'disabled'
+    });
+    await mobile.locator('[data-specimen="before"]').tap();
+    if(await mobile.locator('body').getAttribute('data-fidelity-mobile-mode')!=='before')
+      throw Error('Mobile specimen selection failed');
+    await mobile.screenshot({
+      path:path.join(output,'molded-plastic-mobile-before.png'),
+      animations:'disabled'
+    });
+    await mobile.close();
+    if(errorList.length)throw Error('JavaScript error(s): '+errorList.join('; '));
+    console.log('PASS: real PlayCanvas physical bevel meshes and tangent normal maps',stats);
+    console.log('PASS: exact same studio lights, draggable angle, phone specimen comparison');
+  }finally{
+    await browser.close();await new Promise(resolve=>server.close(resolve));
+  }
+}
+main().catch(error=>{console.error(error);process.exitCode=1;server.close();});
