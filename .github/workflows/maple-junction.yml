@@ -1,0 +1,49 @@
+name: Verify Maple Junction before deployment
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'maple-junction.html'
+      - 'maple-junction.js'
+      - 'maple-junction-world.js'
+      - 'tests/maple-junction-smoke.cjs'
+      - '.github/workflows/maple-junction.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'maple-junction.html'
+      - 'maple-junction.js'
+      - 'maple-junction-world.js'
+      - 'tests/maple-junction-smoke.cjs'
+      - '.github/workflows/maple-junction.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test-maple:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Check out Maple Junction
+        uses: actions/checkout@v4
+      - name: Check JavaScript syntax
+        run: |
+          node --input-type=module --check < maple-junction-world.js
+          node --input-type=module --check < maple-junction.js
+          node --check tests/maple-junction-smoke.cjs
+          test -s maple-junction.html
+      - name: Install Chromium test driver
+        run: npm install --no-save --ignore-scripts --no-audit --no-fund playwright-core@1.56.1
+      - name: Real-world playable desktop and iPhone browser test
+        run: timeout 360s node tests/maple-junction-smoke.cjs
+      - name: Archive real screenshots even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: maple-junction-real-desktop-and-phone
+          path: tests/screenshots/maple-junction-*.png
+          if-no-files-found: ignore
+          retention-days: 14

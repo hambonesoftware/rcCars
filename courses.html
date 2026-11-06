@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#142c34">
 <title>Choose a Course — Micro Mayhem</title>
-<meta name="description" content="Choose from four distinct two-lap 3D RC racing circuits in Micro Mayhem.">
+<meta name="description" content="Choose Maple Junction, a playable three-lap HO train-table town course, plus four original miniature RC racing circuits.">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=DM+Sans:wght@400;500;600;700;800&display=swap');
 :root{color-scheme:dark;--ink:#132c33;--cream:#f6f7ee;--lime:#e4fd7b;font-family:'DM Sans',system-ui,sans-serif}
@@ -26,6 +26,22 @@ header{margin:35px 0 29px}h1,h2{font-family:'Barlow Condensed',Impact,'Arial Nar
 .tag{position:absolute;top:17px;right:16px;z-index:2;background:#122d36df;border:1px solid #f7f9ea72;color:#fff;border-radius:4px;font-size:10px;font-weight:900;padding:7px 10px;letter-spacing:.13em}
 .info{padding:20px 22px 22px}.subtitle{font-size:10px;font-weight:900;letter-spacing:.13em;color:var(--accent);margin:0 0 8px;text-transform:uppercase}.name{font-size:clamp(30px,3.4vw,46px);letter-spacing:-.01em;line-height:1;margin:0 0 12px}.description{font-size:13px;line-height:1.55;color:#cbdbd8;min-height:41px;margin:0}.bottom{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:17px;border-top:1px solid #ffffff28;padding-top:16px}.stat{font-size:10px;font-weight:900;color:#c9d8d1;letter-spacing:.08em}.action{background:var(--accent);color:#16303b;border-radius:4px;font-size:12px;letter-spacing:.07em;font-weight:900;padding:10px 15px}
 .note{font-size:12px;color:#a5c2bf;margin:24px 0 0;text-align:center}
+.featured{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(270px,.75fr);
+  gap:18px;align-items:center;text-decoration:none;margin-bottom:20px;
+  background:linear-gradient(130deg,#dfe6cf,#b6c5aa);
+  border:2px solid #edf6d2;border-radius:13px;padding:22px 23px;
+  color:#203e32;box-shadow:0 19px 36px #091d2560}
+.featured:focus-visible,.featured:hover{outline:3px solid #e4fd7b}
+.featured h2{font:900 clamp(36px,4.3vw,58px)/.90 'Barlow Condensed',Impact,sans-serif;
+  letter-spacing:-.02em;margin:6px 0 13px}
+.featured p{font-size:13px;line-height:1.48;font-weight:650;max-width:620px;
+  margin:0;color:#435d4e}
+.featured strong{display:inline-block;margin-top:16px;padding:12px 17px;
+  font-weight:900;font-size:12px;background:#275241;color:#fff;border-radius:8px}
+.featured .mini-eyebrow{font-size:10px;letter-spacing:.15em;font-weight:900;color:#547456}
+.featured svg{width:100%;max-height:182px;display:block;border-radius:8px;
+  background:#d0d5bb;filter:drop-shadow(0 8px 10px #344c3c35)}
+@media(max-width:740px){.featured{grid-template-columns:1fr;padding:17px}.featured svg{max-height:155px}}
 @media(max-width:740px){.grid{grid-template-columns:1fr}.art{height:235px}h1{font-size:clamp(70px,16vw,120px)}.info{padding:19px}.name{font-size:36px}.description{min-height:unset}}
 @media(prefers-reduced-motion:reduce){.course{transition:none}}
 </style>
@@ -33,7 +49,36 @@ header{margin:35px 0 29px}h1,h2{font-family:'Barlow Condensed',Impact,'Arial Nar
 <body>
 <main>
   <div class="topline"><div class="brand">HAMBONE SOFTWARE / MINIATURE RACING CLUB</div><div style="display:flex;gap:8px;flex-wrap:wrap"><a href="./house-showcase.html" class="back">⌂ INSPECT THE HO HOUSE</a><a href="./playcanvas-house.html" class="back">◈ PLAYCANVAS ENGINE TEST</a><a href="./index.html" class="back">← BACK TO GARAGE</a></div></div>
-  <header><div class="eyebrow">MICRO MAYHEM · HO-SCALE TOWNS & TABLETOP GRAND PRIX</div><h1>CHOOSE<br><span>YOUR TRACK.</span></h1><p class="lede">Four handmade HO-scale railway worlds filled with miniature towns, depots, model trees and tiny people. Race your RC trucks across four distinct circuits with two laps and four sectors each.</p></header>
+  <header><div class="eyebrow">MICRO MAYHEM · HO-SCALE TOWNS & TABLETOP GRAND PRIX</div><h1>CHOOSE<br><span>YOUR TRACK.</span></h1><p class="lede">Race through miniature towns, depots, railroads and wooded hills. Maple Junction is our new playable 20 × 10 train-table circuit, joining four original courses.</p></header>
+  <a class="featured" href="./maple-junction.html" aria-label="Play Maple Junction Loop, the new miniature train-table course">
+    <div>
+      <div class="mini-eyebrow">NEW · FEATURED HO TRAIN-TABLE COURSE · PLAYABLE NOW</div>
+      <h2>MAPLE JUNCTION LOOP.</h2>
+      <p>Race three laps around a complete 20 × 10-foot model railroad town. Molded-plastic shopfronts, connected hill roads, a working miniature train, depot, gardens, and a real mini-car chase camera.</p>
+      <strong>START MAPLE JUNCTION →</strong>
+    </div>
+    <svg viewBox="0 0 340 176" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <rect x="4" y="4" width="332" height="168" rx="9" fill="#b8c49f" stroke="#917354" stroke-width="7"/>
+      <path d="M 105 12 H 327 V 67 Q 282 83 251 54 T 174 69 Q 136 77 105 12" fill="#869976"/>
+      <path d="M 177 11 H 326 V 41 Q 282 62 259 38 T 177 11" fill="#677f60"/>
+      <ellipse cx="170" cy="88" rx="144" ry="67" fill="none" stroke="#79654c" stroke-width="5"/>
+      <ellipse cx="170" cy="88" rx="144" ry="67" fill="none" stroke="#c8ae86" stroke-width="1" stroke-dasharray="3 4"/>
+      <path d="M 43 135 H 287 Q 311 120 290 99 L 267 83 Q 251 63 280 46 Q 286 31 262 32 H 200 Q 180 33 185 53 T 150 79 H 60 Q 35 80 48 106 Q 59 123 43 135 Z" fill="none" stroke="#5c6460" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M 43 135 H 287 Q 311 120 290 99 L 267 83 Q 251 63 280 46 Q 286 31 262 32 H 200 Q 180 33 185 53 T 150 79 H 60 Q 35 80 48 106 Q 59 123 43 135 Z" fill="none" stroke="#debd68" stroke-width="1.4" stroke-dasharray="7 8"/>
+      <g fill="#cbad88" stroke="#f1e7d1" stroke-width="2">
+        <rect x="59" y="45" width="20" height="16" rx="2"/>
+        <rect x="84" y="45" width="20" height="16" rx="2"/>
+        <rect x="111" y="45" width="20" height="16" rx="2"/>
+        <rect x="67" y="99" width="20" height="16" rx="2"/>
+        <rect x="96" y="100" width="20" height="16" rx="2"/>
+        <rect x="126" y="100" width="20" height="16" rx="2"/>
+        <rect x="182" y="100" width="25" height="16" rx="2"/>
+        <rect x="220" y="105" width="29" height="17" rx="2"/>
+      </g>
+      <circle cx="46" cy="136" r="7" fill="#d0a551" stroke="#fff5de" stroke-width="3"/>
+      <g fill="#4a704b"><circle cx="300" cy="67" r="9"/><circle cx="310" cy="87" r="8"/><circle cx="236" cy="25" r="7"/><circle cx="145" cy="22" r="8"/></g>
+    </svg>
+  </a>
   <div id="courses" class="grid" aria-label="Available racing courses"></div>
   <p class="note">Handcrafted model towns · Genuine 3D track geometry · Optional tilt-shift camera · No accounts required</p>
   <noscript><p><a href="./quarter-track.html?course=backyard">Backyard Grand Prix</a> · <a href="./quarter-track.html?course=creek">Creekside Scramble</a> · <a href="./quarter-track.html?course=garage">Garage Gauntlet</a> · <a href="./quarter-track.html?course=quarry">Sunset Quarry</a></p></noscript>
