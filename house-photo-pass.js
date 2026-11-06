@@ -8,7 +8,10 @@ export function createHousePhotoPass(THREE,renderer){
     minFilter:THREE.LinearFilter,magFilter:THREE.LinearFilter,
     format:THREE.RGBAFormat,depthBuffer:true,stencilBuffer:false
   });
-  target.depthTexture=new THREE.DepthTexture(2,2,THREE.UnsignedShortType);
+  // A 16-bit depth target loses sub-unit surface separation at a camera
+  // distance of ~90 units, causing severe lawn/road Z-fighting stripes.
+  // WebGL2 24-bit depth is mandatory for the photo comparison pass.
+  target.depthTexture=new THREE.DepthTexture(2,2,THREE.UnsignedIntType);
   target.depthTexture.format=THREE.DepthFormat;
   const vertexShader=[
     'varying vec2 vUv;',
