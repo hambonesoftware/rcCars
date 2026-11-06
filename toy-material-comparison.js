@@ -565,6 +565,15 @@ async function boot(){
     document.body.dataset.fidelityRegion=state.region;
     document.body.dataset.fidelityCameraDistance=state.zoom.toFixed(2);
     document.body.dataset.fidelityIsolation=phone?'single-specimen':'paired';
+    document.body.dataset.fidelityRoofConnection='gable-and-eaves-aligned';
+    document.body.dataset.fidelityGarageRoof='pitched-molded-roof';
+    document.body.dataset.fidelityLightTreatment='satin-neutral-v2';
+    const indicator=document.querySelector('#scene-indicator');
+    if(indicator){
+      const model=state.mode==='before'?'ORIGINAL':'MOLDED';
+      const subject=state.region==='garage'?'GARAGE':'HOUSE';
+      indicator.textContent=model+' · '+subject;
+    }
   }
   function renderCamera(){
     const rad=state.zoom,c=Math.cos(state.pitch);
