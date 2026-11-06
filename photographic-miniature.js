@@ -345,8 +345,11 @@ export function buildPhotographicMiniature({pc,app,root,device,block,makeMateria
 
   // Three-dimensional foliage foam is many irregular triangulated leaf
   // clusters, not solid green billiard-ball spheres.
+  // One foliage mesh per material for the entire diorama: all tree crowns
+  // and clipped shrubs share three GPU draw calls instead of one per cluster.
+  const foliageGroups=[batch(),batch(),batch()];
   function leafCloud(cx,cy,cz,sx,sy,sz,seed,parent=root){
-    const r=rand(seed),groups=[batch(),batch(),batch()];
+    const r=rand(seed),groups=foliageGroups;
     for(let i=0;i<460;i++){
       const theta=2*Math.PI*r(),u=2*r()-1;
       const q=Math.sqrt(1-u*u);
@@ -363,10 +366,6 @@ export function buildPhotographicMiniature({pc,app,root,device,block,makeMateria
       triangle(face,[x+.03,y-.07,z-rad],
         [x-.045,y+rad*.92,z+rad],
         [x+rad,y+.02,z+.02]);
-    }
-    for(let i=0;i<3;i++){
-      mount(groups[i],'Realistic uneven scenic foliage cluster '+i,
-        [mats.leaf,mats.leafMid,mats.leafLight][i],parent);
     }
   }
   function tree(x,z,h,seed){
@@ -396,6 +395,10 @@ export function buildPhotographicMiniature({pc,app,root,device,block,makeMateria
     [14.6,-5.4,.78,761],[14.8,-3.3,.74,771]
   ])leafCloud(x,.74,z,w,.58,w*.83,seed);
 
+  for(let i=0;i<3;i++){
+    mount(foliageGroups[i],'Batched photographic scenic foliage '+i,
+      [mats.leaf,mats.leafMid,mats.leafLight][i],root);
+  }
   // Hand placed 1:87 garden ballast and cast flower heads, no random clutter.
   for(const [x,z,w,d] of [[-9.3,2.52,3.5,1.2],[.80,2.51,3.20,1.2]]){
     block(root,'Raised scenic garden bed',mats.soil,[x,.357,z],[w,.16,d]);
@@ -430,6 +433,7 @@ export function buildPhotographicMiniature({pc,app,root,device,block,makeMateria
   document.body.dataset.pcHeroAsset='molded-geometry-v3';
   document.body.dataset.pcRoofSystem='batched-individual-shingles';
   document.body.dataset.pcFoliageSystem='triangulated-branch-leaves';
+  document.body.dataset.pcFoliageDrawCalls='3';
   document.body.dataset.pcHouseClapboards=String(sidingPieces);
   return {model,room,materials:mats};
 }
