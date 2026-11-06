@@ -5,6 +5,7 @@ const path=require('node:path');
 const http=require('node:http');
 const {execFileSync}=require('node:child_process');
 const {chromium}=require('playwright-core');
+const {PNG}=require('pngjs');
 const root=path.resolve(__dirname,'..');
 const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.png':'image/png'};
 function chromiumPath(){
@@ -38,6 +39,25 @@ async function main(){
   const output=path.join(root,'tests','screenshots');
   fs.mkdirSync(output,{recursive:true});
   const errorList=[];
+  function pixelChange(pngA,pngB,box){
+    const a=PNG.sync.read(pngA),b=PNG.sync.read(pngB);
+    if(a.width!==b.width||a.height!==b.height)
+      throw Error('Image dimensions changed during fixed-camera lighting test');
+    const x0=Math.max(0,box.x),y0=Math.max(0,box.y);
+    const x1=Math.min(a.width,x0+box.w),y1=Math.min(a.height,y0+box.h);
+    let sum=0,large=0,bright=0,seen=0;
+    for(let y=y0;y<y1;y++)for(let x=x0;x<x1;x++){
+      const i=(y*a.width+x)*4;
+      const dr=b.data[i]-a.data[i],dg=b.data[i+1]-a.data[i+1],
+        db=b.data[i+2]-a.data[i+2];
+      const magnitude=(Math.abs(dr)+Math.abs(dg)+Math.abs(db))/3;
+      sum+=magnitude;
+      if(magnitude>12)large++;
+      if((dr+dg+db)/3>10)bright++;
+      seen++;
+    }
+    return {mean:sum/seen,changed12:large/seen,bright10:bright/seen,pixels:seen};
+  }
   try{
     const desktop=await browser.newPage({viewport:{width:1600,height:1000},deviceScaleFactor:1});
     desktop.on('pageerror',error=>errorList.push('desktop: '+error.message));
@@ -66,7 +86,9 @@ async function main(){
       lighting:document.body.dataset.fidelityLightTreatment,
       specular:document.body.dataset.fidelitySpecularPercent,
       specularLight:document.body.dataset.fidelitySpecularLight,
-      specularIntensity:Number(document.body.dataset.fidelitySpecularIntensity)
+      specularIntensity:Number(document.body.dataset.fidelitySpecularIntensity),
+      diffuseLightIntensity:Number(document.body.dataset.fidelityDiffuseLightIntensity),
+      specularGloss:Number(document.body.dataset.fidelitySpecularGloss)
     }));
     if(stats.engine!=='PlayCanvas 2.23.3'||stats.normal!=='tangent-styrene-normal'||
        stats.ao!=='crevice-texture-and-inset'||stats.beveled<60||
@@ -74,9 +96,11 @@ async function main(){
        stats.roofConnection!=='gable-and-eaves-aligned'||
        stats.garageRoof!=='pitched-molded-roof'||
        stats.lighting!=='satin-neutral-v2'||
-       stats.specular!=='45'||
-       stats.specularLight!=='directional-ggx-v1'||
-       Math.abs(stats.specularIntensity-.36)>.001){
+       stats.specular!=='50'||
+       stats.specularLight!=='dielectric-specular-f0-v3'||
+       Math.abs(stats.specularIntensity-.4325)>.002||
+       Math.abs(stats.diffuseLightIntensity-.82)>.001||
+       !(stats.specularGloss>.65)){
       throw Error('Incomplete physical plastic fidelity preview '+JSON.stringify(stats));
     }
     await desktop.waitForTimeout(600);
@@ -93,20 +117,42 @@ async function main(){
     });
     await desktop.locator('#specular-light').fill('0');
     if(await desktop.locator('body').getAttribute('data-fidelity-specular-percent')!=='0'||
-       await desktop.locator('body').getAttribute('data-fidelity-specular-intensity')!=='0.000')
-      throw Error('Specular slider did not disable extra specular grazing light');
-    await desktop.screenshot({
+       await desktop.locator('body').getAttribute('data-fidelity-specular-intensity')!=='0.015')
+      throw Error('Specular slider did not set matte baseline');
+    await desktop.waitForTimeout(350);
+    const low=await desktop.screenshot({
       path:path.join(output,'molded-plastic-specular-low.png'),
       animations:'disabled'
     });
-    await desktop.locator('#specular-light').fill('90');
-    if(await desktop.locator('body').getAttribute('data-fidelity-specular-percent')!=='90'||
-       await desktop.locator('body').getAttribute('data-fidelity-specular-intensity')!=='0.720')
-      throw Error('Specular slider did not increase real-light and PBR highlights');
-    await desktop.screenshot({
+    await desktop.locator('#specular-light').fill('100');
+    if(await desktop.locator('body').getAttribute('data-fidelity-specular-percent')!=='100'||
+       await desktop.locator('body').getAttribute('data-fidelity-specular-intensity')!=='0.850'||
+       await desktop.locator('body').getAttribute('data-fidelity-diffuse-light-intensity')!=='0.820')
+      throw Error('Specular slider did not change material BRDF independently of diffuse light');
+    await desktop.waitForTimeout(350);
+    const high=await desktop.screenshot({
       path:path.join(output,'molded-plastic-specular-high.png'),
       animations:'disabled'
     });
+    // We MUST measure the rendered image. Changing an intensity variable is
+    // not proof that the user will see a reflective highlight.
+    const regions={
+      moldedGarage:pixelChange(low,high,{x:1150,y:525,w:230,h:105}),
+      moldedRoof:pixelChange(low,high,{x:865,y:360,w:290,h:110}),
+      plainGarage:pixelChange(low,high,{x:430,y:525,w:210,h:105}),
+      sky:pixelChange(low,high,{x:900,y:225,w:400,h:100}),
+      grass:pixelChange(low,high,{x:870,y:670,w:270,h:40})
+    };
+    console.log('Specular image measurements (low vs high):',JSON.stringify(regions));
+    if(regions.moldedGarage.mean<8||
+       regions.moldedGarage.mean<regions.plainGarage.mean*2.2||
+       regions.moldedGarage.changed12<.08||
+       regions.moldedRoof.mean<3.5||
+       regions.sky.mean>1.2||
+       regions.grass.mean>3.5){
+      throw Error('Specular is not visibly distinguishable from diffuse brightness: '+
+        JSON.stringify(regions));
+    }
     await desktop.close();
 
     const context=await browser.newContext({
@@ -138,7 +184,7 @@ async function main(){
        mobileUI.roof!=='gable-and-eaves-aligned'||
        mobileUI.garage!=='pitched-molded-roof'||
        mobileUI.controlsHeight>167||
-       mobileUI.specular!=='45'||
+       mobileUI.specular!=='50'||
        mobileUI.sceneHeight<390||
        mobileUI.scrolling)
       throw Error('Mobile miniature layout regression: '+JSON.stringify(mobileUI));

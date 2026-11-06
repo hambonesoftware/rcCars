@@ -61,15 +61,18 @@ async function boot(){
   // normals. Directional lights support specular contributions in
   // PlayCanvas; this is genuine per-fragment PBR reflection, not a CSS
   // glow, fake white outline, or increased scene exposure.
-  const specularLight=new pc.Entity('Adjustable grazing highlight on satin plastic');
+  // This source stays at constant intensity. The Specular slider must
+  // affect the MATERIAL'S reflected-light BRDF, not just brighten the
+  // scene with more diffuse light (the old, nearly invisible behavior).
+  const specularLight=new pc.Entity('Camera-side softbox for molded highlight inspection');
   specularLight.addComponent('light',{
     type:'directional',
-    color:color('#f0f2ed'),
-    intensity:.36,
+    color:color('#f8f1e4'),
+    intensity:.82,
     affectSpecularity:true,
     castShadows:false
   });
-  specularLight.setEulerAngles(49,22,0);
+  specularLight.setEulerAngles(30,-16,0);
   app.root.addChild(specularLight);
 
   const environment=makeTexture(device,'Real studio card reflections',(ctx,w,h)=>{
@@ -179,26 +182,48 @@ async function boot(){
   materials.turf.diffuse=color('#a8ad87');
   materials.turf.update();
 
+  // The molded components have different intrinsic roughness.
+  // Changing specularity WITHOUT changing diffuse light lets us
+  // verify actual specular response independently of overall exposure.
   const highlightedPlastic=[
-    materials.styrene,materials.sidingEdge,materials.offwhite,
-    materials.roofing,materials.roofRaised,materials.roofHighlight,
-    materials.garageInset,materials.glass,materials.shutter,
-    materials.sill,materials.metal
+    [materials.styrene,.42,.73,.040],
+    [materials.sidingEdge,.43,.78,.040],
+    [materials.offwhite,.48,.84,.075],
+    [materials.roofing,.31,.62,.025],
+    [materials.roofRaised,.32,.64,.025],
+    [materials.roofHighlight,.32,.64,.025],
+    [materials.garageInset,.52,.83,.06],
+    [materials.glass,.76,.97,.26],
+    [materials.shutter,.49,.84,.085],
+    [materials.sill,.48,.83,.08],
+    [materials.metal,.64,.93,.15]
   ];
   function setSpecular(level){
     const percent=Math.max(0,Math.min(100,Math.round(Number(level)||0)));
     const amount=percent/100;
-    // Don't replace the existing diffuse lighting. Add a grazing
-    // contribution with bounded intensity and a realistic dielectric
-    // reflection factor; scenic grass/concrete remain matte.
-    specularLight.light.intensity=.80*amount;
-    for(const mat of highlightedPlastic){
-      mat.specularityFactor=.48+.45*amount;
+    // Constant light intensity: changed pixels come from material
+    // reflection properties, not from a brighter diffuse key light.
+    // Use PlayCanvas's dedicated specular-color workflow rather than
+    // the metallic workflow. These are dielectric injection-molded
+    // plastics, not metals. Vary the actual Fresnel F0 reflection from
+    // nearly matte to a visible photographic softbox reflection.
+    const reflection=.015+.835*amount;
+    for(const [mat,minGloss,maxGloss,coat] of highlightedPlastic){
+      mat.useMetalness=false;
+      mat.useMetalnessSpecularColor=false;
+      mat.metalness=0;
+      mat.specular.set(reflection,reflection,reflection);
+      mat.specularityFactor=1;
+      mat.gloss=minGloss+(maxGloss-minGloss)*amount;
+      mat.clearCoat=coat*amount;
       mat.update();
     }
     document.body.dataset.fidelitySpecularPercent=String(percent);
-    document.body.dataset.fidelitySpecularLight='directional-ggx-v1';
-    document.body.dataset.fidelitySpecularIntensity=
+    document.body.dataset.fidelitySpecularLight='dielectric-specular-f0-v3';
+    document.body.dataset.fidelitySpecularIntensity=reflection.toFixed(3);
+    document.body.dataset.fidelitySpecularGloss=
+      materials.offwhite.gloss.toFixed(3);
+    document.body.dataset.fidelityDiffuseLightIntensity=
       specularLight.light.intensity.toFixed(3);
     const value=document.querySelector('#specular-value');
     if(value)value.textContent=percent+'%';
@@ -676,7 +701,7 @@ async function boot(){
     key.setEulerAngles(59,angle,0);
     // Move the specular highlight together with the key, but at a
     // different azimuth so it grazes the edges of the plastic.
-    specularLight.setEulerAngles(49,angle+63,0);
+    specularLight.setEulerAngles(30,angle+25,0);
     document.body.dataset.fidelityLightAngle=String(angle);
   });
   const specularControl=document.querySelector('#specular-light');
