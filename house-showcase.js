@@ -6,7 +6,7 @@ const stage=$('viewport');
 const renderer=new THREE.WebGLRenderer({
   antialias:true,alpha:false,powerPreference:'high-performance'
 });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.75));
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.30));
 renderer.shadowMap.enabled=true;
 renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 renderer.outputColorSpace=THREE.SRGBColorSpace;
@@ -75,7 +75,7 @@ scene.add(ambient);
 const sun=new THREE.DirectionalLight(0xffe6bd,3.55);
 sun.position.set(-33,62,31);
 sun.castShadow=true;
-sun.shadow.mapSize.set(2048,2048);
+sun.shadow.mapSize.set(1024,1024);
 sun.shadow.camera.near=.5;
 sun.shadow.camera.far=190;
 sun.shadow.camera.left=-75;
