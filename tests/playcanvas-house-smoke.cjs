@@ -96,7 +96,10 @@ async function main(){
       hero:document.body.dataset.pcHeroAsset,
       shingles:document.body.dataset.pcRoofSystem,
       foliage:document.body.dataset.pcFoliageSystem,
-      clapboards:Number(document.body.dataset.pcHouseClapboards||0)
+      clapboards:Number(document.body.dataset.pcHouseClapboards||0),
+      materials:document.body.dataset.pcMaterialSystem,
+      lighting:document.body.dataset.pcLightingSystem,
+      reflections:document.body.dataset.pcReflectionEnvironment
     }));
     if(before.engine!=='PlayCanvas'||before.version!=='2.23.3'||
       before.light!=='table'||before.view!=='three-quarter'||
@@ -104,7 +107,10 @@ async function main(){
       before.hero!=='molded-geometry-v3'||
       before.shingles!=='batched-individual-shingles'||
       before.foliage!=='triangulated-branch-leaves'||
-      before.clapboards<20){
+      before.clapboards<20||
+      before.materials!=='plastic-clearcoat-v4'||
+      before.lighting!=='photographic-softbox-v4'||
+      before.reflections!=='prefiltered-studio-atlas'){
       throw Error('Unexpected desktop PlayCanvas engine state '+
         JSON.stringify(before));
     }
@@ -158,12 +164,16 @@ async function main(){
       width:document.querySelector('#playcanvas').clientWidth,
       height:document.querySelector('#playcanvas').clientHeight,
       hero:document.body.dataset.pcHeroAsset,
+      materials:document.body.dataset.pcMaterialSystem,
+      reflections:document.body.dataset.pcReflectionEnvironment,
       cameraTextVisible:getComputedStyle(document.querySelector('.overlay h1')).display!=='none',
       viewportHeight:document.querySelector('.viewer').clientHeight
     }));
     if(mobileState.engine!=='PlayCanvas'||mobileState.width<300||
       mobileState.height<350||
       mobileState.hero!=='molded-geometry-v3'||
+      mobileState.materials!=='plastic-clearcoat-v4'||
+      mobileState.reflections!=='prefiltered-studio-atlas'||
       mobileState.cameraTextVisible)throw Error('Bad phone canvas or full view: '+
       JSON.stringify(mobileState));
     await phone.screenshot({
