@@ -57,6 +57,21 @@ async function boot(){
     intensity:.16,castShadows:false});
   rim.setEulerAngles(38,210,0);app.root.addChild(rim);
 
+  // A separate, adjustable grazing-angle source reveals molded edge
+  // normals. Directional lights support specular contributions in
+  // PlayCanvas; this is genuine per-fragment PBR reflection, not a CSS
+  // glow, fake white outline, or increased scene exposure.
+  const specularLight=new pc.Entity('Adjustable grazing highlight on satin plastic');
+  specularLight.addComponent('light',{
+    type:'directional',
+    color:color('#f0f2ed'),
+    intensity:.36,
+    affectSpecularity:true,
+    castShadows:false
+  });
+  specularLight.setEulerAngles(49,22,0);
+  app.root.addChild(specularLight);
+
   const environment=makeTexture(device,'Real studio card reflections',(ctx,w,h)=>{
     const gradient=ctx.createLinearGradient(0,0,0,h);
     gradient.addColorStop(0,'#cad3d4');gradient.addColorStop(.5,'#969d9a');
@@ -92,10 +107,18 @@ async function boot(){
     grad.addColorStop(1,'rgba(64,56,51,.36)');
     ctx.fillStyle=grad;ctx.fillRect(0,0,w,h);
   });
-  const plastic=(name,hex,{gloss=.48,coat=.10,metal=.0,texture=true,ao=true}={})=>{
+  const plastic=(name,hex,{gloss=.48,coat=.10,metal=.0,texture=true,
+    ao=true,specularity=.62}={})=>{
     const m=new pc.StandardMaterial();m.name=name;
     m.diffuse=color(hex);m.useMetalness=true;m.metalness=metal;
     m.gloss=gloss;m.clearCoat=coat;m.clearCoatGloss=.69;
+    // A neutral-tinted dielectric specular response, with GGX
+    // microfacet highlights. Keep the sculpted surfaces satin;
+    // clearcoat is deliberately low except for acrylic glazing.
+    m.useMetalnessSpecularColor=true;
+    m.specular=color('#e4e3db');
+    m.specularityFactor=specularity;
+    m.enableGGXSpecular=true;
     m.fresnelModel=pc.FRESNEL_SCHLICK;
     if(texture){
       m.normalMap=normal;m.bumpiness=.26;
@@ -134,14 +157,20 @@ async function boot(){
       {gloss:.27,coat:.01}),
     glass:plastic('Deep smoked acrylic plastic glazing','#2d4f57',{gloss:.76,coat:.26,texture:false,ao:false}),
     shutter:plastic('Deep forest green satin shutters','#405f55',{gloss:.45,coat:.07}),
-    concrete:plastic('Scored weathered model pavement','#999b8d',{gloss:.10,coat:0,texture:false,ao:false}),
-    turf:plastic('Matte handmade grass model railway scenery','#7e8759',{gloss:.03,coat:0,texture:false,ao:false}),
-    base:plastic('Natural painted timber display board','#947a60',{gloss:.15,coat:0,texture:false,ao:false}),
+    concrete:plastic('Scored weathered model pavement','#999b8d',
+      {gloss:.10,coat:0,texture:false,ao:false,specularity:.13}),
+    turf:plastic('Matte handmade grass model railway scenery','#7e8759',
+      {gloss:.03,coat:0,texture:false,ao:false,specularity:.065}),
+    base:plastic('Natural painted timber display board','#947a60',
+      {gloss:.15,coat:0,texture:false,ao:false,specularity:.14}),
     wallBack:plastic('Window recess and garage aperture','#28342f',{gloss:.13,coat:0,texture:false,ao:false}),
     sill:plastic('Pale cast trim inserts','#dad0b7',{gloss:.46,coat:.09}),
-    plant:plastic('Dark model tree scenic foliage','#405744',{gloss:.10,coat:0,texture:false,ao:false}),
-    plantLight:plastic('Light green HO scenic clusters','#637958',{gloss:.08,coat:0,texture:false,ao:false}),
-    soil:plastic('Scenic earth and bark ballast','#625747',{gloss:.05,coat:0,texture:false,ao:false}),
+    plant:plastic('Dark model tree scenic foliage','#405744',
+      {gloss:.10,coat:0,texture:false,ao:false,specularity:.09}),
+    plantLight:plastic('Light green HO scenic clusters','#637958',
+      {gloss:.08,coat:0,texture:false,ao:false,specularity:.08}),
+    soil:plastic('Scenic earth and bark ballast','#625747',
+      {gloss:.05,coat:0,texture:false,ao:false,specularity:.09}),
     metal:plastic('Little silver downspout and fixtures','#8a9690',{gloss:.58,coat:.20,metal:.25,texture:false,ao:false}),
     warmLight:plastic('Amber plastic porch light','#b79a65',{gloss:.60,coat:.08}),
   };
@@ -149,6 +178,31 @@ async function boot(){
   materials.turf.diffuseMapTiling=new pc.Vec2(7,6);
   materials.turf.diffuse=color('#a8ad87');
   materials.turf.update();
+
+  const highlightedPlastic=[
+    materials.styrene,materials.sidingEdge,materials.offwhite,
+    materials.roofing,materials.roofRaised,materials.roofHighlight,
+    materials.garageInset,materials.glass,materials.shutter,
+    materials.sill,materials.metal
+  ];
+  function setSpecular(level){
+    const percent=Math.max(0,Math.min(100,Math.round(Number(level)||0)));
+    const amount=percent/100;
+    // Don't replace the existing diffuse lighting. Add a grazing
+    // contribution with bounded intensity and a realistic dielectric
+    // reflection factor; scenic grass/concrete remain matte.
+    specularLight.light.intensity=.80*amount;
+    for(const mat of highlightedPlastic){
+      mat.specularityFactor=.48+.45*amount;
+      mat.update();
+    }
+    document.body.dataset.fidelitySpecularPercent=String(percent);
+    document.body.dataset.fidelitySpecularLight='directional-ggx-v1';
+    document.body.dataset.fidelitySpecularIntensity=
+      specularLight.light.intensity.toFixed(3);
+    const value=document.querySelector('#specular-value');
+    if(value)value.textContent=percent+'%';
+  }
   const geometryCache=new Map();
   function roundedGeometry(size,radius){
     const key=size.map(n=>n.toFixed(4)).join('/')+'/'+radius.toFixed(4);
@@ -620,8 +674,14 @@ async function boot(){
   document.querySelector('#rotate-light').addEventListener('input',ev=>{
     const angle=Number(ev.target.value);
     key.setEulerAngles(59,angle,0);
+    // Move the specular highlight together with the key, but at a
+    // different azimuth so it grazes the edges of the plastic.
+    specularLight.setEulerAngles(49,angle+63,0);
     document.body.dataset.fidelityLightAngle=String(angle);
   });
+  const specularControl=document.querySelector('#specular-light');
+  specularControl.addEventListener('input',ev=>setSpecular(ev.target.value));
+  setSpecular(specularControl.value);
   window.addEventListener('resize',()=>{app.resizeCanvas();camera();});
   camera();
   app.on('update',renderCamera);
