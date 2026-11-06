@@ -7,7 +7,10 @@ on:
       - 'playcanvas-house.html'
       - 'playcanvas-toy-house.js'
       - 'photographic-miniature.js'
+      - 'toy-material-comparison.html'
+      - 'toy-material-comparison.js'
       - 'tests/playcanvas-house-smoke.cjs'
+      - 'tests/toy-material-fidelity-smoke.cjs'
       - '.github/workflows/playcanvas-house.yml'
   workflow_dispatch:
 
@@ -29,16 +32,22 @@ jobs:
         run: |
           node --input-type=module --check < playcanvas-toy-house.js
           node --input-type=module --check < photographic-miniature.js
+          node --input-type=module --check < toy-material-comparison.js
           node --check tests/playcanvas-house-smoke.cjs
+          node --check tests/toy-material-fidelity-smoke.cjs
       - name: Install test driver
         run: npm install --no-save --ignore-scripts --no-audit --no-fund playwright-core@1.56.1
       - name: Render and test native PlayCanvas scene
         run: timeout 260s node tests/playcanvas-house-smoke.cjs
+      - name: Verify molded-plastic meshes and capture comparison screenshots
+        run: timeout 240s node tests/toy-material-fidelity-smoke.cjs
       - name: Archive real browser screenshots
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: playcanvas-miniature-prototype-desktop-and-phone
-          path: tests/screenshots/playcanvas-toy-house-*.png
+          path: |
+            tests/screenshots/playcanvas-toy-house-*.png
+            tests/screenshots/molded-plastic-*.png
           if-no-files-found: ignore
           retention-days: 14
