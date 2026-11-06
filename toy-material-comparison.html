@@ -43,15 +43,18 @@ footer{font-size:10px;color:#778578;background:#f5f3ed;padding:0 22px 12px}
  header a.back{font-size:11px}
  .subheads{padding:8px;display:none}
  .status{left:9px;bottom:9px;padding:6px 8px;font-size:9px;max-width:90%}
- .controls{padding:10px 11px;gap:8px;flex-wrap:wrap;min-height:160px}
- .intro{width:100%;max-width:none}
+ .controls{padding:9px 11px;gap:9px 12px;
+   display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+   min-height:160px}
+ .intro{grid-column:1/-1;max-width:none;min-width:0}
  h1{font-size:13px;margin-bottom:4px}
- p{font-size:10px}
- label{font-size:10px;flex:1}
+ p{font-size:10px;line-height:1.35}
+ label{font-size:10px;min-width:0}
  input{width:100%}
- .compare{flex:1}
+ .compare{min-width:0}
  .compare button{flex:1;padding:9px 5px;font-size:11px}
- .mobile-label{display:block}
+ .mobile-label{display:flex}
+ .mobile-region{grid-column:1/-1}
  footer{padding:0 12px 8px;font-size:9px}
 }
 </style>
@@ -81,6 +84,10 @@ footer{font-size:10px;color:#778578;background:#f5f3ed;padding:0 22px 12px}
     <div class="compare mobile-label" role="group" aria-label="Choose one comparison specimen on mobile">
       <button data-specimen="before" aria-pressed="false">Before</button>
       <button data-specimen="improved" aria-pressed="true">Molded</button>
+    </div>
+    <div class="compare mobile-label mobile-region" role="group" aria-label="Inspect house or garage on mobile">
+      <button data-region="house" aria-pressed="true">House / window</button>
+      <button data-region="garage" aria-pressed="false">Garage panels</button>
     </div>
   </section>
   <footer id="lab-facts">Physical mesh and material fidelity test; not yet the full Garage Gauntlet neighborhood.</footer>
