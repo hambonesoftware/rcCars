@@ -101,7 +101,10 @@ async function main(){
       lighting:document.body.dataset.pcLightingSystem,
       reflections:document.body.dataset.pcReflectionEnvironment,
       photoPass:document.body.dataset.pcPhotoPass,
-      focus:document.body.dataset.pcPhotographicFocus
+      focus:document.body.dataset.pcPhotographicFocus,
+      tiltShift:document.body.dataset.pcTiltShiftStrength,
+      focusRange:Number(document.body.dataset.pcFocusRange),
+      blurRadius:Number(document.body.dataset.pcBlurRadius)
     }));
     if(before.engine!=='PlayCanvas'||before.version!=='2.23.3'||
       before.light!=='table'||before.view!=='diorama'||
@@ -114,7 +117,10 @@ async function main(){
       before.lighting!=='photographic-softbox-v4'||
       before.reflections!=='prefiltered-studio-atlas'||
       before.photoPass!=='depth-of-field-v5'||
-      before.focus!=='on'){
+      before.focus!=='on'||
+      before.tiltShift!=='subtle-plus-v6'||
+      before.focusRange!==8.5||
+      before.blurRadius!==3.2){
       throw Error('Unexpected desktop PlayCanvas engine state '+
         JSON.stringify(before));
     }
@@ -175,6 +181,9 @@ async function main(){
       reflections:document.body.dataset.pcReflectionEnvironment,
       photoPass:document.body.dataset.pcPhotoPass,
       focus:document.body.dataset.pcPhotographicFocus,
+      tiltShift:document.body.dataset.pcTiltShiftStrength,
+      focusRange:Number(document.body.dataset.pcFocusRange),
+      blurRadius:Number(document.body.dataset.pcBlurRadius),
       cameraTextVisible:getComputedStyle(document.querySelector('.overlay h1')).display!=='none',
       viewportHeight:document.querySelector('.viewer').clientHeight
     }));
@@ -185,6 +194,9 @@ async function main(){
       mobileState.reflections!=='prefiltered-studio-atlas'||
       mobileState.photoPass!=='depth-of-field-v5'||
       mobileState.focus!=='on'||
+      mobileState.tiltShift!=='subtle-plus-v6'||
+      mobileState.focusRange!==8.5||
+      mobileState.blurRadius!==3.2||
       mobileState.cameraTextVisible)throw Error('Bad phone canvas or full view: '+
       JSON.stringify(mobileState));
     await phone.screenshot({
