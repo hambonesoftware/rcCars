@@ -97,15 +97,30 @@ async function main(){
       palette:document.body.dataset.modelPalette,
       seed:document.body.dataset.modelSeed,
       type:document.body.dataset.modelType,
+      car:document.body.dataset.modelCar,
+      realism:document.body.dataset.modelRealism,
+      flocking:Number(document.body.dataset.modelFlocking||0),
       grass:document.getElementById('object-count').textContent
     }));
     if(model.palette!=='sage'||model.seed!=='1407'||
-      Number(model.grass)<1000)throw Error(
-        'Unexpected initial HO house: '+JSON.stringify(model));
+      model.car!=='diecast'||model.flocking<10000||
+      !model.realism?.includes('die-cast')||
+      Number(model.grass)<10000)throw Error(
+        'Unexpected plastic / static-grass / die-cast prototype: '+
+        JSON.stringify(model));
     await page.screenshot({
       path:path.join(screenshotDir,'house-hero-desktop.png'),
       animations:'disabled'
     });
+    await page.locator('[data-view="diecast"]').click();
+    if(await page.locator('[data-view="diecast"]').getAttribute('aria-pressed')!=='true')
+      throw Error('Die-cast model closeup camera failed');
+    await page.waitForTimeout(650);
+    await page.screenshot({
+      path:path.join(screenshotDir,'house-hero-diecast.png'),
+      animations:'disabled'
+    });
+    await page.locator('[data-view="three-quarter"]').click();
     await page.locator('[data-palette="cream"]').click();
     if(await page.locator('body').getAttribute('data-model-palette')!=='cream')
       throw Error('Changing house wall paint failed');
@@ -138,6 +153,9 @@ async function main(){
       path:path.join(screenshotDir,'house-hero-phone.png'),
       animations:'disabled'
     });
+    if(await phone.locator('body').getAttribute('data-model-car')!=='diecast'||
+      Number(await phone.locator('body').getAttribute('data-model-flocking'))<10000)
+      throw Error('Mobile rendering lost die-cast or static-grass geometry');
     await phone.locator('[data-palette="blue"]').tap();
     if(await phone.locator('body').getAttribute('data-model-palette')!=='blue')
       throw Error('Phone touch palette control did not work');
