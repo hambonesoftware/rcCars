@@ -79,6 +79,23 @@ hr{border:0;border-top:1px solid var(--hair);margin:20px 0 16px}
  #foot{display:none}
 }
 @media(max-width:360px){#hero-tag{display:none}}
+
+/* Controlled visual experiment controls: one model, one seed, one camera pose. */
+#render-lab{margin-top:16px;padding:14px 12px;border:1px solid #c9dcb447;border-radius:12px;background:#20383b}
+#render-lab .options{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+#render-lab .option{justify-content:center;width:100%;min-height:37px;padding:7px 5px}
+#render-lab-status{margin:10px 0 0;color:#c8debc;font-size:10px;line-height:1.5;font-weight:700}
+#lab-details{margin-top:12px;border-top:1px solid var(--hair);padding-top:10px}
+#lab-details summary{cursor:pointer;user-select:none;color:#d8e8d7;font-size:11px;font-weight:700}
+.lab-factor{margin-top:10px}
+.lab-factor p{color:#abc0b8;font-size:10px;margin:0 0 5px}
+.lab-factor .options{grid-template-columns:repeat(2,minmax(0,1fr))}
+.lab-factor .option{font-size:9px;min-height:29px}
+@media(max-width:850px){
+ #render-lab{margin-top:8px;padding:9px}
+ #render-lab .option{min-height:32px;font-size:9px}
+ #lab-details .lab-factor .option{min-height:29px}
+}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
 </style>
 </head>
@@ -94,6 +111,61 @@ hr{border:0;border-top:1px solid var(--hair);margin:20px 0 16px}
  <h1>REAL PLASTIC.<br/><em>TOY-SCALE.</em></h1>
  <p class="intro">Inspect the separate snap-fit wall panels, chunky plastic roof, store-bought fake grass mat and small die-cast toy. Rotate, repaint and zoom in to see the molded seams.</p>
  <div class="model-chip"><span>SNAP-FIT MOLDED PLASTIC</span><span class="rule"></span><span>100% PROCEDURAL</span></div>
+ <section id="render-lab" aria-label="Controlled rendering and lighting comparison laboratory">
+  <div class="small-heading">Rendering laboratory · Same house</div>
+  <div class="options" role="group" aria-label="Render comparison presets">
+   <button type="button" class="option selected" data-render-preset="original" aria-pressed="true">A · Original</button>
+   <button type="button" class="option" data-render-preset="room" aria-pressed="false">B · Room light</button>
+   <button type="button" class="option" data-render-preset="surface" aria-pressed="false">C · Surface detail</button>
+   <button type="button" class="option" data-render-preset="photo" aria-pressed="false">D · Photo lens</button>
+  </div>
+  <div id="render-lab-status">Original V3</div>
+  <details id="lab-details">
+   <summary>Compare one rendering factor at a time</summary>
+   <div class="lab-factor">
+    <p>Tone mapping</p>
+    <div class="options" role="group" aria-label="Tone mapping">
+     <button type="button" class="option selected" data-lab-factor="tone" data-lab-value="aces" aria-pressed="true">ACES</button>
+     <button type="button" class="option" data-lab-factor="tone" data-lab-value="neutral" aria-pressed="false">Neutral</button>
+    </div>
+   </div>
+   <div class="lab-factor">
+    <p>Lighting</p>
+    <div class="options" role="group" aria-label="Light rig">
+     <button type="button" class="option selected" data-lab-factor="light" data-lab-value="original" aria-pressed="true">Original</button>
+     <button type="button" class="option" data-lab-factor="light" data-lab-value="room" aria-pressed="false">Room light</button>
+    </div>
+   </div>
+   <div class="lab-factor">
+    <p>Shadows and contact darkening</p>
+    <div class="options" role="group" aria-label="Shadow quality">
+     <button type="button" class="option selected" data-lab-factor="shadows" data-lab-value="soft" aria-pressed="true">Original</button>
+     <button type="button" class="option" data-lab-factor="shadows" data-lab-value="detail" aria-pressed="false">Detailed</button>
+    </div>
+   </div>
+   <div class="lab-factor">
+    <p>Manufactured-surface microtexture</p>
+    <div class="options" role="group" aria-label="Surface maps">
+     <button type="button" class="option selected" data-lab-factor="materials" data-lab-value="plain" aria-pressed="true">Original</button>
+     <button type="button" class="option" data-lab-factor="materials" data-lab-value="micro" aria-pressed="false">Normal + roughness</button>
+    </div>
+   </div>
+   <div class="lab-factor">
+    <p>Camera geometry</p>
+    <div class="options" role="group" aria-label="Camera projection">
+     <button type="button" class="option selected" data-lab-factor="lens" data-lab-value="ortho" aria-pressed="true">Ortho</button>
+     <button type="button" class="option" data-lab-factor="lens" data-lab-value="perspective" aria-pressed="false">Perspective</button>
+    </div>
+   </div>
+   <div class="lab-factor">
+    <p>Depth-based photograph focus (desktop)</p>
+    <div class="options" role="group" aria-label="Depth of field">
+     <button type="button" class="option selected" data-lab-factor="dof" data-lab-value="false" aria-pressed="true">Off</button>
+     <button type="button" class="option" data-lab-factor="dof" data-lab-value="true" aria-pressed="false">On</button>
+    </div>
+   </div>
+  </details>
+ </section>
  <hr/>
  <div class="small-heading">Paint scheme</div>
  <div class="options" role="group" aria-label="House paint schemes">
