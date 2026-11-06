@@ -326,8 +326,10 @@ export function buildPhotographicMiniature({pc,app,root,device,block,makeMateria
 
   // The existing roads stay untouched. The new matted turf overlays only
   // the lawn inside the wooden HO-scale base.
+  // Keep the flock beneath the actual concrete and asphalt top faces:
+  // a high lawn layer would otherwise bleed through the miniature driveway.
   block(root,'True fibrous flock lawn sheet',mats.turf,
-    [0,.285,-1.55],[35.75,.087,27.9]);
+    [0,.266,-1.55],[35.75,.052,27.9]);
   // Real irregular static-grass tips above the mat, built in batches.
   const grass=batch(),rGrass=rand(128790);
   for(let n=0;n<5200;n++){
@@ -338,8 +340,8 @@ export function buildPhotographicMiniature({pc,app,root,device,block,makeMateria
     if(x>5.0&&x<12&&z>1.8)continue;
     const h=.045+rGrass()*.12;
     const dx=(rGrass()-.5)*.16;
-    triangle(grass,[x,.338,z],[x+dx-.018,.338+h,z],
-      [x+dx+.018,.338+h,z+.036]);
+    triangle(grass,[x,.291,z],[x+dx-.018,.291+h,z],
+      [x+dx+.018,.291+h,z+.036]);
   }
   mount(grass,'Five thousand scale-static-grass fibers',mats.leafMid,root);
 
