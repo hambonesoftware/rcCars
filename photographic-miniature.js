@@ -66,37 +66,81 @@ export function buildPhotographicMiniature({pc,app,root,device,block,makeMateria
       ctx.fillRect(r()*w,r()*h,1+r()*2.5,1+r()*2.5);
     }
   });
-  const material=(name,hex,roughness,clearCoat=0,map=null)=>{
-    const m=makeMaterial(name,hex,{roughness,clearcoat:clearCoat});
-    if(map){m.diffuseMap=map;m.diffuseMapTiling=new pc.Vec2(3,3);m.update();}
+  // Almost-white means that the gloss map adds manufacturing variation
+  // without painting harsh black patches on the specular response.
+  const plasticGlossMap=createTexture('Fine injection-molded plastic microgloss',(ctx,w,h)=>{
+    const r=rand(48391);
+    ctx.fillStyle='#f7f7f7';ctx.fillRect(0,0,w,h);
+    for(let i=0;i<18500;i++){
+      const v=Math.floor(214+r()*42);
+      ctx.fillStyle='rgba('+v+','+v+','+v+',.23)';
+      ctx.fillRect(r()*w,r()*h,.35+r()*1.2,.75+r()*2.5);
+    }
+  });
+  const material=(name,hex,roughness,clearCoat=0,map=null,settings={})=>{
+    const m=makeMaterial(name,hex,{
+      roughness,
+      metalness:settings.metalness??0,
+      clearcoat:clearCoat,
+      clearcoatGloss:settings.coatGloss??.85
+    });
+    // Preserve neutral plastic color while allowing real Fresnel reflections
+    // from the generated environment atlas used by the PlayCanvas scene.
+    m.useMetalness=true;
+    m.metalness=settings.metalness??0;
+    m.useMetalnessSpecularColor=true;
+    m.specular=color(settings.specular??'#eeeeea');
+    m.specularityFactor=settings.specularity??.85;
+    m.fresnelModel=pc.FRESNEL_SCHLICK;
+    m.enableGGXSpecular=true;
+    m.reflectivity=settings.reflectivity??.75;
+    if(map){
+      m.diffuseMap=map;
+      m.diffuseMapTiling=new pc.Vec2(3,3);
+    }
+    if(settings.plasticGloss){
+      m.glossMap=plasticGlossMap;
+      m.glossMapChannel='r';
+      m.glossMapTiling=new pc.Vec2(4,4);
+    }
+    m.update();
     return m;
   };
   const mats={
-    siding:material('Fine textured sage styrene siding','#bfccba',.61,.13,styreneMap),
-    white:material('Off-white hand-painted cast trim','#efece0',.42,.21,styreneMap),
-    trimShadow:material('Recessed casting parting lines','#818c80',.84),
-    foundation:material('Cast stone model footing','#a0a29a',.94,gravelMap),
-    roof:material('Fine granular asphalt shingle kit','#707771',.93,0,roofGranules),
-    ridge:material('Hip and ridge caps','#696e6b',.86),
-    darkRoof:material('Weathered shingle variant','#69706b',.96,0,roofGranules),
-    paleRoof:material('Faded shingle variant','#757b74',.92,0,roofGranules),
-    dark:material('Dark inset window cavity','#282d32',.93),
-    glass:material('Smoked acrylic glazed windows','#536d73',.12,.65),
-    curtain:material('Cream interior curtains','#c7c2ac',.93),
-    green:material('Dark satin painted entrance','#4b6862',.44,.2),
-    concrete:material('Scored miniature concrete','#b7b5a9',.91,0,gravelMap),
-    turf:material('Hand applied model railway turf','#f6f3e8',1,0,feltMap),
-    soil:material('Granular scenic mulch','#ac9f8f',1,0,gravelMap),
-    log:material('Brown textured kit trunk','#594936',.93),
-    leaf:material('Matte leaf foliage foam dark','#466043',.94),
-    leafLight:material('Matte leaf foliage foam light','#819267',.98),
-    leafMid:material('Matte foliage foam middle','#5f7d52',.96),
-    rose:material('Tiny cast plastic flower buds','#b06374',.68,.1),
-    gold:material('Tiny butter yellow flower buds','#cbb572',.8),
-    worktop:material('Beige workbench laminate','#c5b6a0',.67),
-    wall:material('Real room backdrop','#b7b7aa',1),
-    silver:material('Folded aluminum gutters','#d8dbd6',.38,.2),
-    rust:material('Tiny painted hardware','#6c5545',.74)
+    siding:material('Pigmented sage injection-molded polystyrene','#c6d0bf',.37,.30,styreneMap,
+      {plasticGloss:true,specularity:.88,reflectivity:.82,coatGloss:.87}),
+    white:material('Warm-white high-sheen molded window/porch trim','#f1eee2',.25,.35,styreneMap,
+      {plasticGloss:true,specularity:.94,reflectivity:.88,coatGloss:.93}),
+    garageDoor:material('Glossed cream sectional molded garage insert','#e6e5dc',.30,.31,styreneMap,
+      {plasticGloss:true,specularity:.90,reflectivity:.85,coatGloss:.91}),
+    trimShadow:material('Recessed styrene casting parting lines','#818c80',.77),
+    foundation:material('Miniature painted cast stone footing','#a0a29a',.91,0,gravelMap),
+    roof:material('Fine granular miniature asphalt shingle roof','#707771',.61,.09,roofGranules,
+      {specularity:.59,reflectivity:.39,coatGloss:.66}),
+    ridge:material('Injection-molded shingle ridge caps','#696e6b',.65,.08,roofGranules),
+    darkRoof:material('Subtle roof color variation dark','#69706b',.65,.07,roofGranules),
+    paleRoof:material('Subtle roof color variation light','#757b74',.60,.10,roofGranules),
+    dark:material('Recessed window aperture shadow','#282d32',.91),
+    glass:material('Smoked high-gloss clear acrylic windows','#536d73',.10,.75,null,
+      {specularity:1,reflectivity:1,coatGloss:.98}),
+    curtain:material('Cream textile mini curtains','#c7c2ac',.90),
+    green:material('Satin painted molded front door and shutters','#57736c',.27,.24,styreneMap,
+      {plasticGloss:true,specularity:.89,reflectivity:.83}),
+    concrete:material('Matte scored HO concrete','#b7b5a9',.90,0,gravelMap),
+    turf:material('Glued-on static grass flock mat','#f6f3e8',.99,0,feltMap,
+      {specularity:.20,reflectivity:.10}),
+    soil:material('Fine HO-scale garden ballast','#ac9f8f',1,0,gravelMap),
+    log:material('Cast textured model tree armature','#594936',.94),
+    leaf:material('Matte dark scenic foam foliage','#466043',.96),
+    leafLight:material('Matte pale scenic foam foliage','#819267',.98),
+    leafMid:material('Matte medium scenic foam foliage','#5f7d52',.96),
+    rose:material('Pink injection-molded flower buds','#b06374',.59,.14),
+    gold:material('Yellow injection-molded flower buds','#cbb572',.62,.12),
+    worktop:material('Satin laminate display worktop','#c5b6a0',.67),
+    wall:material('Photographic studio backdrop','#b7b7aa',1),
+    silver:material('Vacuum-plated miniature metal gutters','#d8dbd6',.25,.12,null,
+      {metalness:.87,specularity:1,reflectivity:.97}),
+    rust:material('Small cast hardware','#6c5545',.58)
   };
   // Batch hundreds of genuinely three-dimensional pieces into a handful
   // of mesh instances (no one-draw-call-per-leaf or per-shingle explosion).
@@ -293,7 +337,7 @@ export function buildPhotographicMiniature({pc,app,root,device,block,makeMateria
   const garageFront=1.77;
   block(model,'Dark recessed garage opening',mats.dark,
     [8.47,2.51,garageFront],[6.48,4.18,.15]);
-  block(model,'Cream sectional garage door',mats.white,
+  block(model,'Cream sectional garage door',mats.garageDoor,
     [8.47,2.51,garageFront+.12],[6.28,4.0,.14]);
   for(let y=.98;y<4.5;y+=.66){
     block(model,'Pressed metal garage recessed panel seam',mats.trimShadow,
@@ -450,6 +494,7 @@ export function buildPhotographicMiniature({pc,app,root,device,block,makeMateria
       [.028,.015,i%5===0?.38:.18]);
   }
   document.body.dataset.pcHeroAsset='molded-geometry-v3';
+  document.body.dataset.pcMaterialSystem='plastic-clearcoat-v4';
   document.body.dataset.pcRoofSystem='batched-individual-shingles';
   document.body.dataset.pcFoliageSystem='triangulated-branch-leaves';
   document.body.dataset.pcFoliageDrawCalls='3';
