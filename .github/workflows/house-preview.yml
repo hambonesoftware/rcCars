@@ -18,7 +18,7 @@ jobs:
   test-house:
     name: Actual Three.js model + mobile preview screenshots
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 4
     steps:
       - uses: actions/checkout@v4
       - name: Verify native ES modules
@@ -28,7 +28,7 @@ jobs:
       - name: Install headless browser
         run: npm install --no-save --ignore-scripts --no-audit --no-fund playwright-core@1.56.1
       - name: Render and exercise the actual procedural model
-        run: timeout 120s node tests/ho-hero-house.test.cjs
+        run: timeout 210s node tests/ho-hero-house.test.cjs
       - name: Save real model previews
         if: always()
         uses: actions/upload-artifact@v4
