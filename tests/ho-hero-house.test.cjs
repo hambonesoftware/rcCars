@@ -100,11 +100,23 @@ async function main(){
       car:document.body.dataset.modelCar,
       realism:document.body.dataset.modelRealism,
       flocking:Number(document.body.dataset.modelFlocking||0),
+      shellSeams:Number(document.body.dataset.modelMoldSeams||0),
+      snapFitParts:Number(document.body.dataset.modelSnapParts||0),
+      moldedShrubs:Number(document.body.dataset.modelMoldShrubs||0),
+      roofClearcoat:Number(document.body.dataset.modelRoofClearcoat),
+      wallClearcoat:Number(document.body.dataset.modelWallClearcoat),
+      carClearcoat:Number(document.body.dataset.modelCarClearcoat),
       grass:document.getElementById('object-count').textContent
     }));
     if(model.palette!=='sage'||model.seed!=='1407'||
       model.car!=='diecast'||model.flocking<30000||
       !model.realism?.includes('die-cast')||
+      !model.realism?.includes('injection molded')||
+      model.shellSeams<10||model.snapFitParts<5||
+      model.moldedShrubs<8||
+      Math.abs(model.roofClearcoat-.08)>.001||
+      Math.abs(model.wallClearcoat-.12)>.001||
+      Math.abs(model.carClearcoat-.85)>.001||
       Number(model.grass)<30000)throw Error(
         'Unexpected plastic / static-grass / die-cast prototype: '+
         JSON.stringify(model));
@@ -154,8 +166,10 @@ async function main(){
       animations:'disabled'
     });
     if(await phone.locator('body').getAttribute('data-model-car')!=='diecast'||
-      Number(await phone.locator('body').getAttribute('data-model-flocking'))<30000)
-      throw Error('Mobile rendering lost die-cast or static-grass geometry');
+      Number(await phone.locator('body').getAttribute('data-model-flocking'))<30000||
+      Number(await phone.locator('body').getAttribute('data-model-mold-seams'))<10||
+      Number(await phone.locator('body').getAttribute('data-model-snap-parts'))<5)
+      throw Error('Mobile rendering lost snap-fit house, die-cast car or grass geometry');
     await phone.locator('[data-palette="blue"]').tap();
     if(await phone.locator('body').getAttribute('data-model-palette')!=='blue')
       throw Error('Phone touch palette control did not work');
