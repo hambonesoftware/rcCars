@@ -113,7 +113,7 @@ function resetRace(){
   const origin=world.road.pointAt(1.75);
   state.position.x=origin.x;state.position.z=origin.z;
   state.yaw=Math.atan2(origin.tx,origin.tz);
-  car.setLocalPosition(origin.x,origin.y+.20,origin.z);
+  car.setLocalPosition(origin.x,origin.y+.51,origin.z);
   car.setLocalEulerAngles(0,state.yaw*radians,0);
   state.mode='ready';
   ui.result.hidden=true;
@@ -460,7 +460,7 @@ async function main(){
     }
   });
   app.start();
-  // Swap the four hero subjects only after each complete GLB has loaded.
+  // Install four verified GLB sources; share their meshes across the town.
   // On any asset failure the existing driveable procedural world survives.
   loadAuthoredMapleAssets(app,world,car).then(result=>{
     console.info('Authored Maple Junction PBR mesh imports:',result);
