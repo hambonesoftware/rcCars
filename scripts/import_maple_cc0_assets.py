@@ -34,6 +34,11 @@ QUATERNIUS_REPO = "anshaneja5/skyline-run"
 QUATERNIUS_REV = "0c41526d8d4130c37c15e219c2c3737fa8cb4ad8"
 QUATERNIUS_ROOT = "public/assets/models"
 
+# Official Kenney race-game truck, provided as a fully authored GLB.
+# Unlike the original cherry coupe, this truck is actually downloadable.
+RC_TRUCK_REPO = "KenneyNL/Starter-Kit-Racing"
+RC_TRUCK_REV = "2f2e5f2646dda89cb21d4e8539bab60c6e955dc8"
+
 # Source repository, pinned revision and git blob SHA are checked to protect
 # against upstream updates, mistakes and HTML pretending to be a GLB file.
 SOURCES = [
@@ -48,6 +53,8 @@ SOURCES = [
     ("shade_tree", "tree3.glb", QUATERNIUS_REPO, QUATERNIUS_REV, f"{QUATERNIUS_ROOT}/tree3.glb", "828786b4bdb5224a8b3672f5e5d6cebe1c65bd93", "Quaternius Stylized Nature MegaKit", "CC0-1.0"),
     ("shrub", "bush.glb", QUATERNIUS_REPO, QUATERNIUS_REV, f"{QUATERNIUS_ROOT}/bush.glb", "84b4153c17e988a658e56d4093b0028d1b034c3f", "Quaternius Stylized Nature MegaKit", "CC0-1.0"),
     ("palette", "Textures/colormap.png", KENNEY_REPO, KENNEY_REV, f"{KENNEY_ROOT}/Textures/colormap.png", "9838fb4ccae35aa66eb2392e7f25c88f7ca28b38", "Kenney City Kit Suburban", "CC0-1.0"),
+    ("rc_truck_red", "rc-truck/vehicle-truck-red.glb", RC_TRUCK_REPO, RC_TRUCK_REV, "models/vehicle-truck-red.glb", "fcd901f5d43e0984b52fe947d31d9a121463127a", "Kenney Starter Kit Racing", "CC0-1.0"),
+    ("rc_truck_palette", "rc-truck/Textures/colormap.png", RC_TRUCK_REPO, RC_TRUCK_REV, "models/Textures/colormap.png", "3450571406e10d758b4dad6b32c43f61caecfc9b", "Kenney Starter Kit Racing", "CC0-1.0"),
 ]
 
 
@@ -98,11 +105,12 @@ def validate_model(path: pathlib.Path, payload: bytes) -> tuple[list[list[float]
             safe_uri = pathlib.PurePosixPath(urllib.parse.unquote(uri))
             if safe_uri.is_absolute() or ".." in safe_uri.parts:
                 raise ValueError(f"Unsafe linked texture URI {uri}")
-            external = OUT.joinpath(*safe_uri.parts)
+            external = path.parent.joinpath(*safe_uri.parts)
             if not external.is_file() and safe_uri.name == "colormap.png":
-                # Kenney interchange exporters differ on whether they use
-                # colormap.png or Textures/colormap.png in image URIs.
-                palette = OUT / "Textures" / "colormap.png"
+                # Original Kenney packs can reference either ./colormap.png
+                # or ./Textures/colormap.png. Never silently cross-use
+                # different palette images from different authors/packs.
+                palette = path.parent / "Textures" / "colormap.png"
                 if palette.is_file():
                     external.parent.mkdir(parents=True, exist_ok=True)
                     external.write_bytes(palette.read_bytes())
@@ -164,7 +172,7 @@ def main():
         "models": records,
     }
     (OUT / "catalog.json").write_text(json.dumps(catalog, indent=2) + "\n")
-    print(f"Imported {len(records) - 1} model GLBs, with source and license provenance.")
+    print(f"Imported {sum(v['file'].endswith('.glb') for v in records.values())} model GLBs, with source and license provenance.")
 
 
 if __name__ == "__main__":
