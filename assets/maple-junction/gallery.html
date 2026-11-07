@@ -14,9 +14,36 @@ main{position:relative;flex:1;min-height:0;overflow:hidden}#canvas{position:abso
 footer{position:relative;z-index:5;display:flex;gap:7px;flex-shrink:0;overflow-x:auto;background:#f5f3e9;padding:9px}
 footer button{border:1px solid #a9bcae;background:#fff;border-radius:10px;padding:12px;font:800 12px system-ui;color:#356148;white-space:nowrap}
 footer button[aria-pressed=true]{background:#2f6048;color:#fff}
+#retry-model{display:none;cursor:pointer;margin-top:10px;background:#315c47;border:0;color:#fff;
+  border-radius:7px;padding:8px 11px;font:800 11px system-ui}
+#retry-model.visible{display:inline-block}
+#model-state{display:block;line-height:1.45;word-break:break-word}
 @media(max-width:700px){header{padding:9px}header h1{font-size:11px}header small{font-size:9px}footer{padding:7px}footer button{font-size:11px;padding:10px}#help{font-size:9px}}
 </style></head><body><header><div><h1>MAPLE JUNCTION · REAL 3D MESH ASSETS</h1><small>Self-contained glTF 2.0 · PlayCanvas PBR lighting</small></div><a href="../../maple-junction.html">← Racing course</a></header>
-<main><canvas id="canvas"></canvas><div id="status"><strong id="model-title">Loading 3D assets…</strong><small id="model-state">Importing model</small></div><div id="help">Drag to orbit · pinch / scroll to zoom</div></main>
+<main><canvas id="canvas"></canvas><div id="status"><strong id="model-title">Loading 3D assets…</strong><small id="model-state">Starting PlayCanvas…</small><button id="retry-model" type="button" onclick="location.reload()">Retry loading model</button></div><div id="help">Drag to orbit · pinch / scroll to zoom</div></main>
+<script>
+(function(){
+ const retry=document.getElementById('retry-model');
+ const state=document.getElementById('model-state');
+ function failed(message){
+   document.body.dataset.galleryStartup='error';
+   document.body.dataset.assetError=String(message).slice(0,900);
+   state.textContent='Unable to display model: '+message;
+   retry.classList.add('visible');
+ }
+ window.addEventListener('error',event=>{
+   if(!document.body.dataset.assetLoaded)failed(event.message||'Rendering module failed');
+ });
+ window.addEventListener('unhandledrejection',event=>{
+   if(!document.body.dataset.assetLoaded)failed(
+     event.reason?.message||String(event.reason||'Module import failed'));
+ });
+ window.setTimeout(()=>{
+   if(!document.body.dataset.assetLoaded&&
+      !document.body.dataset.assetError)failed('Loading timed out. Please retry.');
+ },30000);
+})();
+</script>
 <footer><button data-model="house" aria-pressed="true">Craftsman House</button><button data-model="store" aria-pressed="false">Main Street</button><button data-model="car" aria-pressed="false">Cherry Coupe</button><button data-model="tree" aria-pressed="false">Maple Tree</button></footer>
 <script type="module">
 import * as pc from 'playcanvas';
@@ -48,20 +75,33 @@ function updateCamera(){
 function choose(type){
  const info=models[type];if(!info)return;
  selected=type;title.textContent=info.name;status.textContent='Loading embedded PBR geometry…';
+ document.body.dataset.assetError='';
+ document.body.dataset.assetLoaded='';
+ document.querySelector('#retry-model').classList.remove('visible');
  document.querySelectorAll('[data-model]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.model===type)));
  if(active){active.enabled=false;active=null;}
  radius=info.radius*(window.innerWidth<700?1.43:1);focusY=info.focus;updateCamera();
  if(cache.has(type)){active=cache.get(type);active.enabled=true;status.textContent='Real glTF 2.0 mesh · loaded';document.body.dataset.assetLoaded=type;return;}
- app.assets.loadFromUrlAndFilename('../maple/glb/'+info.file,info.file,'container',(error,asset)=>{
+ app.assets.loadFromUrlAndFilename('../maple/glb/'+info.file+'?v=20261107b',info.file,'container',(error,asset)=>{
    if(type!==selected)return;
-   if(error||!asset?.resource){status.textContent='Load failed: '+String(error);document.body.dataset.assetError=String(error);return;}
+   if(error||!asset?.resource){
+     status.textContent='Model download failed: '+String(error||'missing GLB resource');
+     document.body.dataset.assetError=String(error||'missing GLB resource');
+     document.querySelector('#retry-model').classList.add('visible');
+     return;
+   }
    try{
      active=asset.resource.instantiateRenderEntity();
      active.name='Authored '+info.name;
      app.root.addChild(active);cache.set(type,active);
      status.textContent='Loaded: textured mesh and PBR materials';
      document.body.dataset.assetLoaded=type;
-   }catch(e){status.textContent='Render failure: '+String(e);document.body.dataset.assetError=String(e);}
+     document.body.dataset.galleryStartup='ready';
+   }catch(e){
+     status.textContent='3D import failed: '+String(e);
+     document.body.dataset.assetError=String(e);
+     document.querySelector('#retry-model').classList.add('visible');
+   }
  });
 }
 canvas.addEventListener('pointerdown',e=>{pointer={id:e.pointerId,x:e.clientX,y:e.clientY};canvas.setPointerCapture(e.pointerId);});
