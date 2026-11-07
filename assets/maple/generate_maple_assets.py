@@ -442,57 +442,105 @@ def car_loft(stations,material='red'):
     return trimesh.Trimesh(vertices=verts,faces=faces,process=False)
 
 
+def coupe_cabin_shell():
+    """Real trapezoidal two-door greenhouse, not an oval placed on the hood."""
+    stations=[(-1.18,.70,1.13,1.41),(-.86,.88,1.15,1.87),
+              (-.48,.91,1.16,1.99),(.38,.91,1.16,1.99),
+              (.75,.83,1.15,1.78),(1.03,.73,1.14,1.43)]
+    section=[]
+    for z,w,b,t in stations:
+        section.append([[-w,b,z],[-w*.94,b+.12,z],[-w*.78,t-.10,z],
+                        [-w*.65,t,z],[w*.65,t,z],[w*.78,t-.10,z],
+                        [w*.94,b+.12,z],[w,b,z]])
+    verts=np.asarray([v for ring in section for v in ring])
+    faces=[];n=8
+    for i in range(len(section)-1):
+        for j in range(n):
+            a=i*n+j;b=i*n+(j+1)%n;c=(i+1)*n+j;d=(i+1)*n+(j+1)%n
+            faces.extend([[a,c,b],[b,c,d]])
+    faces.extend([[0,j,j+1] for j in range(1,n-1)])
+    off=(len(section)-1)*n
+    faces.extend([[off,off+j+1,off+j] for j in range(1,n-1)])
+    return trimesh.Trimesh(vertices=verts,faces=faces,process=False)
+
+
+def wheel_arch_disc(side, wheel_z, radius=.58, steps=30):
+    """Wheel-well shadow deliberately hidden behind the visible tire."""
+    x=side*1.215
+    verts=[[x,.54,wheel_z]]
+    for i in range(steps+1):
+        a=math.pi*i/steps
+        verts.append([x,.54+radius*math.sin(a),wheel_z+radius*math.cos(a)])
+    faces=[]
+    for i in range(steps):
+        face=[0,i+1,i+2]
+        faces.append(face if side>0 else face[::-1])
+    return trimesh.Trimesh(vertices=verts,faces=faces,process=False)
+
+
+def wheel_arch_lip(side, wheel_z, steps=32):
+    x=side*1.228
+    verts=[]
+    for i in range(steps+1):
+        a=math.pi*i/steps
+        for r in (.585,.625):
+            verts.append([x,.54+r*math.sin(a),wheel_z+r*math.cos(a)])
+    faces=[]
+    for i in range(steps):
+        a=2*i;b=a+2
+        faces.extend([[a,a+1,b],[a+1,b+1,b]] if side>0 else
+                     [[a,b,a+1],[a+1,b,b+1]])
+    return trimesh.Trimesh(vertices=verts,faces=faces,process=False)
+
+
 def make_car():
-    b=Builder('Maple Cherry Coupe GT')
-    # Body is broad and round at the fenders, narrower at pointed nose.
-    stations=[
-        (-2.21,1.52,.54,1.06,0),(-2.08,2.01,.47,1.22,0),
-        (-1.72,2.30,.42,1.30,0),(-1.26,2.36,.40,1.34,0),
-        (-.56,2.29,.41,1.40,0),(.15,2.32,.42,1.41,0),
-        (.9,2.30,.40,1.32,0),(1.48,2.24,.41,1.22,0),
-        (2.01,2.05,.48,1.11,0),(2.20,1.65,.56,1.01,0)]
+    b=Builder('Maple Cherry Coupe GT | Revised diecast hardtop')
+    # The centerline points along +Z. Model proportions match a 1960s coupe.
+    stations=[(-2.23,1.72,.49,.99,0),(-2.05,1.96,.43,1.12,0),
+              (-1.77,2.26,.40,1.26,0),(-1.28,2.38,.39,1.35,0),
+              (-.52,2.30,.40,1.43,0),(.25,2.32,.41,1.43,0),
+              (1.00,2.33,.40,1.38,0),(1.55,2.20,.41,1.31,0),
+              (2.04,1.98,.47,1.18,0),(2.25,1.61,.54,1.02,0)]
     b.add(car_loft(stations),'red')
-    # Continuous curvature and slight taper in greenhouse, no huge block roof.
-    top=[(-1.19,1.72,1.04,1.53,0),(-.83,1.91,1.00,1.91,0),
-         (-.31,1.92,1.02,2.04,0),(.46,1.90,1.04,2.02,0),
-         (.96,1.73,1.03,1.53,0)]
-    b.add(car_loft(top),'cream_car')
-    # Four inset reflective windows with accurate glass rake.
-    b.add(face_quad([[-.83,1.49,1.00],[.83,1.49,1.00],
-                     [.88,1.87,.42],[-.88,1.87,.42]]),'glass',None)
-    b.add(face_quad([[-.81,1.48,-1.13],[.81,1.48,-1.13],
-                     [.90,1.84,-.76],[-.90,1.84,-.76]]),'glass',None)
-    for sx in (-1,1):
-        b.add(face_quad([[sx*.95,1.20,-.65],[sx*.95,1.73,-.51],
-                         [sx*.94,1.73,.40],[sx*.94,1.24,.80]]),'glass',None)
-        b.box('dark_brass',sx*.99,1.47,-.03,.067,.60,.075,.022)
-    # Hood spine and thin protective molded trim enhance specular highlights.
-    b.box('red_shade',0,1.29,1.52,.075,.014,1.20,.008)
+    b.add(coupe_cabin_shell(),'red')
+    # Windshields ride on actual front/rear windshield rake.
+    b.add(face_quad([[-.69,1.34,1.026],[.69,1.34,1.026],
+                     [.66,1.81,.707],[-.66,1.81,.707]],True),'glass')
+    b.add(face_quad([[-.65,1.38,-1.155],[.65,1.38,-1.155],
+                     [.66,1.79,-.842],[-.66,1.79,-.842]],True),'glass')
     for side in (-1,1):
-        b.box('cream_car',side*1.07,.99,0,.086,.08,3.45,.022)
-        b.box('dark_brass',side*1.07,.92,1.87,.09,.055,.45,.018)
-    b.box('metal',0,.59,2.22,1.84,.24,.23,.07)
-    b.box('metal',0,.57,-2.24,1.87,.23,.24,.07)
-    b.box('dark_cavity',0,.82,2.235,1.06,.24,.14,.035)
-    b.box('antique_white',0,.68,-2.29,.78,.21,.06,.022)
-    for sx in (-1,1):
-        b.box('headlamp',sx*.83,.91,2.19,.41,.22,.10,.064)
-        b.box('taillamp',sx*.78,.79,-2.22,.42,.24,.084,.050)
-        b.box('metal',sx*1.20,1.14,.38,.11,.16,.34,.045)
-        b.box('metal',sx*1.21,1.18,.51,.30,.10,.07,.04)
-    # Actual toroidal tires, whitewall rings, chrome rims, visible five bolts.
-    for sx in (-1,1):
-        for z in (-1.41,1.41):
-            x=sx*1.17
-            b.cyl('tires',.57,.37,x,.53,z,axis='x',sections=36)
-            b.add(ring(.42,.052,(sx*1.39,.53,z)),'cream_car')
-            b.cyl('metal',.32,.05,sx*1.405,.53,z,axis='x',sections=26)
-            b.cyl('dark_cavity',.13,.08,sx*1.445,.53,z,axis='x',sections=18)
+        # Two side window panes, with real paint-color roof rails and B-pillar.
+        b.add(face_quad([[side*.859,1.34,-.72],[side*.718,1.77,-.64],
+                         [side*.719,1.82,-.035],[side*.857,1.34,-.035]],True),'glass')
+        b.add(face_quad([[side*.857,1.34,.045],[side*.718,1.82,.045],
+                         [side*.716,1.80,.378],[side*.828,1.34,.758]],True),'glass')
+        b.box('metal',side*.859,1.48,-.005,.050,.45,.061,.016)
+        b.box('cream_car',side*1.075,.88,0,.065,.045,3.27,.019)
+        b.box('red_shade',side*1.075,1.18,1.45,.06,.023,1.06,.014)
+        for wheel_z in (-1.44,1.44):
+            b.add(wheel_arch_disc(side,wheel_z),'dark_cavity')
+            b.add(wheel_arch_lip(side,wheel_z),'red_shade')
+    b.box('red_shade',0,1.35,1.64,.068,.012,.90,.008)
+    b.box('metal',0,.57,2.263,1.80,.20,.16,.048)
+    b.box('metal',0,.55,-2.258,1.84,.20,.16,.048)
+    b.box('dark_cavity',0,.82,2.254,1.05,.24,.115,.024)
+    b.box('antique_white',0,.65,-2.265,.74,.16,.055,.017)
+    for side in (-1,1):
+        b.box('headlamp',side*.78,.93,2.212,.36,.18,.085,.035)
+        b.box('taillamp',side*.80,.80,-2.234,.34,.17,.075,.028)
+        b.box('metal',side*1.18,1.15,.52,.12,.14,.29,.038)
+        b.box('metal',side*1.235,1.18,.57,.25,.055,.064,.022)
+    for side in (-1,1):
+        for wheel_z in (-1.44,1.44):
+            b.cyl('tires',.54,.37,side*1.185,.54,wheel_z,axis='x',sections=40)
+            b.add(ring(.394,.047,(side*1.400,.54,wheel_z)),'cream_car')
+            b.cyl('metal',.298,.052,side*1.415,.54,wheel_z,axis='x',sections=30)
+            b.cyl('dark_cavity',.114,.074,side*1.459,.54,wheel_z,axis='x',sections=22)
             for k in range(5):
                 a=math.tau*k/5
-                b.ball('brass',sx*1.466,.53+.21*math.cos(a),
-                       z+.21*math.sin(a),(.045,.045,.045),k,1)
-    b.box('glass_bright',0,1.87,-.08,1.53,.06,.32,.025)
+                b.ball('brass',side*1.476,.54+.205*math.cos(a),
+                       wheel_z+.205*math.sin(a),(.036,.036,.036),k,1)
+    b.box('cream_car',0,1.997,-.06,.19,.015,.67,.006)
     return b.make_glb('maple_cherry_coupe.glb')
 
 
