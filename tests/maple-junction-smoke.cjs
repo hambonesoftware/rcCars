@@ -55,6 +55,8 @@ async function run(){
         }))
       ));
     }
+    await desktop.waitForFunction(()=>['all-four-loaded','fallbacks-active'].includes(
+      document.body.dataset.mapleAuthoredAssets),null,{timeout:120000});
     const initial=await desktop.evaluate(()=>({
       title:document.title,ready:document.body.dataset.mapleGameReady,
       course:document.body.dataset.mapleCourse,
@@ -66,6 +68,9 @@ async function run(){
       roadSamples:Number(document.body.dataset.mapleRoadSamples),
       reflections:document.body.dataset.mapleReflections,
       specular:document.body.dataset.mapleSpecular,
+      authored:document.body.dataset.mapleAuthoredAssets,
+      authoredLoaded:Number(document.body.dataset.mapleAuthoredLoaded),
+      authoredFailed:Number(document.body.dataset.mapleAuthoredFailed),
       camera:document.body.dataset.mapleCamera,
       race:document.body.dataset.mapleRaceState,
       context:!!document.querySelector('#maple-canvas').getContext('webgl2'),
@@ -77,6 +82,8 @@ async function run(){
        initial.world!=='20x10-feet'||initial.buildings<12||initial.trees<30||
        initial.ties<100||initial.trainCars!==3||initial.roadSamples<200||
        initial.specular!=='50'||!initial.context||
+       initial.authored!=='all-four-loaded'||
+       initial.authoredLoaded!==4||initial.authoredFailed!==0||
        !initial.introVisible||initial.race!=='intro'){
       throw Error('The photographed 20x10 train-table scene is incomplete: '+
         JSON.stringify(initial));
@@ -134,6 +141,10 @@ async function run(){
     await phone.goto(url,{waitUntil:'domcontentloaded',timeout:60000});
     await phone.waitForFunction(()=>document.body.dataset.mapleGameReady==='true',
       null,{timeout:90000});
+    await phone.waitForFunction(()=>['all-four-loaded','fallbacks-active'].includes(
+      document.body.dataset.mapleAuthoredAssets),null,{timeout:120000});
+    if(await phone.locator('body').getAttribute('data-maple-authored-assets')!=='all-four-loaded')
+      throw Error('iPhone GLB mesh imports did not complete');
     const phoneLayout=await phone.evaluate(()=>{
       const scene=document.querySelector('main').getBoundingClientRect();
       const left=document.querySelector('#left').getBoundingClientRect();
