@@ -192,7 +192,7 @@ function updatePhysics(dt){
   else state.boostHeat=Math.max(0,state.boostHeat-dt*.17);
   // Always-on low-level steering assistance keeps this a readable
   // beginner's course, while steering buttons change the chosen line.
-  const assisting=steer!==0?.26:.95;
+  const assisting=steer!==0 ? 0.26 : 0.95;
   state.yaw+=clamp(error,-1.05,1.05)*dt*assisting;
   // Deliberately prioritize manual steering instead of the old overbearing
   // road-follow helper that fought the directional buttons at every corner.
