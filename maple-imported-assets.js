@@ -6,9 +6,9 @@ import * as pc from 'playcanvas';
  * source Git blob and the imported catalog contains exact glTF scene bounds.
  * Assets load from OUR Pages origin, not third-party CDNs at game runtime.
  */
-export async function loadImportedMapleTown(app,world) {
+export async function loadImportedMapleTown(app,world,car) {
   const directory='./assets/maple/imported/';
-  const status={loaded:0,failed:0,instances:0,buildings:0,trees:0};
+  const status={loaded:0,failed:0,instances:0,buildings:0,trees:0,trucks:0};
   const mobile=window.matchMedia('(max-width:800px)').matches;
   document.body.dataset.mapleImportedAssets='loading';
 
@@ -140,9 +140,74 @@ export async function loadImportedMapleTown(app,world) {
     }
   }
 
+  function installRcTruck(resource,record){
+    if(!car)throw Error('Maple Junction race vehicle does not exist');
+    if(!record?.bounds)throw Error('Imported RC truck has no validated geometry');
+    const [low,high]=record.bounds;
+    const dimensions=high.map((value,i)=>value-low[i]);
+    if(dimensions.some(value=>!Number.isFinite(value)||value<=.001))
+      throw Error('Invalid physical bounds for downloaded RC truck');
+
+    // Size the toy against the actual authored Bungalow, not a hard-coded
+    // arbitrary scale. One truck is ~18% of a house width, ~36% of a house
+    // depth, and <30% of its height: a believable model-railway proportion.
+    // The road remains 9.2 units wide, so multiple vehicles can fit.
+    const reference=(world.buildingSpecs||[]).find(spec=>spec.name==='MAPLE BUNGALOW');
+    if(!reference)throw Error('Model-railway reference house is missing');
+    const limits={
+      width:reference.w*.18,
+      length:reference.d*.36,
+      height:reference.h*.29
+    };
+    const scale=Math.min(limits.width/dimensions[0],
+      limits.height/dimensions[1],limits.length/dimensions[2]);
+    const size=dimensions.map(value=>value*scale);
+    const previous=[...car.children];
+
+    // The vehicle entity is anchored to terrain + .51 by existing racing
+    // physics. Move down by exactly that amount, then lift every mesh by
+    // its measured bottom bound so all four tires touch the terrain.
+    const pivot=new pc.Entity('Downloaded Kenney red RC truck | ground-plane pivot');
+    pivot.setLocalPosition(0,-.51,0);
+    pivot.setLocalEulerAngles(0,180,0); // Kenney/Godot models face -Z; race drives +Z
+    const mesh=resource.instantiateRenderEntity();
+    mesh.name='Kenney Starter Kit Racing | red off-road RC truck';
+    mesh.setLocalScale(scale,scale,scale);
+    mesh.setLocalPosition(
+      -(low[0]+high[0])*.5*scale,
+      -low[1]*scale,
+      -(low[2]+high[2])*.5*scale
+    );
+    pivot.addChild(mesh);
+    car.addChild(pivot);
+    for(const render of mesh.findComponents('render')){
+      render.castShadows=true;
+      render.receiveShadows=true;
+    }
+    for(const child of previous)child.enabled=false;
+    const wheels=['wheel-front-left','wheel-front-right',
+      'wheel-back-left','wheel-back-right'].map(name=>mesh.findByName(name))
+      .filter(Boolean);
+    world.animatePlayerWheels=(dt,speed)=>{
+      const rotation=dt*Math.max(0,speed)*55;
+      for(const wheel of wheels)wheel.rotateLocal(rotation,0,0);
+    };
+    document.body.dataset.maplePlayerModel='downloaded-kenney-rc-truck-red';
+    document.body.dataset.mapleTruckScale=scale.toFixed(5);
+    document.body.dataset.mapleTruckWidth=size[0].toFixed(3);
+    document.body.dataset.mapleTruckHeight=size[1].toFixed(3);
+    document.body.dataset.mapleTruckLength=size[2].toFixed(3);
+    document.body.dataset.mapleTruckHouseWidthRatio=(size[0]/reference.w).toFixed(4);
+    document.body.dataset.mapleTruckRoadWidthRatio=(size[0]/9.2).toFixed(4);
+    document.body.dataset.mapleTruckWheelNodes=String(wheels.length);
+    document.body.dataset.mapleTruckGrounded='true';
+    status.instances++;
+    status.trucks++;
+  }
+
   // PlayCanvas's container loader expects the GLB relative to the current
   // origin. Assets are generated and published together with this module.
-  const all=[...houses,...treePlansActive];
+  const all=[...houses,...treePlansActive,{key:'rc_truck_red'}];
   const unique=[...new Set(all.map(entry=>entry.key))];
   const results=await Promise.all(unique.map(key=>new Promise(resolve=>{
     const record=catalog[key];
@@ -158,7 +223,8 @@ export async function loadImportedMapleTown(app,world) {
         resolve({key,ok:false,error:String(error)});
       }else{
         try {
-          if(houses.some(p=>p.key===key))installHouse(key,asset.resource,record);
+          if(key==='rc_truck_red')installRcTruck(asset.resource,record);
+          else if(houses.some(p=>p.key===key))installHouse(key,asset.resource,record);
           else installTree(key,asset.resource,record);
           status.loaded++;
           resolve({key,ok:true});
@@ -173,6 +239,7 @@ export async function loadImportedMapleTown(app,world) {
       document.body.dataset.mapleImportedBuildings=String(status.buildings);
       document.body.dataset.mapleImportedTrees=String(status.trees);
       document.body.dataset.mapleImportedInstances=String(status.instances);
+      document.body.dataset.mapleImportedTrucks=String(status.trucks);
     });
   })));
   document.body.dataset.mapleImportedAssets=status.failed?
@@ -182,5 +249,6 @@ export async function loadImportedMapleTown(app,world) {
   document.body.dataset.mapleImportedBuildings=String(status.buildings);
   document.body.dataset.mapleImportedTrees=String(status.trees);
   document.body.dataset.mapleImportedInstances=String(status.instances);
+  document.body.dataset.mapleImportedTrucks=String(status.trucks);
   return {status,results};
 }
