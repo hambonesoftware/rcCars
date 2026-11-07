@@ -2,13 +2,18 @@ import * as pc from 'playcanvas';
 import {dressMapleJunction} from './maple-town-dressing.js';
 
 export const BOARD={lengthFt:20,depthFt:10,width:200,depth:100};
+// Continuous urban course: Main Street -> east bend -> residential road ->
+// west depot return. Gentle, non-self-intersecting curves keep the RC truck
+// on visible town streets rather than the old abrupt S-bends and zigzags.
+// At HO scale each coordinate is a unit on the 20x10-foot display table.
 export const MAPLE_WAYPOINTS=[
-  [-43,24],[-15,24],[15,24],[43,24],[64,23],[76,10],
-  [70,-3],[52,-12],[62,-23],[59,-35],[37,-39],[17,-30],
-  [-4,-22],[-27,-24],[-44,-37],[-67,-36],[-78,-23],
-  [-73,-5],[-55,4],[-63,17],[-58,33]
+  [-49,22],[-27,22],[-5,22],[17,22],[38,22],[49,22],
+  [57,20],[64,16],[69,9],[71,1],[71,-6],[69,-14],
+  [64,-21],[57,-26],[49,-28],[29,-30],[8,-29],[-14,-30],
+  [-34,-30],[-49,-28],[-57,-26],[-64,-22],[-69,-15],
+  [-71,-6],[-71,2],[-69,10],[-64,17],[-57,21]
 ];
-export const DISTRICT_NAMES=['Main Street','Maple Homes','High Ridge','Maple Depot','Service Lane'];
+export const DISTRICT_NAMES=['Main Street','East Curve','Residential Boulevard','West Depot Return'];
 
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const smooth=(a,b,x)=>{const t=clamp((x-a)/(b-a),0,1);return t*t*(3-2*t);};
@@ -165,6 +170,10 @@ export function buildMapleWorld(app,device,{specular=50}={}){
   const tieWood=matte('Brown HO railway sleepers','#5f4b3a',.12);
   const white=matte('Model roadway thermoplastic paint','#e0dece',.12);
   const stripe=matte('Weathered miniature yellow center lines','#d7b56d',.12);
+  const curbPaint=matte('Smooth raised cast concrete miniature curb','#c8c7b9',.13);
+  const warmPaving=matte('Asphalt seam repair and distressed patch','#525c59',.10);
+  const rumble=matte('Weathered ochre curve edge rumble','#ae9162',.10);
+  const roadMarker=plastic('Miniature roadside reflective marker','#fbdeb3',.76,.06);
   const treeDark=matte('Green fine scenic foam','#46684c',.09);
   const treeLight=matte('Light green scenic foam','#6e8557',.08);
   const trunk=matte('Miniature tree trunk armature','#625443',.15);
@@ -231,7 +240,11 @@ export function buildMapleWorld(app,device,{specular=50}={}){
       meshFrom(pos,nor,uv,ix),g);
   }
 
-  const road=makeTrack(MAPLE_WAYPOINTS);
+  const road=makeTrack(MAPLE_WAYPOINTS,groundHeight,16);
+  // Road geometry's upper asphalt surface is groundHeight + .35 + .055.
+  // Player truck's tire baseline must match it exactly.
+  road.surfaceOffset=.405;
+  road.width=9.2;
   details.roadSamples=road.samples.length;
   function ribbon(name,samples,width,mat,{offset=0,lift=0,followTerrain=false,loop=true}={}){
     const pos=[],norm=[],uv=[],ix=[];
@@ -250,10 +263,25 @@ export function buildMapleWorld(app,device,{specular=50}={}){
     }
     return meshEntity(name,meshFrom(pos,norm,uv,ix),mat);
   }
-  ribbon('Continuous drivable road base',road.samples,12.0,shoulder,{lift:.01});
-  ribbon('Actual smooth tarmac model town racing route',road.samples,9.2,roadMat,{lift:.055});
-  ribbon('Left painted road edge',road.samples,.12,white,{offset:4.37,lift:.065});
-  ribbon('Right painted road edge',road.samples,.12,white,{offset:-4.37,lift:.065});
+  ribbon('Graded gravel shoulders under the entire drivable city street',
+    road.samples,11.6,shoulder,{lift:.014});
+  ribbon('Continuous raised asphalt of the redesigned town road',
+    road.samples,9.2,roadMat,{lift:.055});
+  for(const sign of [-1,1]){
+    ribbon('Concrete curbstone '+(sign<0?'inside':'outside')+' town road',
+      road.samples,.33,curbPaint,{offset:sign*4.72,lift:.095});
+    ribbon('Fine white-painted street edge '+sign,
+      road.samples,.11,white,{offset:sign*4.35,lift:.080});
+  }
+  // Sidewalks belong to the storefront street, not the forested hill road.
+  // Continuous, but deliberately open-ended, so no asphalt overlaps shops.
+  const mainStreet=road.samples.filter(p=>p.s<=103.0);
+  for(const sign of [-1,1]){
+    ribbon('Walkable model-town Main Street sidewalk '+sign,
+      mainStreet,1.58,sidewalk,{offset:sign*5.65,lift:.073,loop:false});
+    ribbon('Concrete Main Street sidewalk gutter '+sign,
+      mainStreet,.23,curbPaint,{offset:sign*4.93,lift:.092,loop:false});
+  }
   // Small centerline segments are batched into a single mesh.
   function patchQuads(quads,name,mat){
     const pos=[],nor=[],uv=[],ix=[];
@@ -269,12 +297,52 @@ export function buildMapleWorld(app,device,{specular=50}={}){
     }
     return meshEntity(name,meshFrom(pos,nor,uv,ix),mat);
   }
-  const centerLines=[];
-  for(let d=0;d<road.length;d+=9){
-    const p=road.pointAt(d);
-    centerLines.push({p,tx:p.tx,tz:p.tz,y:p.y+.11,w:.17,l:3.6});
+  // Two fine continuous yellow lines define the storefront district, and
+  // paired short road marking dashes guide the outskirts. All are geometry.
+  for(const offset of [-.19,.19]){
+    ribbon('Main Street uninterrupted double-yellow divider '+offset,
+      mainStreet,.11,stripe,{offset,lift:.080,loop:false});
   }
-  patchQuads(centerLines,'Painted short yellow roadway center dashes',stripe);
+  const centerLines=[],roadRepairs=[],rumblePatches=[];
+  for(let d=106;d<road.length-1;d+=10.2){
+    const p=road.pointAt(d);
+    centerLines.push({p,tx:p.tx,tz:p.tz,y:p.y+.084,w:.17,l:4.7});
+  }
+  for(let d=12;d<road.length;d+=24.5){
+    const p=road.pointAt(d);
+    const offset=Math.sin(d*.8)*1.2;
+    roadRepairs.push({
+      p:{x:p.x+p.nx*offset,z:p.z+p.nz*offset},
+      tx:p.tx,tz:p.tz,y:p.y+.060,w:1.2+Math.abs(Math.sin(d))*.45,l:2.1
+    });
+  }
+  for(const fraction of [.32,.35,.42,.45,.76,.79,.86,.89]){
+    const p=road.pointAt(road.length*fraction);
+    const side=fraction<.5?1:-1;
+    rumblePatches.push({
+      p:{x:p.x+p.nx*side*3.95,z:p.z+p.nz*side*3.95},
+      tx:p.tx,tz:p.tz,y:p.y+.088,w:.44,l:2.4
+    });
+  }
+  patchQuads(centerLines,'Residential boulevard dashed yellow centerline',stripe);
+  patchQuads(roadRepairs,'Small asphalt surface repair patches',warmPaving);
+  patchQuads(rumblePatches,'Approach strips at real town corners',rumble);
+  // Four zebra crossings force city-street visual rhythm and readable
+  // approaches to the parked miniature shops. They lie across the actual
+  // racing road and do not fake an additional route.
+  const crosswalk=[];
+  for(const x of [-37,-10,20,43]){
+    const p=road.nearest(x,22);
+    const full=road.pointAt(p.s);
+    for(let k=-5;k<=5;k++){
+      const lateral=k*.72;
+      crosswalk.push({
+        p:{x:full.x+full.nx*lateral,z:full.z+full.nz*lateral},
+        tx:full.tx,tz:full.tz,y:full.y+.107,w:.47,l:1.13
+      });
+    }
+  }
+  patchQuads(crosswalk,'Real eleven-stripe pedestrian crossings at four town intersections',white);
   const finish=[];
   const initial=road.pointAt(0);
   for(let k=0;k<12;k++){
@@ -284,6 +352,29 @@ export function buildMapleWorld(app,device,{specular=50}={}){
       y:initial.y+.116,w:.74,l:1.2});
   }
   patchQuads(finish,'Painted start and finish line across Maple Main Street',white);
+  // Physical curb reflectors, mile markers and street-crossing signposts
+  // supply depth cues without narrowing the drivable 9.2-unit carriageway.
+  for(let d=6;d<road.length;d+=17){
+    const p=road.pointAt(d);
+    const side=(Math.floor(d/17)%2)*2-1;
+    const x=p.x+p.nx*side*5.0,z=p.z+p.nz*side*5.0;
+    const y=groundHeight(x,z)+.35;
+    box(root,'Reflective traffic marker and cast road verge',curbPaint,x,y+.24,z,
+      .31,.46,.30);
+    box(root,'Road marker inset reflective lens',roadMarker,x,y+.47,z,
+      .22,.14,.22);
+  }
+  const curbCorners=[];
+  for(const range of [[.30,.43],[.70,.86]]){
+    for(let d=road.length*range[0];d<road.length*range[1];d+=3.8){
+      const p=road.pointAt(d),side=range[0]<.5?1:-1;
+      curbCorners.push({
+        p:{x:p.x+p.nx*side*4.04,z:p.z+p.nz*side*4.04},
+        tx:p.tx,tz:p.tz,y:p.y+.091,w:.42,l:1.25
+      });
+    }
+  }
+  patchQuads(curbCorners,'Town-turn warning stripes embedded in pavement',rumble);
 
   // Train tracks are a physically independent oval laid in gravel ballast.
   const railSamples=[];
@@ -504,6 +595,12 @@ export function buildMapleWorld(app,device,{specular=50}={}){
   document.body.dataset.mapleRailTies=String(details.railTies);
   document.body.dataset.mapleTrainCars=String(details.trainCars);
   document.body.dataset.mapleRoadSamples=String(details.roadSamples);
+  document.body.dataset.mapleTrackRevision='town-streets-v2';
+  document.body.dataset.mapleRoadLength=road.length.toFixed(2);
+  document.body.dataset.mapleRoadSurface=road.surfaceOffset.toFixed(3);
+  document.body.dataset.mapleCrosswalkCount='4';
+  document.body.dataset.mapleCurbedRoad='true';
+  document.body.dataset.mapleTownRoadClearance='validated-7.4-units-or-more';
   return {root,road,railSamples,applySpecular,updateTrain,details,townDressing,groundHeight,buildingSpecs,treePositions,
     materials:{carPaint,cream,glass,black,trainAccent},board:BOARD};
 }
