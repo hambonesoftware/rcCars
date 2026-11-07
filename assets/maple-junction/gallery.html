@@ -9,14 +9,14 @@ header{display:flex;align-items:center;justify-content:space-between;gap:12px;ba
 header h1{font-size:13px;line-height:1.2;font-weight:900;margin:0}header small{font-size:10px;color:#65796d}header a{font-weight:850;color:#2d5841;text-decoration:none;font-size:11px}
 main{position:relative;flex:1;min-height:0;overflow:hidden}#canvas{position:absolute;inset:0;display:block;width:100%;height:100%;touch-action:none}
 #status{position:absolute;top:12px;left:12px;background:#f7f7eef0;border-radius:10px;padding:11px 14px;max-width:295px;box-shadow:0 7px 22px #243a3127}
-#status strong{display:block;font-size:14px}#status small{color:#62806b}
+#status strong{display:block;font-size:14px}#status small{color:#62806b;display:block;margin-top:5px}#retry-model{display:none;border:0;background:#315e45;color:white;border-radius:8px;margin-top:10px;padding:9px 12px;font-weight:850}body[data-asset-error] #retry-model{display:block}
 #help{position:absolute;bottom:14px;right:12px;border-radius:999px;padding:7px 12px;font-size:10px;font-weight:850;background:#f5f4ebe3}
 footer{position:relative;z-index:5;display:flex;gap:7px;flex-shrink:0;overflow-x:auto;background:#f5f3e9;padding:9px}
 footer button{border:1px solid #a9bcae;background:#fff;border-radius:10px;padding:12px;font:800 12px system-ui;color:#356148;white-space:nowrap}
 footer button[aria-pressed=true]{background:#2f6048;color:#fff}
 @media(max-width:700px){header{padding:9px}header h1{font-size:11px}header small{font-size:9px}footer{padding:7px}footer button{font-size:11px;padding:10px}#help{font-size:9px}}
 </style></head><body><header><div><h1>MAPLE JUNCTION · REAL 3D MESH ASSETS</h1><small>Self-contained glTF 2.0 · PlayCanvas PBR lighting</small></div><a href="../../maple-junction.html">← Racing course</a></header>
-<main><canvas id="canvas"></canvas><div id="status"><strong id="model-title">Loading 3D assets…</strong><small id="model-state">Importing model</small></div><div id="help">Drag to orbit · pinch / scroll to zoom</div></main>
+<main><canvas id="canvas"></canvas><div id="status" role="status" aria-live="polite"><strong id="model-title">Loading 3D assets…</strong><small id="model-state">Importing model</small><button id="retry-model" type="button">Retry model loading</button></div><div id="help">Drag to orbit · pinch / scroll to zoom</div></main>
 <footer><button data-model="house" aria-pressed="true">Craftsman House</button><button data-model="store" aria-pressed="false">Main Street</button><button data-model="car" aria-pressed="false">Cherry Coupe</button><button data-model="tree" aria-pressed="false">Maple Tree</button></footer>
 <script type="module">
 import * as pc from 'playcanvas';
@@ -45,25 +45,96 @@ function updateCamera(){
  cam.setLocalPosition(Math.sin(yaw)*cos*d,focusY+Math.sin(pitch)*d,Math.cos(yaw)*cos*d);
  cam.lookAt(0,focusY,0);
 }
-function choose(type){
- const info=models[type];if(!info)return;
- selected=type;title.textContent=info.name;status.textContent='Loading embedded PBR geometry…';
- document.querySelectorAll('[data-model]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.model===type)));
- if(active){active.enabled=false;active=null;}
- radius=info.radius*(window.innerWidth<700?1.43:1);focusY=info.focus;updateCamera();
- if(cache.has(type)){active=cache.get(type);active.enabled=true;status.textContent='Real glTF 2.0 mesh · loaded';document.body.dataset.assetLoaded=type;return;}
- app.assets.loadFromUrlAndFilename('../maple/glb/'+info.file,info.file,'container',(error,asset)=>{
-   if(type!==selected)return;
-   if(error||!asset?.resource){status.textContent='Load failed: '+String(error);document.body.dataset.assetError=String(error);return;}
-   try{
-     active=asset.resource.instantiateRenderEntity();
-     active.name='Authored '+info.name;
-     app.root.addChild(active);cache.set(type,active);
-     status.textContent='Loaded: textured mesh and PBR materials';
-     document.body.dataset.assetLoaded=type;
-   }catch(e){status.textContent='Render failure: '+String(e);document.body.dataset.assetError=String(e);}
- });
+// GitHub Pages deployments may momentarily serve the gallery before the
+// corresponding binary is live at the edge. Try the local file first,
+// then the canonical repository raw URL, which supports cross-origin GLB.
+const assetPath='../maple/glb/';
+const repositoryAssetPath='https://raw.githubusercontent.com/hambonesoftware/rcCars/main/assets/maple/glb/';
+const retryButton=document.querySelector('#retry-model');
+let loadVersion=0;
+const loadErrors=[];
+function fetchGLBAsset(url,filename){
+  return new Promise((resolve,reject)=>{
+    app.assets.loadFromUrlAndFilename(url,filename,'container',(error,asset)=>{
+      if(error||!asset?.resource){
+        reject(new Error(String(error||'Empty GLB container response')));
+      }else resolve(asset);
+    });
+  });
 }
+async function choose(type){
+  const info=models[type];if(!info)return;
+  const version=++loadVersion;
+  selected=type;title.textContent=info.name;
+  status.textContent='Checking 3D model file…';
+  document.body.removeAttribute('data-asset-error');
+  document.body.dataset.assetStatus='loading';
+  document.body.dataset.assetLoaded='';
+  document.querySelectorAll('[data-model]').forEach(button=>
+    button.setAttribute('aria-pressed',String(button.dataset.model===type)));
+  if(active){active.enabled=false;active=null;}
+  radius=info.radius*(window.innerWidth<700?1.43:1);
+  focusY=info.focus;updateCamera();
+  if(cache.has(type)){
+    active=cache.get(type);active.enabled=true;
+    status.textContent='3D model loaded · drag to rotate';
+    document.body.dataset.assetLoaded=type;
+    document.body.dataset.assetStatus='ready';
+    return;
+  }
+  const paths=[
+    {kind:'pages',url:new URL(assetPath+info.file,document.baseURI).href},
+    {kind:'repository',url:repositoryAssetPath+info.file}
+  ];
+  const errors=[];
+  for(const source of paths){
+    if(version!==loadVersion)return;
+    document.body.dataset.assetSourceAttempt=source.kind;
+    status.textContent=source.kind==='pages'?
+      'Loading 3D model from Gallery…':'Trying repository model backup…';
+    try{
+      const asset=await fetchGLBAsset(source.url,info.file);
+      const model=asset.resource.instantiateRenderEntity();
+      model.name='Authored '+info.name;
+      app.root.addChild(model);
+      cache.set(type,model);
+      if(version!==loadVersion){model.enabled=false;return;}
+      active=model;
+      status.textContent='3D model loaded · drag to rotate';
+      document.body.dataset.assetLoaded=type;
+      document.body.dataset.assetStatus='ready';
+      document.body.dataset.assetSource=source.kind;
+      document.body.removeAttribute('data-asset-error');
+      return;
+    }catch(error){
+      const message=source.kind+': '+String(error?.message||error);
+      errors.push(message);
+      loadErrors.push({model:type,message});
+      console.warn('Maple Junction GLB model load attempt failed:',message);
+    }
+  }
+  if(version!==loadVersion)return;
+  document.body.dataset.assetStatus='error';
+  document.body.dataset.assetError=errors.join(' | ').slice(0,350);
+  document.body.setAttribute('data-asset-error','true');
+  status.textContent='Could not load '+info.name+'. Tap Retry. '+errors.join(' | ').slice(0,155);
+}
+retryButton.addEventListener('click',()=>choose(selected));
+window.addEventListener('error',event=>{
+  if(document.body.dataset.assetStatus==='ready')return;
+  status.textContent='3D viewer error: '+event.message;
+  document.body.dataset.assetStatus='error';
+  document.body.dataset.assetError=event.message;
+  document.body.setAttribute('data-asset-error','true');
+});
+window.addEventListener('unhandledrejection',event=>{
+  if(document.body.dataset.assetStatus==='ready')return;
+  const message=String(event.reason?.message||event.reason);
+  status.textContent='3D viewer error: '+message;
+  document.body.dataset.assetStatus='error';
+  document.body.dataset.assetError=message;
+  document.body.setAttribute('data-asset-error','true');
+});
 canvas.addEventListener('pointerdown',e=>{pointer={id:e.pointerId,x:e.clientX,y:e.clientY};canvas.setPointerCapture(e.pointerId);});
 canvas.addEventListener('pointermove',e=>{if(!pointer||pointer.id!==e.pointerId)return;const dx=e.clientX-pointer.x,dy=e.clientY-pointer.y;pointer.x=e.clientX;pointer.y=e.clientY;yaw+=dx*.007;pitch=Math.max(-.1,Math.min(1.12,pitch+dy*.005));updateCamera();});
 for(const event of ['pointerup','pointercancel','lostpointercapture'])canvas.addEventListener(event,()=>pointer=null);
