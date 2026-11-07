@@ -47,6 +47,8 @@ jobs:
           node --input-type=module --check < maple-junction.js
           node --input-type=module --check < maple-imported-assets.js
           node --check tests/maple-junction-smoke.cjs
+          node --check tests/maple-town-course.test.cjs
+          node tests/maple-town-course.test.cjs
           test -s maple-junction.html
       - name: Install Chromium test driver
         run: npm install --no-save --ignore-scripts --no-audit --no-fund playwright-core@1.56.1
