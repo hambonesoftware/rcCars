@@ -89,6 +89,14 @@ async function run(){
       rcTruckRoadWidthRatio:Number(document.body.dataset.mapleTruckRoadWidthRatio),
       rcTruckGrounded:document.body.dataset.mapleTruckGrounded,
       rcTruckWheels:Number(document.body.dataset.mapleTruckWheelNodes),
+      rcTruckFront:document.body.dataset.mapleTruckFrontAlongTravel,
+      rcTruckOriginalAxis:document.body.dataset.mapleTruckOriginalFrontAxis,
+      rcTruckGroundError:Number(document.body.dataset.mapleTruckGroundError),
+      trackRevision:document.body.dataset.mapleTrackRevision,
+      curbedRoad:document.body.dataset.mapleCurbedRoad,
+      crosswalks:Number(document.body.dataset.mapleCrosswalkCount),
+      roadLength:Number(document.body.dataset.mapleRoadLength),
+      roadSurface:Number(document.body.dataset.mapleRoadSurface),
       importedTrucks:Number(document.body.dataset.mapleImportedTrucks),
       dressedLots:Number(document.body.dataset.mapleDressedLots),
       streetLamps:Number(document.body.dataset.mapleStreetlamps),
@@ -114,6 +122,11 @@ async function run(){
        initial.rcTruckLength<1.6||initial.rcTruckLength>3.61||
        initial.rcTruckHouseWidthRatio<.07||initial.rcTruckHouseWidthRatio>.181||
        initial.rcTruckRoadWidthRatio>.25||initial.rcTruckWheels!==4||
+       initial.rcTruckFront!=='true'||!['-Z','+Z'].includes(initial.rcTruckOriginalAxis)||
+       initial.rcTruckGroundError>.005||initial.trackRevision!=='town-streets-v2'||
+       initial.curbedRoad!=='true'||initial.crosswalks!==4||
+       initial.roadLength<310||initial.roadLength>390||
+       Math.abs(initial.roadSurface-.405)>.001||
        initial.importedBuildings<5||initial.importedTrees<5||
        initial.importedInstances<10||
        initial.townInstances<13||initial.dressedTown!=='true'||
@@ -160,6 +173,33 @@ async function run(){
       path:path.join(images,'maple-junction-desktop-racing.png'),
       animations:'disabled'
     });
+    // Verify real steering semantics, not merely whether the input button
+    // receives a touch event. Screen-right is negative world yaw in the
+    // chase-camera orientation used by this course.
+    const headingBefore=Number(await desktop.locator('body').getAttribute('data-maple-heading-degrees'));
+    await desktop.keyboard.down('ArrowRight');
+    try {
+      await desktop.waitForFunction(previous=>
+        document.body.dataset.mapleSteeringIntent==='-1' &&
+        Number(document.body.dataset.mapleHeadingDegrees)<previous-.35,
+        headingBefore,{timeout:60000});
+    } finally {
+      await desktop.keyboard.up('ArrowRight');
+    }
+    const headingAfterRight=Number(await desktop.locator('body').getAttribute('data-maple-heading-degrees'));
+    await desktop.keyboard.down('ArrowLeft');
+    try {
+      await desktop.waitForFunction(previous=>
+        document.body.dataset.mapleSteeringIntent==='1' &&
+        Number(document.body.dataset.mapleHeadingDegrees)>previous+.35,
+        headingAfterRight,{timeout:60000});
+    } finally {
+      await desktop.keyboard.up('ArrowLeft');
+    }
+    await desktop.screenshot({
+      path:path.join(images,'maple-junction-steering-corrected.png'),
+      animations:'disabled'
+    });
     await desktop.locator('#overview').click();
     if(await desktop.locator('body').getAttribute('data-maple-camera')!=='overview')
       throw Error('Tabletop overview did not switch from live chase camera');
@@ -192,6 +232,10 @@ async function run(){
       throw Error('Phone is not driving the downloaded red RC truck');
     if(await phone.locator('body').getAttribute('data-maple-truck-grounded')!=='true')
       throw Error('The imported RC truck does not sit on the miniature roadway');
+    if(await phone.locator('body').getAttribute('data-maple-truck-front-along-travel')!=='true')
+      throw Error('The RC truck nose points behind the direction of travel');
+    if(await phone.locator('body').getAttribute('data-maple-track-revision')!=='town-streets-v2')
+      throw Error('Phone is loading an outdated racing track');
     if(await phone.locator('body').getAttribute('data-maple-authored-assets')!=='all-four-loaded')
       throw Error('iPhone GLB mesh imports did not complete');
     if(Number(await phone.locator('body').getAttribute('data-maple-town-asset-instances'))<9)
