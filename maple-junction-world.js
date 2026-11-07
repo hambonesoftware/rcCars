@@ -1,4 +1,5 @@
 import * as pc from 'playcanvas';
+import {dressMapleJunction} from './maple-town-dressing.js';
 
 export const BOARD={lengthFt:20,depthFt:10,width:200,depth:100};
 export const MAPLE_WAYPOINTS=[
@@ -404,6 +405,8 @@ export function buildMapleWorld(app,device,{specular=50}={}){
     return entity;
   }
   for(const spec of buildingSpecs)house(spec);
+  // Model-railway scenic lots remain separate from the collision/track meshes.
+  const townDressing=dressMapleJunction({app,root,road,groundHeight,box,buildingSpecs});
 
   // Distinctive miniature landscaping: puff-foam deciduous trees and
   // pine-cone scenic trees, with no glossy finish on the foliage.
@@ -501,6 +504,6 @@ export function buildMapleWorld(app,device,{specular=50}={}){
   document.body.dataset.mapleRailTies=String(details.railTies);
   document.body.dataset.mapleTrainCars=String(details.trainCars);
   document.body.dataset.mapleRoadSamples=String(details.roadSamples);
-  return {root,road,railSamples,applySpecular,updateTrain,details,
+  return {root,road,railSamples,applySpecular,updateTrain,details,townDressing,groundHeight,
     materials:{carPaint,cream,glass,black,trainAccent},board:BOARD};
 }
