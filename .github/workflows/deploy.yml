@@ -48,6 +48,7 @@ jobs:
           node --input-type=module --check < maple-town-dressing.js
           node --input-type=module --check < maple-imported-assets.js
           node --check tests/maple-junction-smoke.cjs
+          node tests/maple-town-course.test.cjs
           node --check game.js
           node --check truck-model.js
           node --check vehicle-preview.js
