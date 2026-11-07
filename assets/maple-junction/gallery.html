@@ -52,7 +52,7 @@ function choose(type){
  if(active){active.enabled=false;active=null;}
  radius=info.radius;focusY=info.focus;updateCamera();
  if(cache.has(type)){active=cache.get(type);active.enabled=true;status.textContent='Real glTF 2.0 mesh · loaded';document.body.dataset.assetLoaded=type;return;}
- app.assets.loadFromUrlAndFilename('./'+info.file,info.file,'container',(error,asset)=>{
+ app.assets.loadFromUrlAndFilename('../maple/glb/'+info.file,info.file,'container',(error,asset)=>{
    if(type!==selected)return;
    if(error||!asset?.resource){status.textContent='Load failed: '+String(error);document.body.dataset.assetError=String(error);return;}
    try{
