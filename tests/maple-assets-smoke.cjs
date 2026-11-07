@@ -21,7 +21,8 @@ const server=http.createServer((req,res)=>{
 });
 async function verify(){
  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
- const url='http://127.0.0.1:'+server.address().port+'/assets/maple-junction/gallery.html';
+ // Use the public entry point so a broken/missing redirect fails CI.
+ const url='http://127.0.0.1:'+server.address().port+'/maple-asset-gallery.html';
  const executablePath=[process.env.CHROME_PATH,'/usr/bin/chromium','/usr/bin/google-chrome'].find(p=>p&&fs.existsSync(p))||
    execFileSync('which',['chromium'],{encoding:'utf8'}).trim();
  const browser=await chromium.launch({headless:true,executablePath,args:[
@@ -34,6 +35,8 @@ async function verify(){
    const desktop=await browser.newPage({viewport:{width:1440,height:940},deviceScaleFactor:1});
    desktop.on('pageerror',err=>errors.push('desktop: '+err.message));
    await desktop.goto(url,{waitUntil:'domcontentloaded',timeout:90000});
+   await desktop.waitForURL('**/assets/maple-junction/gallery.html',{timeout:15000});
+   console.log('PASS stable public gallery link redirects to actual GLB gallery');
    for(const variant of ['house','store','car','tree']){
      await desktop.waitForFunction(type=>document.body.dataset.assetLoaded===type||
        !!document.body.dataset.assetError,variant,{timeout:90000});
@@ -57,6 +60,7 @@ async function verify(){
    const phone=await tablet.newPage();
    phone.on('pageerror',err=>errors.push('iPhone: '+err.message));
    await phone.goto(url,{waitUntil:'domcontentloaded',timeout:90000});
+   await phone.waitForURL('**/assets/maple-junction/gallery.html',{timeout:15000});
    await phone.waitForFunction(()=>document.body.dataset.assetLoaded==='house'||
       !!document.body.dataset.assetError,null,{timeout:90000});
    if(await phone.locator('body').getAttribute('data-asset-error'))
