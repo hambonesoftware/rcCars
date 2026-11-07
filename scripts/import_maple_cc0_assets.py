@@ -95,7 +95,17 @@ def validate_model(path: pathlib.Path, payload: bytes) -> tuple[list[list[float]
     for photo in images:
         uri = photo.get("uri")
         if uri and not uri.startswith("data:"):
-            external = OUT / uri
+            safe_uri = pathlib.PurePosixPath(urllib.parse.unquote(uri))
+            if safe_uri.is_absolute() or ".." in safe_uri.parts:
+                raise ValueError(f"Unsafe linked texture URI {uri}")
+            external = OUT.joinpath(*safe_uri.parts)
+            if not external.is_file() and safe_uri.name == "colormap.png":
+                # Kenney interchange exporters differ on whether they use
+                # colormap.png or Textures/colormap.png in image URIs.
+                palette = OUT / "Textures" / "colormap.png"
+                if palette.is_file():
+                    external.parent.mkdir(parents=True, exist_ok=True)
+                    external.write_bytes(palette.read_bytes())
             if not external.is_file():
                 raise ValueError(f"Missing sidecar texture {uri} for {path.name}")
     loaded = trimesh.load(path, force="scene", process=False)
