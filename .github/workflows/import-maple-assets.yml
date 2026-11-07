@@ -40,6 +40,7 @@ jobs:
           test -s assets/maple/imported/building-type-a.glb
           test -s assets/maple/imported/b_small.glb
           test -s assets/maple/imported/catalog.json
+          test -s assets/maple/imported/rc-truck/vehicle-truck-red.glb
       - name: Verify 10 independent GLBs and provenance
         run: |
           python - <<'PY'
@@ -48,8 +49,8 @@ jobs:
           root=Path('assets/maple/imported')
           catalog=json.loads((root/'catalog.json').read_text())
           models=catalog['models']
-          assert len(models)==11, len(models)
-          assert sum(x['file'].endswith('.glb') for x in models.values())==10
+          assert len(models)==13, len(models)
+          assert sum(x['file'].endswith('.glb') for x in models.values())==11
           for key,record in models.items():
               assert record['license']=='CC0-1.0', (key,record)
               assert record['source'].startswith('https://github.com/')
@@ -57,7 +58,7 @@ jobs:
               if record['file'].endswith('.glb'):
                   assert record['triangles']>30
                   assert len(record['bounds'])==2
-          print('PASS: 10 independently authored GLBs, one Kenney texture, and full source provenance.')
+          print('PASS: 11 authored GLBs, independent Kenney palettes and full source provenance.')
           PY
       - name: Preserve imported GLBs and geometry metadata
         if: always()
