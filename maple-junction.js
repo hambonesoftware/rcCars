@@ -216,6 +216,7 @@ function updatePhysics(dt){
   car.setLocalPosition(state.position.x,groundHeight(state.position.x,state.position.z)+.51,
     state.position.z);
   car.setLocalEulerAngles(0,state.yaw*radians,0);
+  world.animatePlayerWheels?.(dt,state.speed);
   state.time+=dt;
   state.elapsedLap=state.time-state.lapStart;
   if(state.noticeUntil&&state.time>state.noticeUntil)ui.msg.classList.remove('active');
@@ -233,7 +234,9 @@ function updateCamera(dt,hard=false){
   }else{
     const forwardX=Math.sin(state.yaw),forwardZ=Math.cos(state.yaw);
     const height=groundHeight(p.x,p.z);
-    const follow=phone?19:16,eye=phone?17.5:15.3;
+    // The scale-correct RC truck is shorter than the old large coupe.
+    // Bring the chase camera in just enough to keep it legible on phones.
+    const follow=phone?15.6:13.7,eye=phone?14.1:13.0;
     pcam.set(p.x-forwardX*follow,height+eye,p.z-forwardZ*follow);
     plook.set(p.x+forwardX*(phone?10:12),height+1.6,
       p.z+forwardZ*(phone?10:12));
@@ -471,7 +474,7 @@ async function main(){
   });
   // Secondary CC0 buildings and vegetation enrich the rest of the table.
   // Missing optional imports must never stop the authored race or its HUD.
-  loadImportedMapleTown(app,world).then(result=>{
+  loadImportedMapleTown(app,world,car).then(result=>{
     console.info('Imported CC0 miniature town assets:',result);
   }).catch(error=>{
     console.warn('Keeping the original town if downloaded scenery fails',error);
