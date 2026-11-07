@@ -504,6 +504,6 @@ export function buildMapleWorld(app,device,{specular=50}={}){
   document.body.dataset.mapleRailTies=String(details.railTies);
   document.body.dataset.mapleTrainCars=String(details.trainCars);
   document.body.dataset.mapleRoadSamples=String(details.roadSamples);
-  return {root,road,railSamples,applySpecular,updateTrain,details,townDressing,groundHeight,
+  return {root,road,railSamples,applySpecular,updateTrain,details,townDressing,groundHeight,buildingSpecs,treePositions,
     materials:{carPaint,cream,glass,black,trainAccent},board:BOARD};
 }
