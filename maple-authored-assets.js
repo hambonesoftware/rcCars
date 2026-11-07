@@ -40,18 +40,12 @@ export function loadAuthoredMapleAssets(app,world,car){
     {
       key:'car',file:'maple_cherry_coupe.glb',
       install(resource){
-        const legacy=[...car.children];
-        const model=resource.instantiateRenderEntity();
-        model.name='Rebuilt Maple Cherry Coupe GT | actual GLB geometry';
-        // Drivable entity sits at ground + .51; GLB tires reach y=0.
-        model.setLocalPosition(0,-.51,0);
-        car.addChild(model);
-        for(const child of legacy)child.enabled=false;
-        instances++;
-        if(!mobile){
-          parkedCoupe(resource,'Pharmacy visitor',19,-16.5,-88,.72);
-          parkedCoupe(resource,'Maple resident',-33,-15,165,.70);
-        }
+        // The downloaded Kenney RC truck is now the playable model.
+        // Keep our authored Cherry Coupe only as parked miniature scenery.
+        // Do NOT replace the player's temporary fallback car here: the
+        // independent RC-truck importer replaces it on successful load.
+        parkedCoupe(resource,'Pharmacy visitor',19,-16.5,-88,.72);
+        if(!mobile)parkedCoupe(resource,'Maple resident',-33,-15,165,.70);
       }
     },
     {

@@ -34,6 +34,7 @@ jobs:
           python -m pip install --disable-pip-version-check 'numpy>=1.26,<3' 'trimesh>=4.4,<5' 'pillow>=10,<13'
           python -m py_compile assets/maple/generate_maple_assets.py
           python assets/maple/generate_maple_assets.py
+          python scripts/import_maple_cc0_assets.py
           test -s assets/maple/glb/maple_cherry_coupe.glb
           test -s assets/maple/glb/maple_craftsman_house.glb
           test -s assets/maple/glb/maple_mainstreet_hardware.glb
@@ -45,6 +46,7 @@ jobs:
           node --input-type=module --check < maple-junction.js
           node --input-type=module --check < maple-authored-assets.js
           node --input-type=module --check < maple-town-dressing.js
+          node --input-type=module --check < maple-imported-assets.js
           node --check tests/maple-junction-smoke.cjs
           node --check game.js
           node --check truck-model.js

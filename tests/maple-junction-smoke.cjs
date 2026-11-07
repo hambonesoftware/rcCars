@@ -57,6 +57,8 @@ async function run(){
     }
     await desktop.waitForFunction(()=>['all-four-loaded','fallbacks-active'].includes(
       document.body.dataset.mapleAuthoredAssets),null,{timeout:120000});
+    await desktop.waitForFunction(()=>['all-sources-loaded','fallbacks-active'].includes(
+      document.body.dataset.mapleImportedAssets),null,{timeout:120000});
     const initial=await desktop.evaluate(()=>({
       title:document.title,ready:document.body.dataset.mapleGameReady,
       course:document.body.dataset.mapleCourse,
@@ -73,6 +75,21 @@ async function run(){
       authoredFailed:Number(document.body.dataset.mapleAuthoredFailed),
       townInstances:Number(document.body.dataset.mapleTownAssetInstances),
       dressedTown:document.body.dataset.mapleDressedTown,
+      imported:document.body.dataset.mapleImportedAssets,
+      importedLoaded:Number(document.body.dataset.mapleImportedLoaded),
+      importedFailed:Number(document.body.dataset.mapleImportedFailed),
+      importedBuildings:Number(document.body.dataset.mapleImportedBuildings),
+      importedTrees:Number(document.body.dataset.mapleImportedTrees),
+      importedInstances:Number(document.body.dataset.mapleImportedInstances),
+      playerModel:document.body.dataset.maplePlayerModel,
+      rcTruckWidth:Number(document.body.dataset.mapleTruckWidth),
+      rcTruckHeight:Number(document.body.dataset.mapleTruckHeight),
+      rcTruckLength:Number(document.body.dataset.mapleTruckLength),
+      rcTruckHouseWidthRatio:Number(document.body.dataset.mapleTruckHouseWidthRatio),
+      rcTruckRoadWidthRatio:Number(document.body.dataset.mapleTruckRoadWidthRatio),
+      rcTruckGrounded:document.body.dataset.mapleTruckGrounded,
+      rcTruckWheels:Number(document.body.dataset.mapleTruckWheelNodes),
+      importedTrucks:Number(document.body.dataset.mapleImportedTrucks),
       dressedLots:Number(document.body.dataset.mapleDressedLots),
       streetLamps:Number(document.body.dataset.mapleStreetlamps),
       camera:document.body.dataset.mapleCamera,
@@ -88,6 +105,17 @@ async function run(){
        initial.specular!=='50'||!initial.context||
        initial.authored!=='all-four-loaded'||
        initial.authoredLoaded!==4||initial.authoredFailed!==0||
+       initial.imported!=='all-sources-loaded'||
+       initial.importedLoaded!==11||initial.importedFailed!==0||
+       initial.playerModel!=='downloaded-kenney-rc-truck-red'||
+       initial.importedTrucks!==1||initial.rcTruckGrounded!=='true'||
+       initial.rcTruckWidth<.9||initial.rcTruckWidth>2.17||
+       initial.rcTruckHeight<.6||initial.rcTruckHeight>2.33||
+       initial.rcTruckLength<1.6||initial.rcTruckLength>3.61||
+       initial.rcTruckHouseWidthRatio<.07||initial.rcTruckHouseWidthRatio>.181||
+       initial.rcTruckRoadWidthRatio>.25||initial.rcTruckWheels!==4||
+       initial.importedBuildings<5||initial.importedTrees<5||
+       initial.importedInstances<10||
        initial.townInstances<13||initial.dressedTown!=='true'||
        initial.dressedLots<5||initial.streetLamps<3||
        !initial.introVisible||initial.race!=='intro'){
@@ -154,6 +182,16 @@ async function run(){
       null,{timeout:90000});
     await phone.waitForFunction(()=>['all-four-loaded','fallbacks-active'].includes(
       document.body.dataset.mapleAuthoredAssets),null,{timeout:120000});
+    await phone.waitForFunction(()=>['all-sources-loaded','fallbacks-active'].includes(
+      document.body.dataset.mapleImportedAssets),null,{timeout:120000});
+    if(await phone.locator('body').getAttribute('data-maple-imported-assets')!=='all-sources-loaded')
+      throw Error('Phone failed to load imported town models');
+    if(Number(await phone.locator('body').getAttribute('data-maple-imported-instances'))<8)
+      throw Error('Phone miniature town has too few independent GLB instances');
+    if(await phone.locator('body').getAttribute('data-maple-player-model')!=='downloaded-kenney-rc-truck-red')
+      throw Error('Phone is not driving the downloaded red RC truck');
+    if(await phone.locator('body').getAttribute('data-maple-truck-grounded')!=='true')
+      throw Error('The imported RC truck does not sit on the miniature roadway');
     if(await phone.locator('body').getAttribute('data-maple-authored-assets')!=='all-four-loaded')
       throw Error('iPhone GLB mesh imports did not complete');
     if(Number(await phone.locator('body').getAttribute('data-maple-town-asset-instances'))<9)

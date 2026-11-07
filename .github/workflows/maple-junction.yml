@@ -7,6 +7,8 @@ on:
       - 'maple-junction.html'
       - 'maple-junction.js'
       - 'maple-junction-world.js'
+      - 'maple-imported-assets.js'
+      - 'scripts/import_maple_cc0_assets.py'
       - 'tests/maple-junction-smoke.cjs'
       - '.github/workflows/maple-junction.yml'
   push:
@@ -15,6 +17,8 @@ on:
       - 'maple-junction.html'
       - 'maple-junction.js'
       - 'maple-junction-world.js'
+      - 'maple-imported-assets.js'
+      - 'scripts/import_maple_cc0_assets.py'
       - 'tests/maple-junction-smoke.cjs'
       - '.github/workflows/maple-junction.yml'
   workflow_dispatch:
@@ -29,10 +33,19 @@ jobs:
     steps:
       - name: Check out Maple Junction
         uses: actions/checkout@v4
+      - name: Prepare Python for pinned CC0 model downloads
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Download and validate all independent CC0 glTF models
+        run: |
+          python -m pip install --disable-pip-version-check 'numpy>=1.26,<3' 'trimesh>=4.4,<5' 'pillow>=10,<13'
+          python scripts/import_maple_cc0_assets.py
       - name: Check JavaScript syntax
         run: |
           node --input-type=module --check < maple-junction-world.js
           node --input-type=module --check < maple-junction.js
+          node --input-type=module --check < maple-imported-assets.js
           node --check tests/maple-junction-smoke.cjs
           test -s maple-junction.html
       - name: Install Chromium test driver
