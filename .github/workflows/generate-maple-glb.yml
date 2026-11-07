@@ -1,0 +1,73 @@
+name: Generate authored Maple Junction glTF assets
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [feature/maple-authored-glb-assets]
+    paths:
+      - 'scripts/maple-generator-part-*.b64'
+      - '.github/workflows/generate-maple-glb.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  export-models:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install GLB generator dependencies
+        run: python -m pip install --disable-pip-version-check 'numpy>=1.26,<3' 'trimesh>=4.4,<5' 'pillow>=10,<12'
+      - name: Decode version-controlled generator source
+        run: |
+          mkdir -p assets/maple/glb
+          cat scripts/maple-generator-part-1.b64 scripts/maple-generator-part-2.b64 | base64 -d | gzip -d > assets/maple/generate_maple_assets.py
+          python -m py_compile assets/maple/generate_maple_assets.py
+          sha256sum assets/maple/generate_maple_assets.py
+      - name: Generate real textured binary glTF models
+        run: python assets/maple/generate_maple_assets.py
+      - name: Verify binary headers, geometry, mesh materials and sane bounds
+        run: |
+          python - <<'PY'
+          import json,struct
+          from pathlib import Path
+          import trimesh
+          folder=Path('assets/maple/glb')
+          names=['maple_craftsman_house','maple_mainstreet_hardware','maple_cherry_coupe','maple_scenic_tree']
+          stats={}
+          for name in names:
+              path=folder/(name+'.glb')
+              data=path.read_bytes()
+              assert data[:4]==b'glTF' and struct.unpack_from('<I',data,8)[0]==len(data)
+              model=trimesh.load(path,force='scene',process=False)
+              assert len(model.geometry)>=4, (name,len(model.geometry))
+              faces=sum(len(x.faces) for x in model.geometry.values())
+              assert faces>2500,(name,faces)
+              assert model.bounds is not None
+              bounds=(model.bounds[1]-model.bounds[0]).tolist()
+              assert all(.1<v<35 for v in bounds),(name,bounds)
+              stats[name]={'bytes':len(data),'meshes':len(model.geometry),'triangles':faces,'bounds':bounds}
+          (folder.parent/'export-validation.json').write_text(json.dumps(stats,indent=2))
+          print(json.dumps(stats,indent=2))
+          PY
+      - name: Save generated GLB assets on feature branch
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add assets/maple/generate_maple_assets.py assets/maple/glb assets/maple/export-validation.json
+          if ! git diff --cached --quiet; then
+            git commit -m 'assets: export authored Maple Junction houses, car and tree as GLB'
+            git push origin HEAD:feature/maple-authored-glb-assets
+          fi
+      - name: Preserve models as workflow artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: maple-junction-authored-GLB-assets
+          path: assets/maple/glb/*.glb
+          if-no-files-found: ignore
+          retention-days: 14
