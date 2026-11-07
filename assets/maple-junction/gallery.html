@@ -27,6 +27,7 @@ const models={
  car:{name:'Maple Cherry Coupe',file:'maple_cherry_coupe.glb',focus:1.0,radius:8.8},
  tree:{name:'Model Railroad Tree',file:'maple_scenic_tree.glb',focus:3.3,radius:14}
 };
+try {
 const device=await pc.createGraphicsDevice(canvas,{deviceTypes:[pc.DEVICETYPE_WEBGL2],antialias:true});
 const options=new pc.AppOptions();options.graphicsDevice=device;
 options.componentSystems=[pc.RenderComponentSystem,pc.CameraComponentSystem,pc.LightComponentSystem];
@@ -143,4 +144,12 @@ canvas.addEventListener('touchmove',e=>{if(e.touches.length<2)return;const a=e.t
 canvas.addEventListener('touchend',()=>pinch=0);
 document.querySelectorAll('[data-model]').forEach(b=>b.addEventListener('click',()=>choose(b.dataset.model)));
 window.addEventListener('resize',()=>{app.resizeCanvas();updateCamera();});updateCamera();app.start();choose('house');
+} catch(error) {
+  console.error('GLB gallery initialization failed',error);
+  status.textContent='Could not initialize the 3D viewer: '+String(error?.message||error);
+  document.body.dataset.assetStatus='error';
+  document.body.dataset.assetError=String(error?.message||error);
+  document.body.setAttribute('data-asset-error','true');
+  document.querySelector('#retry-model').addEventListener('click',()=>window.location.reload());
+}
 </script></body></html>
