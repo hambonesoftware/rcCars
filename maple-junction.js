@@ -1,5 +1,6 @@
 import * as pc from 'playcanvas';
 import {BOARD,buildMapleWorld,groundHeight} from './maple-junction-world.js';
+import {loadAuthoredMapleAssets} from './maple-authored-assets.js';
 
 const canvas=document.querySelector('#maple-canvas');
 const ui={
@@ -418,7 +419,7 @@ async function main(){
   opts.componentSystems=[
     pc.RenderComponentSystem,pc.CameraComponentSystem,pc.LightComponentSystem
   ];
-  opts.resourceHandlers=[pc.TextureHandler];
+  opts.resourceHandlers=[pc.TextureHandler,pc.ContainerHandler];
   app=new pc.AppBase(canvas);
   app.init(opts);
   app.setCanvasFillMode(pc.FILLMODE_FILL_WINDOW);
@@ -459,6 +460,14 @@ async function main(){
     }
   });
   app.start();
+  // Swap the four hero subjects only after each complete GLB has loaded.
+  // On any asset failure the existing driveable procedural world survives.
+  loadAuthoredMapleAssets(app,world,car).then(result=>{
+    console.info('Authored Maple Junction PBR mesh imports:',result);
+  }).catch(error=>{
+    console.warn('Maintaining legacy scene after mesh import failure',error);
+    document.body.dataset.mapleAuthoredAssets='fallbacks-active';
+  });
   ui.status.hidden=true;
   document.body.dataset.mapleGameReady='true';
   document.body.dataset.mapleEngine='PlayCanvas-2.23.3';
