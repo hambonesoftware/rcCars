@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#ede9df">
+<title>Maple Junction · Real 3D Asset Gallery</title>
+<meta name="description" content="Inspect detailed original GLB meshes for Garage Gauntlet in PlayCanvas on desktop or iPhone.">
+<script type="importmap">{"imports":{"playcanvas":"https://cdn.jsdelivr.net/npm/playcanvas@2.23.3/+esm"}}</script>
+<style>
+:root{font:500 14px/1.5 system-ui,-apple-system,Segoe UI,sans-serif;color:#22382d;background:#deded1}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden}
+body{height:100dvh;display:flex;flex-direction:column}
+header{flex-shrink:0;background:#faf8f1;min-height:54px;display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 17px;border-bottom:1px solid #b6c6b8}
+h1{font-size:14px;letter-spacing:-.025em;margin:0;font-weight:900}
+.sub{color:#64816c;font-size:10px;font-weight:600}
+a{color:#2b674a;font-weight:800;font-size:12px;text-decoration:none;white-space:nowrap}
+main{min-height:0;flex:1;position:relative;overflow:hidden;background:#c3d0ca}
+canvas{display:block;width:100%;height:100%;touch-action:none;overscroll-behavior:contain}
+.metadata{position:absolute;left:14px;top:14px;background:#faf7eee9;padding:11px 14px;border-radius:13px;box-shadow:0 6px 28px #1d2f2c22;pointer-events:none;max-width:75%}
+.metadata strong{display:block;font-size:16px;font-weight:950}
+.metadata span{font-size:11px;color:#4c6b58}
+.spin-hint{position:absolute;right:12px;bottom:14px;background:#faf7eedb;border-radius:10px;padding:8px 11px;color:#4b6a57;font-size:10px;pointer-events:none}
+footer{background:#faf8f1;display:flex;gap:7px;padding:10px;align-items:center;overflow-x:auto;flex-shrink:0;scrollbar-width:thin}
+button{border:1px solid #b4c7b8;color:#2c5542;background:white;min-height:44px;padding:10px 14px;white-space:nowrap;font-size:12px;font-weight:850;border-radius:10px;cursor:pointer}
+button[aria-pressed=true]{background:#2d5c48;color:white}
+button:focus-visible{outline:3px solid #d5af6b;outline-offset:2px}
+@media(max-width:640px){
+ header{padding:8px 11px;min-height:50px}
+ h1{font-size:11px}.sub{font-size:9px}a{font-size:10px}
+ .metadata{left:9px;top:10px;padding:8px 10px;border-radius:9px}
+ .metadata strong{font-size:13px}.metadata span{font-size:10px}
+ footer{padding:7px;gap:5px}button{min-height:42px;font-size:11px;padding:9px 11px}
+}
+</style>
+</head>
+<body>
+<header>
+  <div><h1>GARAGE GAUNTLET / REAL GLB MODEL GALLERY</h1><div class="sub">Actual exported meshes · independent of gameplay · PBR materials</div></div>
+  <a href="./maple-junction.html">Maple Junction ↗</a>
+</header>
+<main>
+  <canvas id="gallery-canvas" aria-label="Rotatable 3D model"></canvas>
+  <div class="metadata" role="status"><strong id="asset-name">Craftsman House</strong><span id="asset-status">Initializing PlayCanvas 3D renderer…</span></div>
+  <div class="spin-hint">Drag to orbit · pinch to zoom</div>
+</main>
+<footer role="group" aria-label="Choose a 3D asset">
+  <button data-model="house" aria-pressed="true">Craftsman house</button>
+  <button data-model="hardware" aria-pressed="false">Hardware store</button>
+  <button data-model="car" aria-pressed="false">Cherry coupe</button>
+  <button data-model="tree" aria-pressed="false">Scenic tree</button>
+</footer>
+<script type="module">
+import * as pc from 'playcanvas';
+const variants={
+  house:{label:'Craftsman House',file:'maple_craftsman_house.glb',radius:24,targetY:5.5},
+  hardware:{label:'Main Street Hardware',file:'maple_mainstreet_hardware.glb',radius:27,targetY:6.8},
+  car:{label:'Cherry Coupe',file:'maple_cherry_coupe.glb',radius:8,targetY:1},
+  tree:{label:'Scenic Tree',file:'maple_scenic_tree.glb',radius:13,targetY:3.6}
+};
+const canvas=document.querySelector('#gallery-canvas');
+const label=document.querySelector('#asset-name');
+const status=document.querySelector('#asset-status');
+const device=await pc.createGraphicsDevice(canvas,{deviceTypes:[pc.DEVICETYPE_WEBGL2],antialias:true});
+const opts=new pc.AppOptions();
+opts.graphicsDevice=device;
+opts.componentSystems=[pc.RenderComponentSystem,pc.CameraComponentSystem,pc.LightComponentSystem];
+opts.resourceHandlers=[pc.TextureHandler,pc.ContainerHandler];
+const app=new pc.AppBase(canvas);app.init(opts);
+app.setCanvasFillMode(pc.FILLMODE_FILL_WINDOW);app.setCanvasResolution(pc.RESOLUTION_AUTO);
+app.graphicsDevice.maxPixelRatio=Math.min(window.devicePixelRatio||1,1.5);
+app.scene.ambientLight=new pc.Color(.55,.64,.59);
+app.scene.exposure=.87;
+const cam=new pc.Entity('Mobile-friendly orbital camera');
+cam.addComponent('camera',{nearClip:.07,farClip:170,fov:46,clearColor:new pc.Color(.74,.79,.76)});
+cam.camera.toneMapping=pc.TONEMAP_NEUTRAL;app.root.addChild(cam);
+const sun=new pc.Entity('Satin model kit key');
+sun.addComponent('light',{type:'directional',color:new pc.Color(1,.94,.85),intensity:1.55,castShadows:true,shadowResolution:2048,shadowDistance:80});
+sun.setEulerAngles(54,-44,0);app.root.addChild(sun);
+const rim=new pc.Entity('Plastic specular rim light');
+rim.addComponent('light',{type:'directional',color:new pc.Color(.87,.94,1),intensity:.48,castShadows:false,affectSpecularity:true});
+rim.setEulerAngles(23,118,0);app.root.addChild(rim);
+let azimuth=.43,pitch=.32,zoom=24,focus=5.5,current=null,selected='house',pointer=null,lastPinch=0,token=0;
+const cached=new Map();
+function positionCamera(){
+ const horizontal=zoom*Math.cos(pitch);
+ cam.setLocalPosition(Math.sin(azimuth)*horizontal,focus+Math.sin(pitch)*zoom,Math.cos(azimuth)*horizontal);
+ cam.lookAt(0,focus,0);
+}
+function choose(name){
+ if(!(name in variants))return;
+ const v=variants[name];
+ selected=name;const myToken=++token;
+ label.textContent=v.label;status.textContent='Loading original geometry…';
+ document.body.dataset.assetLoading=name;
+ document.querySelectorAll('[data-model]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.model===name)));
+ if(current){current.enabled=false;current=null;}
+ zoom=v.radius;focus=v.targetY;positionCamera();
+ if(cached.has(name)){
+   current=cached.get(name);current.enabled=true;
+   status.textContent='glTF 2.0 binary imported with embedded materials';
+   document.body.dataset.assetReady=name;return;
+ }
+ const path='./assets/maple-junction/glb/'+v.file;
+ app.assets.loadFromUrlAndFilename(path,v.file,'container',(error,asset)=>{
+   if(myToken!==token)return;
+   if(error||!asset?.resource){
+     status.textContent='GLB load failed: '+String(error);
+     document.body.dataset.assetReady='error';return;
+   }
+   try{
+     current=asset.resource.instantiateRenderEntity();
+     current.name='Imported GLB / '+v.label;
+     app.root.addChild(current);cached.set(name,current);
+     status.textContent='glTF 2.0 mesh imported · embedded PBR materials';
+     document.body.dataset.assetReady=name;
+     document.body.dataset.assetGeometry=String(asset.resource.renders?.length||0);
+   }catch(e){
+     status.textContent='Model import failed: '+e.message;
+     document.body.dataset.assetReady='error';
+   }
+ });
+}
+canvas.addEventListener('pointerdown',e=>{
+ if(pointer)return;
+ pointer={id:e.pointerId,x:e.clientX,y:e.clientY};
+ canvas.setPointerCapture(e.pointerId);
+});
+canvas.addEventListener('pointermove',e=>{
+ if(!pointer||pointer.id!==e.pointerId)return;
+ azimuth+=(e.clientX-pointer.x)*.008;
+ pitch=Math.min(1.2,Math.max(-.15,pitch+(e.clientY-pointer.y)*.004));
+ pointer.x=e.clientX;pointer.y=e.clientY;positionCamera();
+});
+for(const event of ['pointerup','pointercancel','lostpointercapture'])
+ canvas.addEventListener(event,()=>{pointer=null;});
+canvas.addEventListener('wheel',e=>{
+ e.preventDefault();zoom=Math.min(80,Math.max(3.5,zoom*Math.exp(e.deltaY*.0015)));positionCamera();
+},{passive:false});
+canvas.addEventListener('touchmove',e=>{
+ if(e.touches.length!==2){lastPinch=0;return;}
+ const a=e.touches[0],b=e.touches[1],dist=Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);
+ if(lastPinch){zoom=Math.min(80,Math.max(3.5,zoom*lastPinch/dist));positionCamera();}
+ lastPinch=dist;
+},{passive:false});
+canvas.addEventListener('touchend',()=>{lastPinch=0;});
+document.querySelectorAll('[data-model]').forEach(b=>b.addEventListener('click',()=>choose(b.dataset.model)));
+window.addEventListener('resize',()=>{app.resizeCanvas();positionCamera();});
+positionCamera();app.start();choose('house');
+document.body.dataset.assetGallery='PlayCanvas-2.23.3';
+</script></body></html>
