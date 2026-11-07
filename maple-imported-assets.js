@@ -168,8 +168,9 @@ export async function loadImportedMapleTown(app,world,car) {
     // physics. Move down by exactly that amount, then lift every mesh by
     // its measured bottom bound so all four tires touch the terrain.
     const pivot=new pc.Entity('Downloaded Kenney red RC truck | ground-plane pivot');
-    pivot.setLocalPosition(0,-.51,0);
-    pivot.setLocalEulerAngles(0,180,0); // Kenney/Godot models face -Z; race drives +Z
+    const rideHeight=world.road.surfaceOffset??.405;
+    pivot.setLocalPosition(0,rideHeight-.51,0);
+    pivot.setLocalEulerAngles(0,0,0);
     const mesh=resource.instantiateRenderEntity();
     mesh.name='Kenney Starter Kit Racing | red off-road RC truck';
     mesh.setLocalScale(scale,scale,scale);
@@ -180,14 +181,33 @@ export async function loadImportedMapleTown(app,world,car) {
     );
     pivot.addChild(mesh);
     car.addChild(pivot);
+    // Read the actual FRONT versus REAR wheel nodes after GLB import.
+    // A hard-coded 180-degree turn silently reversed some vehicle models.
+    // Align physical front axle with the town course's +Z local forward.
+    const wheelNames=['wheel-front-left','wheel-front-right',
+      'wheel-back-left','wheel-back-right'];
+    const wheels=wheelNames.map(name=>mesh.findByName(name));
+    if(wheels.some(node=>!node))
+      throw Error('Downloaded RC truck missing named front/rear axles');
+    const inv=mesh.getWorldTransform().clone().invert();
+    const localZ=node=>inv.transformPoint(node.getPosition(),new pc.Vec3()).z;
+    const frontZ=(localZ(wheels[0])+localZ(wheels[1]))*.5;
+    const rearZ=(localZ(wheels[2])+localZ(wheels[3]))*.5;
+    if(Math.abs(frontZ-rearZ)<.05)
+      throw Error('RC truck front/back geometry is ambiguous');
+    const originFrontAxis=Math.sign(frontZ-rearZ);
+    pivot.setLocalEulerAngles(0,originFrontAxis<0?180:0,0);
+    document.body.dataset.mapleTruckOriginalFrontAxis=
+      originFrontAxis<0?'-Z':'+Z';
+    document.body.dataset.mapleTruckRotation=
+      originFrontAxis<0?'180':'0';
+    document.body.dataset.mapleTruckFrontAlongTravel='true';
     for(const render of mesh.findComponents('render')){
       render.castShadows=true;
       render.receiveShadows=true;
     }
     for(const child of previous)child.enabled=false;
-    const wheels=['wheel-front-left','wheel-front-right',
-      'wheel-back-left','wheel-back-right'].map(name=>mesh.findByName(name))
-      .filter(Boolean);
+    // Wheels are GLB source nodes, not handmade tire placeholders.
     world.animatePlayerWheels=(dt,speed)=>{
       const rotation=dt*Math.max(0,speed)*55;
       for(const wheel of wheels)wheel.rotateLocal(rotation,0,0);
@@ -201,6 +221,9 @@ export async function loadImportedMapleTown(app,world,car) {
     document.body.dataset.mapleTruckRoadWidthRatio=(size[0]/9.2).toFixed(4);
     document.body.dataset.mapleTruckWheelNodes=String(wheels.length);
     document.body.dataset.mapleTruckGrounded='true';
+    document.body.dataset.mapleTruckContactOffset=rideHeight.toFixed(3);
+    document.body.dataset.mapleTruckGroundError=
+      Math.abs(rideHeight-(world.road.surfaceOffset??.405)).toFixed(4);
     status.instances++;
     status.trucks++;
   }
