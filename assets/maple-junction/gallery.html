@@ -34,10 +34,10 @@ options.resourceHandlers=[pc.TextureHandler,pc.ContainerHandler];
 const app=new pc.AppBase(canvas);app.init(options);app.setCanvasFillMode(pc.FILLMODE_NONE);app.setCanvasResolution(pc.RESOLUTION_AUTO);
 app.graphicsDevice.maxPixelRatio=Math.min(device.maxPixelRatio||1,1.6);
 const color=hex=>new pc.Color(parseInt(hex.slice(1,3),16)/255,parseInt(hex.slice(3,5),16)/255,parseInt(hex.slice(5,7),16)/255);
-app.scene.ambientLight=color('#909f99');app.scene.exposure=.91;
-const cam=new pc.Entity('Asset inspection camera');cam.addComponent('camera',{nearClip:.12,farClip:160,clearColor:color('#c4cec6'),fov:46});cam.camera.toneMapping=pc.TONEMAP_ACES;app.root.addChild(cam);
-const key=new pc.Entity('Warm studio softbox');key.addComponent('light',{type:'directional',color:color('#fff4df'),intensity:1.8,castShadows:true,shadowResolution:1024});key.setEulerAngles(49,-36,0);app.root.addChild(key);
-const bounce=new pc.Entity('Cool bounced skylight');bounce.addComponent('light',{type:'directional',color:color('#dae9ef'),intensity:.55});bounce.setEulerAngles(31,131,0);app.root.addChild(bounce);
+app.scene.ambientLight=color('#68766e');app.scene.exposure=.86;
+const cam=new pc.Entity('Asset inspection camera');cam.addComponent('camera',{nearClip:.12,farClip:160,clearColor:color('#c4cec6'),fov:46});cam.camera.toneMapping=pc.TONEMAP_NEUTRAL;app.root.addChild(cam);
+const key=new pc.Entity('Warm studio softbox');key.addComponent('light',{type:'directional',color:color('#fff4df'),intensity:1.28,castShadows:true,shadowResolution:1024});key.setEulerAngles(49,-36,0);app.root.addChild(key);
+const bounce=new pc.Entity('Cool bounced skylight');bounce.addComponent('light',{type:'directional',color:color('#dae9ef'),intensity:.26});bounce.setEulerAngles(31,131,0);app.root.addChild(bounce);
 const cache=new Map();
 let selected='house',active=null,yaw=.55,pitch=.29,radius=27,focusY=5.6,pointer=null,pinch=0;
 function updateCamera(){
@@ -50,7 +50,7 @@ function choose(type){
  selected=type;title.textContent=info.name;status.textContent='Loading embedded PBR geometry…';
  document.querySelectorAll('[data-model]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.model===type)));
  if(active){active.enabled=false;active=null;}
- radius=info.radius;focusY=info.focus;updateCamera();
+ radius=info.radius*(window.innerWidth<700?1.43:1);focusY=info.focus;updateCamera();
  if(cache.has(type)){active=cache.get(type);active.enabled=true;status.textContent='Real glTF 2.0 mesh · loaded';document.body.dataset.assetLoaded=type;return;}
  app.assets.loadFromUrlAndFilename('../maple/glb/'+info.file,info.file,'container',(error,asset)=>{
    if(type!==selected)return;
