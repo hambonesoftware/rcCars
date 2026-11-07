@@ -44,7 +44,7 @@ footer button[aria-pressed=true]{background:#2f6048;color:#fff}
  },30000);
 })();
 </script>
-<footer><button data-model="house" aria-pressed="true">Craftsman House</button><button data-model="store" aria-pressed="false">Main Street</button><button data-model="car" aria-pressed="false">Cherry Coupe</button><button data-model="tree" aria-pressed="false">Maple Tree</button></footer>
+<footer><button data-model="house" aria-pressed="true">Craftsman House</button><button data-model="store" aria-pressed="false">Main Street</button><button data-model="car" aria-pressed="false">Cherry Coupe</button><button data-model="truck" aria-pressed="false">RC Truck</button><button data-model="tree" aria-pressed="false">Maple Tree</button></footer>
 <script type="module">
 import * as pc from 'playcanvas';
 const canvas=document.querySelector('#canvas'),title=document.querySelector('#model-title'),status=document.querySelector('#model-state');
@@ -52,6 +52,7 @@ const models={
  house:{name:'Maple Craftsman House',file:'maple_craftsman_house.glb',focus:5.6,radius:27},
  store:{name:'Maple Hardware Storefront',file:'maple_mainstreet_hardware.glb',focus:6.4,radius:28},
  car:{name:'Maple Cherry Coupe',file:'maple_cherry_coupe.glb',focus:1.0,radius:8.8},
+ truck:{name:'Kenney Red RC Truck',file:'rc-truck/vehicle-truck-red.glb',directory:'../maple/imported/',focus:1.1,radius:7.4},
  tree:{name:'Model Railroad Tree',file:'maple_scenic_tree.glb',focus:3.3,radius:14}
 };
 const device=await pc.createGraphicsDevice(canvas,{deviceTypes:[pc.DEVICETYPE_WEBGL2],antialias:true});
@@ -82,7 +83,7 @@ function choose(type){
  if(active){active.enabled=false;active=null;}
  radius=info.radius*(window.innerWidth<700?1.43:1);focusY=info.focus;updateCamera();
  if(cache.has(type)){active=cache.get(type);active.enabled=true;status.textContent='Real glTF 2.0 mesh · loaded';document.body.dataset.assetLoaded=type;return;}
- app.assets.loadFromUrlAndFilename('../maple/glb/'+info.file+'?v=20261107b',info.file,'container',(error,asset)=>{
+ app.assets.loadFromUrlAndFilename((info.directory||'../maple/glb/')+info.file+'?v=20261107d',info.file.split('/').pop(),'container',(error,asset)=>{
    if(type!==selected)return;
    if(error||!asset?.resource){
      status.textContent='Model download failed: '+String(error||'missing GLB resource');
