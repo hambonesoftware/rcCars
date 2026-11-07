@@ -71,6 +71,26 @@ function chrome(){
     await phone.locator('[data-model="car"]').tap();
     await verify(phone,'car');
     await screenshot(phone,'maple-glb-car-iphone.png');
+    // Simulate the exact Pages propagation failure: the page is live,
+    // but all copies of its first .glb briefly return HTTP 404.
+    // A person must see an error and be able to retry, not stare at Loading.
+    const retryPage=await browser.newPage({viewport:{width:920,height:680}});
+    const blockGlb=route=>route.fulfill({status:404,body:'Model not yet published'});
+    await retryPage.route('**/*maple_craftsman_house.glb',blockGlb);
+    await retryPage.goto(url,{waitUntil:'domcontentloaded',timeout:50000});
+    await retryPage.waitForFunction(()=>document.body.dataset.assetStatus==='error',
+      null,{timeout:75000});
+    if(!(await retryPage.locator('#retry-model').isVisible()))
+      throw Error('Missing 3D models left no visible Retry action');
+    if(!(await retryPage.locator('#model-state').textContent()).includes('Could not load'))
+      throw Error('Gallery did not explain the missing model error');
+    await retryPage.unroute('**/*maple_craftsman_house.glb',blockGlb);
+    await retryPage.locator('#retry-model').click();
+    await verify(retryPage,'house');
+    if(await retryPage.locator('body').getAttribute('data-asset-status')!=='ready')
+      throw Error('Retry left GLB gallery in an error state');
+    await retryPage.close();
+    console.log('PASS: missing Pages/backup model shows actionable error and Retry recovers');
     if(errors.length)throw Error('Browser JavaScript error(s): '+errors.join('; '));
     console.log('PASS: all 4 authored GLBs import and render in PlayCanvas desktop');
     console.log('PASS: real iPhone-sized WebGL2 renders and asset selector');
