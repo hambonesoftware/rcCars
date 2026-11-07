@@ -86,3 +86,24 @@ jobs:
           path: tests/screenshots/*.png
           if-no-files-found: ignore
           retention-days: 7
+
+  verify-public-gallery:
+    name: Verify deployed model gallery and all GLB files
+    needs: deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    steps:
+      - name: Check out exact published commit
+        uses: actions/checkout@v4
+      - name: Install real browser test driver
+        run: npm install --no-save --ignore-scripts --no-audit --no-fund playwright-core@1.56.1
+      - name: Test PUBLIC Pages HTML, 4 GLB downloads, desktop and mobile models
+        run: timeout 460s node tests/maple-assets-live-smoke.cjs
+      - name: Save live-site desktop and mobile screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: maple-live-pages-real-browser-proof
+          path: tests/screenshots/maple-live-*.png
+          if-no-files-found: ignore
+          retention-days: 14
