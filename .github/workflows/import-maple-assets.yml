@@ -38,7 +38,7 @@ jobs:
           python -m py_compile scripts/import_maple_cc0_assets.py
           python scripts/import_maple_cc0_assets.py
           test -s assets/maple/imported/building-type-a.glb
-          test -s assets/maple/imported/warehouse.glb
+          test -s assets/maple/imported/b_small.glb
           test -s assets/maple/imported/catalog.json
       - name: Verify 10 independent GLBs and provenance
         run: |
