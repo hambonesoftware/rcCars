@@ -71,6 +71,10 @@ async function run(){
       authored:document.body.dataset.mapleAuthoredAssets,
       authoredLoaded:Number(document.body.dataset.mapleAuthoredLoaded),
       authoredFailed:Number(document.body.dataset.mapleAuthoredFailed),
+      townInstances:Number(document.body.dataset.mapleTownAssetInstances),
+      dressedTown:document.body.dataset.mapleDressedTown,
+      dressedLots:Number(document.body.dataset.mapleDressedLots),
+      streetLamps:Number(document.body.dataset.mapleStreetlamps),
       camera:document.body.dataset.mapleCamera,
       race:document.body.dataset.mapleRaceState,
       context:!!document.querySelector('#maple-canvas').getContext('webgl2'),
@@ -84,6 +88,8 @@ async function run(){
        initial.specular!=='50'||!initial.context||
        initial.authored!=='all-four-loaded'||
        initial.authoredLoaded!==4||initial.authoredFailed!==0||
+       initial.townInstances<13||initial.dressedTown!=='true'||
+       initial.dressedLots<5||initial.streetLamps<3||
        !initial.introVisible||initial.race!=='intro'){
       throw Error('The photographed 20x10 train-table scene is incomplete: '+
         JSON.stringify(initial));
@@ -105,7 +111,12 @@ async function run(){
       animations:'disabled'
     });
     await desktop.locator('#start-race').click();
-    await desktop.waitForTimeout(1900);
+    // SwiftShader on CI can take several seconds per frame with authored GLBs.
+    // Wait for real simulation progress instead of wall-clock sleep.
+    await desktop.waitForFunction(()=>
+      Number(document.body.dataset.mapleSpeed||0)>.95 &&
+      Number(document.body.dataset.mapleProgress||0)>1.80,
+      null,{timeout:90000});
     const race=await desktop.evaluate(()=>({
       race:document.body.dataset.mapleRaceState,
       lap:document.body.dataset.mapleLap,
@@ -115,7 +126,7 @@ async function run(){
       time:document.querySelector('#time').textContent
     }));
     if(race.race!=='racing'||race.camera!=='chase'||
-       race.lap!=='1'||race.speed<.40||race.progress<1.77)
+       race.lap!=='1'||race.speed<.95||race.progress<1.80)
       throw Error('Driveable three-lap circuit did not begin: '+JSON.stringify(race));
     await desktop.screenshot({
       path:path.join(images,'maple-junction-desktop-racing.png'),
@@ -145,6 +156,8 @@ async function run(){
       document.body.dataset.mapleAuthoredAssets),null,{timeout:120000});
     if(await phone.locator('body').getAttribute('data-maple-authored-assets')!=='all-four-loaded')
       throw Error('iPhone GLB mesh imports did not complete');
+    if(Number(await phone.locator('body').getAttribute('data-maple-town-asset-instances'))<9)
+      throw Error('The authored model-railroad town was not populated on iPhone');
     const phoneLayout=await phone.evaluate(()=>{
       const scene=document.querySelector('main').getBoundingClientRect();
       const left=document.querySelector('#left').getBoundingClientRect();
