@@ -111,7 +111,12 @@ async function run(){
       animations:'disabled'
     });
     await desktop.locator('#start-race').click();
-    await desktop.waitForTimeout(1900);
+    // SwiftShader on CI can take several seconds per frame with authored GLBs.
+    // Wait for real simulation progress instead of wall-clock sleep.
+    await desktop.waitForFunction(()=>
+      Number(document.body.dataset.mapleSpeed||0)>.95 &&
+      Number(document.body.dataset.mapleProgress||0)>1.80,
+      null,{timeout:90000});
     const race=await desktop.evaluate(()=>({
       race:document.body.dataset.mapleRaceState,
       lap:document.body.dataset.mapleLap,
@@ -121,7 +126,7 @@ async function run(){
       time:document.querySelector('#time').textContent
     }));
     if(race.race!=='racing'||race.camera!=='chase'||
-       race.lap!=='1'||race.speed<.40||race.progress<1.77)
+       race.lap!=='1'||race.speed<.95||race.progress<1.80)
       throw Error('Driveable three-lap circuit did not begin: '+JSON.stringify(race));
     await desktop.screenshot({
       path:path.join(images,'maple-junction-desktop-racing.png'),
