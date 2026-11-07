@@ -24,8 +24,28 @@ jobs:
       - name: Check out source
         uses: actions/checkout@v4
 
+      - name: Prepare reproducible authored miniature models
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Build revised Cherry Coupe and model town GLBs for Pages
+        run: |
+          python -m pip install --disable-pip-version-check 'numpy>=1.26,<3' 'trimesh>=4.4,<5' 'pillow>=10,<13'
+          python -m py_compile assets/maple/generate_maple_assets.py
+          python assets/maple/generate_maple_assets.py
+          test -s assets/maple/glb/maple_cherry_coupe.glb
+          test -s assets/maple/glb/maple_craftsman_house.glb
+          test -s assets/maple/glb/maple_mainstreet_hardware.glb
+          test -s assets/maple/glb/maple_scenic_tree.glb
+
       - name: Validate game source
         run: |
+          node --input-type=module --check < maple-junction-world.js
+          node --input-type=module --check < maple-junction.js
+          node --input-type=module --check < maple-authored-assets.js
+          node --input-type=module --check < maple-town-dressing.js
+          node --check tests/maple-junction-smoke.cjs
           node --check game.js
           node --check truck-model.js
           node --check vehicle-preview.js
@@ -77,7 +97,9 @@ jobs:
       - name: Install browser driver
         run: npm install --no-save --ignore-scripts --no-audit --no-fund playwright-core@1.56.1
       - name: Smoke-test all courses in Chromium
-        run: timeout 120s node tests/browser-smoke.cjs
+        run: |
+          timeout 120s node tests/browser-smoke.cjs
+          timeout 240s node tests/maple-junction-smoke.cjs
       - name: Save HO course previews for visual QA
         if: always()
         uses: actions/upload-artifact@v4
