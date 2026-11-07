@@ -1,0 +1,253 @@
+{
+  "license": "CC0-1.0",
+  "notes": "Pinned, validated GLBs hosted locally with the game; geometry sizes are glTF Y-up units.",
+  "models": {
+    "house_a": {
+      "file": "building-type-a.glb",
+      "source": "https://github.com/petroulacl/fps-buildings-env-kit/blob/1dd8e932402deb82422920df2e7fd079391e55d3/buildings/kenney-city-kit-suburban/Models/GLB%20format/building-type-a.glb",
+      "creator": "Kenney City Kit Suburban",
+      "license": "CC0-1.0",
+      "git_blob_sha1": "870bf63ab3ddedbaa44e238b2025b98d5426d46e",
+      "bytes": 98604,
+      "bounds": [
+        [
+          -0.6499999761581421,
+          0.0,
+          -0.5140689015388489
+        ],
+        [
+          0.6499999761581421,
+          0.8335409760475159,
+          0.5140689015388489
+        ]
+      ],
+      "triangles": 1174
+    },
+    "house_b": {
+      "file": "building-type-b.glb",
+      "source": "https://github.com/petroulacl/fps-buildings-env-kit/blob/1dd8e932402deb82422920df2e7fd079391e55d3/buildings/kenney-city-kit-suburban/Models/GLB%20format/building-type-b.glb",
+      "creator": "Kenney City Kit Suburban",
+      "license": "CC0-1.0",
+      "git_blob_sha1": "d25162a98353fb557c987bf44663261f41c95667",
+      "bytes": 146720,
+      "bounds": [
+        [
+          -0.9140000343322754,
+          0.0,
+          -0.5699999928474426
+        ],
+        [
+          0.9140000343322754,
+          1.1375000476837158,
+          0.5699999928474426
+        ]
+      ],
+      "triangles": 1748
+    },
+    "house_c": {
+      "file": "building-type-c.glb",
+      "source": "https://github.com/petroulacl/fps-buildings-env-kit/blob/1dd8e932402deb82422920df2e7fd079391e55d3/buildings/kenney-city-kit-suburban/Models/GLB%20format/building-type-c.glb",
+      "creator": "Kenney City Kit Suburban",
+      "license": "CC0-1.0",
+      "git_blob_sha1": "91bbbacbccfd63ca56cb40573a96bec93528865f",
+      "bytes": 99592,
+      "bounds": [
+        [
+          -0.6431901454925537,
+          0.0,
+          -0.5140689015388489
+        ],
+        [
+          0.6431901454925537,
+          1.033540964126587,
+          0.5140689015388489
+        ]
+      ],
+      "triangles": 1196
+    },
+    "house_f": {
+      "file": "building-type-f.glb",
+      "source": "https://github.com/petroulacl/fps-buildings-env-kit/blob/1dd8e932402deb82422920df2e7fd079391e55d3/buildings/kenney-city-kit-suburban/Models/GLB%20format/building-type-f.glb",
+      "creator": "Kenney City Kit Suburban",
+      "license": "CC0-1.0",
+      "git_blob_sha1": "db68497199c8469b3190cfb41b1a61c4f0c79f9c",
+      "bytes": 138536,
+      "bounds": [
+        [
+          -0.7139999866485596,
+          0.0,
+          -0.7029455900192261
+        ],
+        [
+          0.7140000462532043,
+          1.1375000476837158,
+          0.7029456496238708
+        ]
+      ],
+      "triangles": 1616
+    },
+    "house_j": {
+      "file": "building-type-j.glb",
+      "source": "https://github.com/petroulacl/fps-buildings-env-kit/blob/1dd8e932402deb82422920df2e7fd079391e55d3/buildings/kenney-city-kit-suburban/Models/GLB%20format/building-type-j.glb",
+      "creator": "Kenney City Kit Suburban",
+      "license": "CC0-1.0",
+      "git_blob_sha1": "363afd7c2ae39e00d28843fe34996f5aae892b15",
+      "bytes": 99512,
+      "bounds": [
+        [
+          -0.6850000023841858,
+          0.0,
+          -0.4580000042915344
+        ],
+        [
+          0.6850000023841858,
+          1.037500023841858,
+          0.4580000042915344
+        ]
+      ],
+      "triangles": 1210
+    },
+    "house_t": {
+      "file": "building-type-t.glb",
+      "source": "https://github.com/petroulacl/fps-buildings-env-kit/blob/1dd8e932402deb82422920df2e7fd079391e55d3/buildings/kenney-city-kit-suburban/Models/GLB%20format/building-type-t.glb",
+      "creator": "Kenney City Kit Suburban",
+      "license": "CC0-1.0",
+      "git_blob_sha1": "d655da71e7bd17946d377409e34b3f986ccecead",
+      "bytes": 167512,
+      "bounds": [
+        [
+          -0.6635879278182983,
+          0.0,
+          -0.7031901478767395
+        ],
+        [
+          0.6499999761581421,
+          1.1563305854797363,
+          0.7031901478767395
+        ]
+      ],
+      "triangles": 2062
+    },
+    "warehouse": {
+      "file": "b_small.glb",
+      "source": "https://github.com/anshaneja5/skyline-run/blob/0c41526d8d4130c37c15e219c2c3737fa8cb4ad8/public/assets/models/b_small.glb",
+      "creator": "Quaternius Downtown City MegaKit",
+      "license": "CC0-1.0",
+      "git_blob_sha1": "8f8edb201fc44f8b9eb7a4d4778cd1272e28c0e4",
+      "bytes": 1202148,
+      "bounds": [
+        [
+          -7.2300004959106445,
+          -0.01194706466048956,
+          -12.230000495910645
+        ],
+        [
+          5.2300004959106445,
+          17.014022827148438,
+          2.3060078620910645
+        ]
+      ],
+      "triangles": 15726
+    },
+    "leafy_tree": {
+      "file": "tree1.glb",
+      "source": "https://github.com/anshaneja5/skyline-run/blob/0c41526d8d4130c37c15e219c2c3737fa8cb4ad8/public/assets/models/tree1.glb",
+      "creator": "Quaternius Stylized Nature MegaKit",
+      "license": "CC0-1.0",
+      "git_blob_sha1": "80bd662cc51f983986f4e201463dc3a729a6cd4a",
+      "bytes": 516044,
+      "bounds": [
+        [
+          -2.1944587230682373,
+          -0.24277201294898987,
+          -2.2245190143585205
+        ],
+        [
+          2.116964101791382,
+          7.022013187408447,
+          2.3531949520111084
+        ]
+      ],
+      "triangles": 6257
+    },
+    "shade_tree": {
+      "file": "tree3.glb",
+      "source": "https://github.com/anshaneja5/skyline-run/blob/0c41526d8d4130c37c15e219c2c3737fa8cb4ad8/public/assets/models/tree3.glb",
+      "creator": "Quaternius Stylized Nature MegaKit",
+      "license": "CC0-1.0",
+      "git_blob_sha1": "828786b4bdb5224a8b3672f5e5d6cebe1c65bd93",
+      "bytes": 332440,
+      "bounds": [
+        [
+          -1.7970952987670898,
+          -0.24277201294898987,
+          -2.0796103477478027
+        ],
+        [
+          2.028430461883545,
+          9.195609092712402,
+          1.6757631301879883
+        ]
+      ],
+      "triangles": 4065
+    },
+    "shrub": {
+      "file": "bush.glb",
+      "source": "https://github.com/anshaneja5/skyline-run/blob/0c41526d8d4130c37c15e219c2c3737fa8cb4ad8/public/assets/models/bush.glb",
+      "creator": "Quaternius Stylized Nature MegaKit",
+      "license": "CC0-1.0",
+      "git_blob_sha1": "84b4153c17e988a658e56d4093b0028d1b034c3f",
+      "bytes": 108520,
+      "bounds": [
+        [
+          -0.9234761595726013,
+          -0.234694704413414,
+          -0.9743891954421997
+        ],
+        [
+          0.9913685917854309,
+          1.3470909595489502,
+          0.9907516837120056
+        ]
+      ],
+      "triangles": 900
+    },
+    "palette": {
+      "file": "Textures/colormap.png",
+      "source": "https://github.com/petroulacl/fps-buildings-env-kit/blob/1dd8e932402deb82422920df2e7fd079391e55d3/buildings/kenney-city-kit-suburban/Models/GLB%20format/Textures/colormap.png",
+      "creator": "Kenney City Kit Suburban",
+      "license": "CC0-1.0",
+      "git_blob_sha1": "9838fb4ccae35aa66eb2392e7f25c88f7ca28b38",
+      "bytes": 11784
+    },
+    "rc_truck_red": {
+      "file": "rc-truck/vehicle-truck-red.glb",
+      "source": "https://github.com/KenneyNL/Starter-Kit-Racing/blob/2f2e5f2646dda89cb21d4e8539bab60c6e955dc8/models/vehicle-truck-red.glb",
+      "creator": "Kenney Starter Kit Racing",
+      "license": "CC0-1.0",
+      "git_blob_sha1": "fcd901f5d43e0984b52fe947d31d9a121463127a",
+      "bytes": 92436,
+      "bounds": [
+        [
+          -0.7500001192092896,
+          -1.1920928966180355e-08,
+          -1.3999998569488523
+        ],
+        [
+          0.7499999403953552,
+          1.299999976158142,
+          1.3999999761581423
+        ]
+      ],
+      "triangles": 946
+    },
+    "rc_truck_palette": {
+      "file": "rc-truck/Textures/colormap.png",
+      "source": "https://github.com/KenneyNL/Starter-Kit-Racing/blob/2f2e5f2646dda89cb21d4e8539bab60c6e955dc8/models/Textures/colormap.png",
+      "creator": "Kenney Starter Kit Racing",
+      "license": "CC0-1.0",
+      "git_blob_sha1": "3450571406e10d758b4dad6b32c43f61caecfc9b",
+      "bytes": 10219
+    }
+  }
+}
