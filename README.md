@@ -156,3 +156,11 @@ On desktop, use **W/↑** to accelerate, **A/D** or **←/→** to steer, **S/�
 ## Playable imported RC truck (Kenney, CC0)
 
 The player now drives the **downloaded red off-road truck from Kenney's Starter Kit Racing**, with the previously custom-authored Cherry Coupe preserved as a parked HO miniature. The real GLB includes separately identifiable front/rear wheel nodes; wheel geometry is no longer handmade in the live car. Its Y-up asset bounds determine a single uniform scale relative to the actual Maple Bungalow width, depth and height: the truck is capped at 18%, 36% and 29% respectively. Measured bounds also position its tire contact plane exactly on the race surface. Camera chase distances are slightly closer for iPhones and iPads. The asset and its dedicated Kenney palette are downloaded via the checksum-pinned importer and served from the same GitHub Pages domain as the game.
+
+## Maple Junction street-circuit and driving-direction correction
+
+The previous track had disconnected-feeling zigzags and thin generic road ribbons. The revised **town-streets-v2** circuit is an intentionally shaped, closed urban course with broad curves, continuous scale asphalt, physical-looking raised cast curbs, fine white roadway edges, two Main Street sidewalk strips, a double yellow Main Street divider, suburban dashed center markings, surface repairs, rumble warning areas, reflective street markers and **four real painted zebra crossings**. Geometry regression checks reject roads overlapping the thirteen existing buildings or the moving HO train's ballast. We retain the authored models unchanged.
+
+Steering is corrected for the actual chase-camera projection: right inputs turn the truck to the right *on screen*, and left inputs to the left. The downloaded Kenney RC truck's nose direction is identified by comparing the real front/rear wheel nodes in its GLB, instead of assuming a 180-degree turn. Tire contact now matches the road mesh's measured surface at terrain +0.405 game units. The follow camera has been brought down to a more RC-like viewpoint.
+
+Tests: `node tests/maple-town-course.test.cjs` asserts the closed town course, bend radii, clearance to buildings and rail, and steering and road-contact invariants. Real desktop and iPhone Chromium browser smoke tests verify model orientation, manual steering and the road revision.
