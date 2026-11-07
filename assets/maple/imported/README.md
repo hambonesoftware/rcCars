@@ -22,3 +22,10 @@ These files can be bundled, modified, and redistributed as part of the game.
 Credits are supplied even though CC0 does not require attribution. The
 original custom Maple Junction models remain separately authored in
 `assets/maple/glb`.
+
+## Kenney — Starter Kit Racing (red RC truck)
+- Creator: Kenney, https://github.com/KenneyNL/Starter-Kit-Racing
+- Asset: `models/vehicle-truck-red.glb` and its `models/Textures/colormap.png`
+- License: CC0 1.0 Universal (the upstream README explicitly grants CC0 for 3D models).
+- Source version is pinned by SHA and both model and palette are checksum-verified.
+- The truck is the playable vehicle. The Cherry Coupe remains a parked custom model.
