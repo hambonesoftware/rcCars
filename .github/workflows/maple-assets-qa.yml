@@ -1,0 +1,47 @@
+name: Verify authored Maple Junction GLBs
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'assets/maple/**'
+      - 'assets/maple-junction/gallery.html'
+      - 'tests/maple-assets-smoke.cjs'
+      - '.github/workflows/maple-assets-qa.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'assets/maple/**'
+      - 'assets/maple-junction/gallery.html'
+      - 'tests/maple-assets-smoke.cjs'
+      - '.github/workflows/maple-assets-qa.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  glb-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check exported GLB files are present
+        run: |
+          test -s assets/maple/glb/maple_craftsman_house.glb
+          test -s assets/maple/glb/maple_mainstreet_hardware.glb
+          test -s assets/maple/glb/maple_cherry_coupe.glb
+          test -s assets/maple/glb/maple_scenic_tree.glb
+          node --check tests/maple-assets-smoke.cjs
+      - name: Install Playwright Chromium browser driver
+        run: npm install --no-save --ignore-scripts --no-audit --no-fund playwright-core@1.56.1
+      - name: Render GLB assets in real desktop and iPhone Chromium
+        run: timeout 480s node tests/maple-assets-smoke.cjs
+      - name: Preserve actual mesh render screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: maple-authored-glb-desktop-iphone-screenshots
+          path: tests/screenshots/maple-asset-*.png
+          if-no-files-found: ignore
+          retention-days: 14
