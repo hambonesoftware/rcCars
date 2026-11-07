@@ -46,11 +46,11 @@ const timeText=seconds=>{
 };
 const sections=[
   {name:'Main Street',at:0},
-  {name:'Hill Switchbacks',at:.20},
-  {name:'High Ridge',at:.39},
-  {name:'Depot Crossing',at:.61},
-  {name:'Residential Bend',at:.80},
-  {name:'Main Street Return',at:.94}
+  {name:'East Town Bend',at:.28},
+  {name:'Neighborhood Boulevard',at:.43},
+  {name:'Depot Return',at:.73},
+  {name:'West Town Bend',at:.87},
+  {name:'Main Street Approach',at:.96}
 ];
 const targets=[.18,.40,.64,.86];
 function section(s){
@@ -172,7 +172,11 @@ function lapGate(last,now){
 function updatePhysics(dt){
   if(state.mode!=='racing')return;
   const last=state.s;
-  const steer=Number(controls.right)-Number(controls.left);
+  // The chase camera looks toward the vehicle's +Z. In this camera
+  // orientation, screen-right corresponds to NEGATIVE world yaw.
+  // Reversing this sign fixes both the iPhone arrows and A/D steering.
+  const steer=Number(controls.left)-Number(controls.right);
+  document.body.dataset.mapleSteeringIntent=String(steer);
   const braking=controls.brake;
   const gas=controls.gas;
   const assist=world.road.nearest(state.position.x,state.position.z);
@@ -188,15 +192,21 @@ function updatePhysics(dt){
   else state.boostHeat=Math.max(0,state.boostHeat-dt*.17);
   // Always-on low-level steering assistance keeps this a readable
   // beginner's course, while steering buttons change the chosen line.
-  state.yaw+=clamp(error,-1.85,1.85)*dt*(steer?.64:1.22);
-  state.yaw+=steer*dt*(1.35+state.speed*.009);
+  const assisting=steer!==0?.26:.95;
+  state.yaw+=clamp(error,-1.05,1.05)*dt*assisting;
+  // Deliberately prioritize manual steering instead of the old overbearing
+  // road-follow helper that fought the directional buttons at every corner.
+  state.yaw+=steer*dt*(1.27+state.speed*.014);
   state.position.x+=Math.sin(state.yaw)*state.speed*dt;
   state.position.z+=Math.cos(state.yaw)*state.speed*dt;
   const nearest=world.road.nearest(state.position.x,state.position.z);
-  if(nearest.dist>5.30){
+  // Truck width is 1.93; allow its wheels to approach the curb but
+  // prevent the body from passing through solid miniature curbstones.
+  const usableHalfWidth=world.road.width/2-1.0;
+  if(nearest.dist>usableHalfWidth){
     state.speed=Math.min(state.speed,13);
-    // Driveable curbs, but no disappearing through model houses.
-    const excess=nearest.dist-5.3;
+    // Sidewall clearance on the actual asphalt edge.
+    const excess=nearest.dist-usableHalfWidth;
     const dx=state.position.x-nearest.x,dz=state.position.z-nearest.z;
     const distance=Math.hypot(dx,dz)||1;
     const correction=Math.min(1,excess/3+.4);
@@ -204,7 +214,7 @@ function updatePhysics(dt){
     state.position.z-=dz/distance*excess*correction;
     if(!state.inCurb){state.brushes++;notice('CURB BRUSH · SLOW DOWN');}
     state.inCurb=true;
-  }else if(nearest.dist<4.4)state.inCurb=false;
+  }else if(nearest.dist<usableHalfWidth-.45)state.inCurb=false;
   if(Math.abs(state.position.x)>98||Math.abs(state.position.z)>48){
     const p=world.road.pointAt(assist.s);
     state.position.x=p.x;state.position.z=p.z;state.speed=0;
@@ -216,6 +226,8 @@ function updatePhysics(dt){
   car.setLocalPosition(state.position.x,groundHeight(state.position.x,state.position.z)+.51,
     state.position.z);
   car.setLocalEulerAngles(0,state.yaw*radians,0);
+  document.body.dataset.mapleHeadingDegrees=(state.yaw*radians).toFixed(2);
+  document.body.dataset.mapleRoadEdgeDistance=nearest.dist.toFixed(3);
   world.animatePlayerWheels?.(dt,state.speed);
   state.time+=dt;
   state.elapsedLap=state.time-state.lapStart;
@@ -236,10 +248,10 @@ function updateCamera(dt,hard=false){
     const height=groundHeight(p.x,p.z);
     // The scale-correct RC truck is shorter than the old large coupe.
     // Bring the chase camera in just enough to keep it legible on phones.
-    const follow=phone?15.6:13.7,eye=phone?14.1:13.0;
+    const follow=phone?11.7:12.6,eye=phone?9.8:10.9;
     pcam.set(p.x-forwardX*follow,height+eye,p.z-forwardZ*follow);
-    plook.set(p.x+forwardX*(phone?10:12),height+1.6,
-      p.z+forwardZ*(phone?10:12));
+    plook.set(p.x+forwardX*(phone?10:13),height+1.8,
+      p.z+forwardZ*(phone?10:13));
     if(hard){cam.setLocalPosition(pcam);}
     else{
       const alpha=1-Math.exp(-Math.max(.001,dt)*6);
@@ -362,7 +374,7 @@ function start(){
   ui.camera.textContent='TABLE';
   state.mode='racing';
   updateCamera(0,true);
-  notice('MAPLE JUNCTION · 3 LAPS · WATCH THE TRAIN');
+  notice('MAPLE JUNCTION · RIGHT BUTTON STEERS RIGHT · KEEP TO THE STREETS');
   updateHud();
 }
 function setupStudio(){
