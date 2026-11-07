@@ -42,7 +42,7 @@ SOURCES = [
     ("house_c", "building-type-c.glb", KENNEY_REPO, KENNEY_REV, f"{KENNEY_ROOT}/building-type-c.glb", "91bbbacbccfd63ca56cb40573a96bec93528865f", "Kenney City Kit Suburban", "CC0-1.0"),
     ("house_f", "building-type-f.glb", KENNEY_REPO, KENNEY_REV, f"{KENNEY_ROOT}/building-type-f.glb", "db68497199c8469b3190cfb41b1a61c4f0c79f9c", "Kenney City Kit Suburban", "CC0-1.0"),
     ("house_j", "building-type-j.glb", KENNEY_REPO, KENNEY_REV, f"{KENNEY_ROOT}/building-type-j.glb", "363afd7c2ae39e00d28843fe34996f5aae892b15", "Kenney City Kit Suburban", "CC0-1.0"),
-    ("house_t", "building-type-t.glb", KENNEY_REPO, KENNEY_REV, f"{KENNEY_ROOT}/building-type-t.glb", "d655da71e7bd17946d377409e34b3f986ccead", "Kenney City Kit Suburban", "CC0-1.0"),
+    ("house_t", "building-type-t.glb", KENNEY_REPO, KENNEY_REV, f"{KENNEY_ROOT}/building-type-t.glb", "d655da71e7bd17946d377409e34b3f986ccecead", "Kenney City Kit Suburban", "CC0-1.0"),
     ("warehouse", "b_small.glb", QUATERNIUS_REPO, QUATERNIUS_REV, f"{QUATERNIUS_ROOT}/b_small.glb", "8f8edb201fc44f8b9eb7a4d4778cd1272e28c0e4", "Quaternius Downtown City MegaKit", "CC0-1.0"),
     ("leafy_tree", "tree1.glb", QUATERNIUS_REPO, QUATERNIUS_REV, f"{QUATERNIUS_ROOT}/tree1.glb", "80bd662cc51f983986f4e201463dc3a729a6cd4a", "Quaternius Stylized Nature MegaKit", "CC0-1.0"),
     ("shade_tree", "tree3.glb", QUATERNIUS_REPO, QUATERNIUS_REV, f"{QUATERNIUS_ROOT}/tree3.glb", "828786b4bdb5224a8b3672f5e5d6cebe1c65bd93", "Quaternius Stylized Nature MegaKit", "CC0-1.0"),
