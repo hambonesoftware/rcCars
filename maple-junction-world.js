@@ -8,9 +8,9 @@ export const BOARD={lengthFt:20,depthFt:10,width:200,depth:100};
 // At HO scale each coordinate is a unit on the 20x10-foot display table.
 export const MAPLE_WAYPOINTS=[
   [-49,22],[-27,22],[-5,22],[17,22],[38,22],[49,22],
-  [57,20],[64,16],[69,9],[71,1],[71,-6],[69,-14],
-  [64,-21],[57,-26],[49,-28],[29,-30],[8,-29],[-14,-30],
-  [-34,-30],[-49,-28],[-57,-26],[-64,-22],[-69,-15],
+  [57,20],[64,16],[69,9],[71,1],[71,-6],[69,-12],
+  [64,-18],[57,-21],[49,-25],[29,-26],[8,-26],[-14,-26],
+  [-34,-26],[-49,-25],[-57,-21],[-64,-18],[-69,-12],
   [-71,-6],[-71,2],[-69,10],[-64,17],[-57,21]
 ];
 export const DISTRICT_NAMES=['Main Street','East Curve','Residential Boulevard','West Depot Return'];
@@ -600,7 +600,7 @@ export function buildMapleWorld(app,device,{specular=50}={}){
   document.body.dataset.mapleRoadSurface=road.surfaceOffset.toFixed(3);
   document.body.dataset.mapleCrosswalkCount='4';
   document.body.dataset.mapleCurbedRoad='true';
-  document.body.dataset.mapleTownRoadClearance='validated-7.4-units-or-more';
+  document.body.dataset.mapleTownRoadClearance='validated-rail-and-building-clearance';
   return {root,road,railSamples,applySpecular,updateTrain,details,townDressing,groundHeight,buildingSpecs,treePositions,
     materials:{carPaint,cream,glass,black,trainAccent},board:BOARD};
 }
