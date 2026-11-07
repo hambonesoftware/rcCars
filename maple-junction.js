@@ -1,6 +1,7 @@
 import * as pc from 'playcanvas';
 import {BOARD,buildMapleWorld,groundHeight} from './maple-junction-world.js';
 import {loadAuthoredMapleAssets} from './maple-authored-assets.js';
+import {loadImportedMapleTown} from './maple-imported-assets.js';
 
 const canvas=document.querySelector('#maple-canvas');
 const ui={
@@ -467,6 +468,15 @@ async function main(){
   }).catch(error=>{
     console.warn('Maintaining legacy scene after mesh import failure',error);
     document.body.dataset.mapleAuthoredAssets='fallbacks-active';
+  });
+  // Secondary CC0 buildings and vegetation enrich the rest of the table.
+  // Missing optional imports must never stop the authored race or its HUD.
+  loadImportedMapleTown(app,world).then(result=>{
+    console.info('Imported CC0 miniature town assets:',result);
+  }).catch(error=>{
+    console.warn('Keeping the original town if downloaded scenery fails',error);
+    document.body.dataset.mapleImportedAssets='fallbacks-active';
+    document.body.dataset.mapleImportedError=String(error);
   });
   ui.status.hidden=true;
   document.body.dataset.mapleGameReady='true';
